@@ -2,7 +2,8 @@
 """
 Created on Mon Apr  4 19:57:34 2022
 
-@author: laoba
+@author: Yikun Bai
+Yikun.bai@Vanderbilt.edu
 """
 
 import numpy
