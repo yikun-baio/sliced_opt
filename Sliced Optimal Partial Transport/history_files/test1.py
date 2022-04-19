@@ -55,10 +55,9 @@ Lambda=1/4
 mu=1/n*np.ones(n) # mu is the pmf of each point
 xl=[0,0.1,0.2]
 
-
-m=1
-k=1 # mass
-nu=k/n*np.ones([m]) # nu is the pmf of each point
+k=1
+m=3
+nu=k/m*np.ones([m]) # nu is the pmf of each point
 yl=[0,200,201]
 
 pi1d=[]# the density of P_1pi/mu 
@@ -72,7 +71,7 @@ for i in range(n):
 pi1d_sum=sqrt(pi1d_sum)
 pi1d=np.array(pi1d)/pi1d_sum
 
-pi2d=np.zeros(m) # the density of p_2pi/nu
+pi2d=np.zeros(n) # the density of p_2pi/nu
 pi2d[0]=sum(pi1d)
 
 pi1d_prime=np.zeros(n) # for T', we just transfer all the mass from x1 to y1. 
@@ -88,7 +87,7 @@ KL_mu1_pi=KL_divergence(pi1d,mu)
 KL_mu2_pi=KL_divergence(pi2d,nu) #For the second term, we only consider
 
 Total_cost_pi=trans_cost_pi+4*Lambda*KL_mu1_pi+4*Lambda*KL_mu2_pi  
-print('The total cost calculated by mapping T is '+str(Total_cost_pi))
+print('The total cost calculated by the optimal mapping T is '+str(Total_cost_pi))
 
 
 total_cost=1+m/3-2/3*sqrt(cos(abs(xl[0]-yl[0]))**2+cos(abs(xl[1]-yl[0]))**2+cos(abs(xl[2]-yl[0]))**2)
@@ -129,14 +128,3 @@ distance=ot.unbalanced.sinkhorn_unbalanced2(mu, nu, M, reg, reg_m)
 print('The transportation distance is '+str(distance))
 print('My transportation distance is '+str(Total_cost_pi))
 
-a=1  
-b=cos(0.2)**2
-c=cos(0.3)**2
-sumabc=sqrt(a+b+c)
-A1=1+1/3
-A2=-1/3*log(a)*a/sqrt(a+b+c)-1/3*log(b)*b/sqrt(a+b+c)-1/3*log(c)*c/sqrt(a+b+c)
-A3=+1/3*a/sqrt(a+b+c)*log(a/sqrt(a+b+c))+1/3*b/sqrt(a+b+c)*log(b/sqrt(a+b+c))+1/3*c/sqrt(a+b+c)*log(c/sqrt(a+b+c))
-A6=-1/3*a/sqrt(a+b+c)-1/3*b/sqrt(a+b+c)-1/3*c/sqrt(a+b+c)
-A4=+1/3*sqrt(a+b+c)*log(sqrt(a+b+c))
-A5=-1/3*sqrt(a+b+c)
-print(A1+A2+A3+A4+A5+A6)

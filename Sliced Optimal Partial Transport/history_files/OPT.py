@@ -1,13 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Apr  4 19:57:34 2022
+Created on Fri Apr 15 12:47:54 2022
 
 @author: laoba
 """
 
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Apr  4 19:57:34 2022
+
+@author: Yikun Bai
+Yikun.bai@Vanderbilt.edu
+"""
+
 import numpy
 import math
-
+import torch
 
 
 def OPT_1D_empty_Y(X):
@@ -737,10 +745,6 @@ for i in range(100):
 
 
 
-# X=numpy.array([0.14494503, 0.57865424, 1.43409851])
-# Y=numpy.array([0.6186552,  1.06134637, 6.73059874])
-# Cost1,L1,xx=OPT_1D_v3(X,Y)
-# Cost2,L2, problem =OPT_1D_v3(X,Y)
 #print(L1)
 
 # print(L2)

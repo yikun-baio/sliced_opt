@@ -706,6 +706,116 @@ for i in range(100):
 
 
 
+                    
+def OPT_1D_v2_1(X,Y): 
+    def update_problem(min_case):
+        nonlocal cost_previous
+        nonlocal L_previous
+        if min_case=='0':
+            cost_previous=cost
+            L_previous=L.copy()
+
+        elif min_case=='2' and -numpy.inf in L_sub_previous:
+            cost_previous=cost_previous+cost_sub_previous
+            L_previous=L_previous+L_sub_previous
+
+    
+    def cost_plan_select():
+        nonlocal cost
+        nonlocal L
+
+        nonlocal cost_sub_previous
+        nonlocal L_sub_previous
+        cost_sub_previous=None
+        L_sub_previous=None
+        cost_book={}
+        for case in case_set:
+            if case=='0': # cost for destroy mass 
+                cost_book[case]=cost+(2*Lambda)  
+            elif case=='1n': # incremental cost without conflict
+                cost_book[case]=cost+cost_xk_yjk
+            elif case=='1c' and j_last+1<=m-1: # there exists right point
+                cost_xk_yjlast1=cost_function(xk,Y[j_last+1])
+                cost_book[case]=cost+cost_xk_yjlast1
+            elif case=='2': # cost for recursive problem                
+                cost_xk_yjlast=cost_function(xk,Y[j_last])
+                if cost_xk_yjlast<(2*Lambda) and j_start<=m:
+                    X_sub=X[i_start:k]
+                    Y_sub=Y[j_start:j_last]
+                    cost_sub,L_sub,cost_sub_previous,L_sub_previous=OPT_1D_v2_1(X_sub,Y_sub)
+                    cost_book[case]=cost_previous+cost_sub+cost_xk_yjlast   
+                    L_sub=index_adjust(L_sub,j_start)
+                    L_sub_previous=index_adjust(L_sub_previous,j_start)  
+                    
+        # update transportation plan L                    
+        min_case=min(cost_book,key=cost_book.get)
+        cost=cost_book[min_case]
+        if min_case=='1n':
+            L.append(jk)
+        elif min_case=='1c':
+            L.append(j_last+1)
+        elif min_case=='0':
+            L.append(-numpy.inf)
+        elif min_case=='2':
+            L=L_previous+L_sub+[j_last]
+        if min_case in {'0','2'}:
+            update_problem(min_case)
+
+        
+
+
+    n=len(X)
+    m=len(Y)
+    
+    L=[] # save the optimal plan
+    cost=0 # save the optimal cost    
+    
+    #For sub
+    cost_previous=0
+    L_previous=[]
+    cost_sub_previous=0
+    L_sub_previous=[]
+    
+    for k in range (n):
+        xk=X[k]
+        case_set={'0','1n','1c','2'} # 0 is for cost without conflict, 1 is for cost with conflict, 2 is cost with destroying, 3 is cost we solve the problem recursively 
+        i_start,j_start=startindex(L_previous)         
+        Y1=Y[j_start:]
+
+        if len(Y1)==0: # There is no y, so we destroy point 
+            case_set=case_set-{'1n','1c','2'}
+            cost_plan_select()
+            continue
+
+        jk,cost_xk_yjk=closest_y(xk,Y1)
+        jk=jk+j_start
+        if cost_xk_yjk>=2*Lambda: # closest distance is 2Lambda, then we destroy the point
+            case_set=case_set-{'1n','1c','2'}
+            cost_plan_select()
+            continue
+        
+        if len(L)==0:# No conflict
+            case_set=case_set-{'1c','2'}
+            cost_plan_select()
+            continue
+        
+        j_last=L[-1] # index of last y 
+        
+
+        if jk>j_last:# No conflict L[-1]=j_last 
+            case_set=case_set-{'1c','2'}
+        elif jk<=j_last:# conflict
+            case_set=case_set-{'1n'}
+            
+        cost_plan_select()
+#        i_start,j_start=update_sub(L,i_start,j_start)
+
+    
+    return cost,L,cost_previous,L_previous
+
+
+
+
 # X=numpy.array([0.14494503, 0.57865424, 1.43409851])
 # Y=numpy.array([0.6186552,  1.06134637, 6.73059874])
 # Cost1,L1,xx=OPT_1D_v3(X,Y)
