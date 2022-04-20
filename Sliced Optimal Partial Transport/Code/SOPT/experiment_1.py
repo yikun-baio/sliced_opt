@@ -36,11 +36,11 @@ for Lambda in Lambda_list:
     cost2,L2=OPT_1D_v1(X,Y,Lambda)
     cost2_list.append(cost2)
     
-plt.plot(Lambda_list,cost2_list,label='OPT distance')
+plt.plot(Lambda_list,cost2_list,label='OPT distance v1')
 
 plt.plot([Lambda_list[0],Lambda_list[-1]],[cost1,cost1],label='OT distance')
 plt.xlabel("lambda")
-plt.ylabel("OPT")
+plt.ylabel("Distance")
 plt.title("OPT and OT")
 plt.legend()
 plt.show()
