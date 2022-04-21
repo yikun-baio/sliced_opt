@@ -11,7 +11,7 @@ def cost_function(x,y,p=2):
     V=abs(x-y)**p
     return V
 
-def cost_matrix(X,Y,p=2):
+def cost_matrix(X,Y):
     X=X.reshape(len(X),1)
     M=cost_function(X,Y)
     return M

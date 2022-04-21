@@ -16,8 +16,8 @@ def cost_matrix(X,Y,p=2):
     M=cost_function(X,Y)
     return M
 
-def closest_y_C(k,M,j_start=0):
-    cost_list=M[k,j_start:]    
+def closest_y_C(k,M):
+    cost_list=M[k,:]    
     min_index=cost_list.argmin().item()
     min_cost=cost_list[min_index]
     return min_index,min_cost

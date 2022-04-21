@@ -22,7 +22,7 @@ def OPT_refined(X,Y,L):
     return cost
 # Experiment 1 Relation between OT and OPT
 n=20
-m=25
+m=30
 Lambda=8
 num_expriment=100
 cost1_list=[]

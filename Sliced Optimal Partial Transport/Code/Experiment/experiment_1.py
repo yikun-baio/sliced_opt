@@ -7,40 +7,37 @@ Created on Sun Apr 17 20:52:13 2022
 
 import torch
 import numpy as np 
-from .SOPT import OPT
+from OPT import *
 from library import *
 import ot 
 import matplotlib.pyplot as plt
 
 
 # Experiment 1 Relation between OT and OPT
-n=18
-m=18
+n=20
+m=20
 X=np.random.uniform(0,10,size=n)
-Y=np.random.uniform(3,15,size=m)
+Y=np.random.uniform(5,15,size=m)
 X.sort()
 Y.sort()
 mu=np.ones(n)
 nu=np.ones(m)
 
+M=cost_matrix(X,Y)
 
-cost_matrix=np.zeros([n,m])
-for i in range(n):
-    for j in range(m):
-        cost_matrix[i,j]=cost_function(X[i],Y[j])
-cost1=ot.emd2(mu,nu,cost_matrix)
+cost1=ot.emd2(mu,nu,M)
 
-Lambda_list=np.linspace(0,60,60)
+Lambda_list=np.linspace(0,80,10)
 cost2_list=[]
 for Lambda in Lambda_list:    
     cost2,L2=OPT_1D_v1(X,Y,Lambda)
     cost2_list.append(cost2)
     
-plt.plot(Lambda_list,cost2_list,label='OPT distance')
+plt.plot(Lambda_list,cost2_list,label='OPT distance v1')
 
-plt.plot([Lambda_list[0],Lambda_list[-1]],[cost1,cost1],label='OT distance')
+plt.plot([Lambda_list[0],Lambda_list[-1]],[cost1,cost1],label='OT distance (POT package)')
 plt.xlabel("lambda")
-plt.ylabel("OPT")
+plt.ylabel("Distance")
 plt.title("OPT and OT")
 plt.legend()
 plt.show()

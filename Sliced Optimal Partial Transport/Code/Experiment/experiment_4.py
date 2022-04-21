@@ -32,9 +32,9 @@ time3_list=[]
 time4_list=[]
 
 start_n=10
-end_n=35
+end_n=1000
 
-for n in range (start_n,end_n,5):
+for n in range (start_n,end_n,10):
     m=n+10
     X=np.random.uniform(0,20,size=n)
     Y=np.random.uniform(5,30,size=m)
@@ -50,10 +50,10 @@ for n in range (start_n,end_n,5):
     X.sort()
     Y.sort()
     
-    start_time = time.time()
-    cost1,L1=OPT_1D_v1(X,Y,Lambda)
-    end_time = time.time()
-    time1=end_time-start_time 
+    # start_time = time.time()
+    # cost1,L1=OPT_1D_v1(X,Y,Lambda)
+    # end_time = time.time()
+    # time1=end_time-start_time 
     
     start_time = time.time()
     cost2,L2=OPT_1D_v3(X,Y,Lambda)
@@ -72,7 +72,7 @@ for n in range (start_n,end_n,5):
     time4=end_time-start_time
     
     
-    time1_list.append(time1)
+#    time1_list.append(time1)
     time2_list.append(time2)
     time3_list.append(time3)
     time4_list.append(time4)
@@ -81,20 +81,20 @@ for n in range (start_n,end_n,5):
     
 
 
-plt.semilogy(range(start_n,end_n),time1_list,label='OPT v1')
-plt.semilogy(range(start_n,end_n),time2_list,label='OPT v2')
-plt.semilogy(range(start_n,end_n),time3_list,label='POT')
-plt.semilogy(range(start_n,end_n),time4_list,label='Sinkhon in POT package')
+# plt.semilogy(range(start_n,end_n),time1_list,label='OPT v1')
+# plt.semilogy(range(start_n,end_n),time2_list,label='OPT v2')
+# plt.semilogy(range(start_n,end_n),time3_list,label='POT')
+# plt.semilogy(range(start_n,end_n),time4_list,label='Sinkhon in POT package')
 
-plt.xlabel("n: size of X")
-plt.ylabel("runing time")
-plt.legend(loc='best')
-plt.show()
-
-# plt.plot(range(start_n,end_n,5),time2_list,label='OPT v2')
-# plt.plot(range(start_n,end_n,5),time3_list,label='POT')
-# plt.plot(range(start_n,end_n,5),time4_list,label='Sinkhorn in POT package')
 # plt.xlabel("n: size of X")
 # plt.ylabel("runing time")
 # plt.legend(loc='best')
 # plt.show()
+
+plt.plot(range(start_n,end_n,10),time2_list,label='OPT v2')
+plt.plot(range(start_n,end_n,10),time3_list,label='POT')
+plt.plot(range(start_n,end_n,10),time4_list,label='Sinkhorn in POT package')
+plt.xlabel("n: size of X")
+plt.ylabel("runing time")
+plt.legend(loc='best')
+plt.show()
