@@ -17,7 +17,8 @@ import torch
 from torch import optim
 import ot
 
-work_path=os.getcwd()
+work_path=os.path.abspath(__file__)
+print(work_path)
 loc1=work_path.find('/code')
 parent_path=work_path[0:loc1+5]
 sys.path.append(parent_path)
