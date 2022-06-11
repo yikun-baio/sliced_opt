@@ -28,7 +28,7 @@ label='20'
 from sopt.library import *
 from sopt.sliced_opt import *   
 os.getcwd()
-data_path=parent_path+'/experiment/point_cloud_matching/data/test'
+data_path=parent_path+'/experiment/shape_registration/data/test'
 
 data=torch.load(data_path+'/data_noise'+label+'.pt')
 
