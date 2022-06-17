@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="C___Code"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;CMake Files\..\;CMake Files\..\..\;CMake Files\..\..\..\;CMake Files\..\..\..\..\;CMake Files\..\..\..\..\..\;CMake Files\..\..\..\..\..\..\;CMake Files\..\..\..\..\..\..\..\;CMake Files\..\..\..\..\..\..\..\opt\;CMake Files\..\..\..\..\..\..\..\opt\anaconda3\;CMake Files\..\..\..\..\..\..\..\opt\anaconda3\lib\;CMake Files\..\..\..\..\..\..\..\opt\anaconda3\lib\cmake\;CMake Files\..\..\..\..\..\..\..\opt\anaconda3\lib\cmake\xtensor\;CMake Files\..\..\..\..\..\..\..\opt\anaconda3\share\;CMake Files\..\..\..\..\..\..\..\opt\anaconda3\share\cmake\;CMake Files\..\..\..\..\..\..\..\opt\anaconda3\share\cmake\xtl\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/Users/shahroz/Desktop/University/MINT Lab/Sliced_opt/Sliced_opt/sliced_opt/C++ Code/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j12 -f &quot;/Users/shahroz/Desktop/University/MINT\ Lab/Sliced_opt/Sliced_opt/sliced_opt/C++\ Code/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j12 -f &quot;/Users/shahroz/Desktop/University/MINT\ Lab/Sliced_opt/Sliced_opt/sliced_opt/C++\ Code/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j12 -f &quot;/Users/shahroz/Desktop/University/MINT\ Lab/Sliced_opt/Sliced_opt/sliced_opt/C++\ Code/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j12 -f &quot;/Users/shahroz/Desktop/University/MINT\ Lab/Sliced_opt/Sliced_opt/sliced_opt/C++\ Code/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/Users/shahroz/Desktop/University/MINT Lab/Sliced_opt/Sliced_opt/sliced_opt/C++ Code/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j12 -f &quot;/Users/shahroz/Desktop/University/MINT\ Lab/Sliced_opt/Sliced_opt/sliced_opt/C++\ Code/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -j12 -f &quot;/Users/shahroz/Desktop/University/MINT\ Lab/Sliced_opt/Sliced_opt/sliced_opt/C++\ Code/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j12 -f &quot;/Users/shahroz/Desktop/University/MINT\ Lab/Sliced_opt/Sliced_opt/sliced_opt/C++\ Code/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j12 -f &quot;/Users/shahroz/Desktop/University/MINT\ Lab/Sliced_opt/Sliced_opt/sliced_opt/C++\ Code/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/Users/shahroz/Desktop/University/MINT Lab/Sliced_opt/Sliced_opt/sliced_opt/C++ Code/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j12 -f &quot;/Users/shahroz/Desktop/University/MINT\ Lab/Sliced_opt/Sliced_opt/sliced_opt/C++\ Code/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -j12 -f &quot;/Users/shahroz/Desktop/University/MINT\ Lab/Sliced_opt/Sliced_opt/sliced_opt/C++\ Code/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j12 -f &quot;/Users/shahroz/Desktop/University/MINT\ Lab/Sliced_opt/Sliced_opt/sliced_opt/C++\ Code/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j12 -f &quot;/Users/shahroz/Desktop/University/MINT\ Lab/Sliced_opt/Sliced_opt/sliced_opt/C++\ Code/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="slicedOpt">
+				<Option output="/Users/shahroz/Desktop/University/MINT Lab/Sliced_opt/Sliced_opt/sliced_opt/C++ Code/cmake-build-debug/slicedOpt" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/shahroz/Desktop/University/MINT Lab/Sliced_opt/Sliced_opt/sliced_opt/C++ Code/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Users/shahroz/opt/anaconda3/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/12.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j12 -f &quot;/Users/shahroz/Desktop/University/MINT\ Lab/Sliced_opt/Sliced_opt/sliced_opt/C++\ Code/cmake-build-debug/Makefile&quot;  VERBOSE=1 slicedOpt"/>
+					<CompileFile command="/usr/bin/make -j12 -f &quot;/Users/shahroz/Desktop/University/MINT\ Lab/Sliced_opt/Sliced_opt/sliced_opt/C++\ Code/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j12 -f &quot;/Users/shahroz/Desktop/University/MINT\ Lab/Sliced_opt/Sliced_opt/sliced_opt/C++\ Code/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j12 -f &quot;/Users/shahroz/Desktop/University/MINT\ Lab/Sliced_opt/Sliced_opt/sliced_opt/C++\ Code/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="slicedOpt/fast">
+				<Option output="/Users/shahroz/Desktop/University/MINT Lab/Sliced_opt/Sliced_opt/sliced_opt/C++ Code/cmake-build-debug/slicedOpt" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/shahroz/Desktop/University/MINT Lab/Sliced_opt/Sliced_opt/sliced_opt/C++ Code/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Users/shahroz/opt/anaconda3/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/12.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j12 -f &quot;/Users/shahroz/Desktop/University/MINT\ Lab/Sliced_opt/Sliced_opt/sliced_opt/C++\ Code/cmake-build-debug/Makefile&quot;  VERBOSE=1 slicedOpt/fast"/>
+					<CompileFile command="/usr/bin/make -j12 -f &quot;/Users/shahroz/Desktop/University/MINT\ Lab/Sliced_opt/Sliced_opt/sliced_opt/C++\ Code/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j12 -f &quot;/Users/shahroz/Desktop/University/MINT\ Lab/Sliced_opt/Sliced_opt/sliced_opt/C++\ Code/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j12 -f &quot;/Users/shahroz/Desktop/University/MINT\ Lab/Sliced_opt/Sliced_opt/sliced_opt/C++\ Code/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/Users/shahroz/Desktop/University/MINT Lab/Sliced_opt/Sliced_opt/sliced_opt/C++ Code/experiments/main.cpp">
+			<Option target="slicedOpt"/>
+		</Unit>
+		<Unit filename="/Users/shahroz/Desktop/University/MINT Lab/Sliced_opt/Sliced_opt/sliced_opt/C++ Code/include/helpers.h">
+			<Option target="slicedOpt"/>
+		</Unit>
+		<Unit filename="/Users/shahroz/Desktop/University/MINT Lab/Sliced_opt/Sliced_opt/sliced_opt/C++ Code/include/sliced_opt.h">
+			<Option target="slicedOpt"/>
+		</Unit>
+		<Unit filename="/Users/shahroz/Desktop/University/MINT Lab/Sliced_opt/Sliced_opt/sliced_opt/C++ Code/src/helpers.cpp">
+			<Option target="slicedOpt"/>
+		</Unit>
+		<Unit filename="/Users/shahroz/Desktop/University/MINT Lab/Sliced_opt/Sliced_opt/sliced_opt/C++ Code/src/sliced_opt.cpp">
+			<Option target="slicedOpt"/>
+		</Unit>
+		<Unit filename="/Users/shahroz/Desktop/University/MINT Lab/Sliced_opt/Sliced_opt/sliced_opt/C++ Code/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+		<Unit filename="/Users/shahroz/Desktop/University/MINT Lab/Sliced_opt/Sliced_opt/sliced_opt/C++ Code/../../../../../../../opt/anaconda3/lib/cmake/xtensor/xtensorConfig.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\..\opt\anaconda3\lib\cmake\xtensor\"/>
+		</Unit>
+		<Unit filename="/Users/shahroz/Desktop/University/MINT Lab/Sliced_opt/Sliced_opt/sliced_opt/C++ Code/../../../../../../../opt/anaconda3/lib/cmake/xtensor/xtensorConfigVersion.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\..\opt\anaconda3\lib\cmake\xtensor\"/>
+		</Unit>
+		<Unit filename="/Users/shahroz/Desktop/University/MINT Lab/Sliced_opt/Sliced_opt/sliced_opt/C++ Code/../../../../../../../opt/anaconda3/lib/cmake/xtensor/xtensorTargets.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\..\opt\anaconda3\lib\cmake\xtensor\"/>
+		</Unit>
+		<Unit filename="/Users/shahroz/Desktop/University/MINT Lab/Sliced_opt/Sliced_opt/sliced_opt/C++ Code/../../../../../../../opt/anaconda3/share/cmake/xtl/xtlConfig.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\..\opt\anaconda3\share\cmake\xtl\"/>
+		</Unit>
+		<Unit filename="/Users/shahroz/Desktop/University/MINT Lab/Sliced_opt/Sliced_opt/sliced_opt/C++ Code/../../../../../../../opt/anaconda3/share/cmake/xtl/xtlConfigVersion.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\..\opt\anaconda3\share\cmake\xtl\"/>
+		</Unit>
+		<Unit filename="/Users/shahroz/Desktop/University/MINT Lab/Sliced_opt/Sliced_opt/sliced_opt/C++ Code/../../../../../../../opt/anaconda3/share/cmake/xtl/xtlTargets.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\..\opt\anaconda3\share\cmake\xtl\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>

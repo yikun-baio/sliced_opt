@@ -19,7 +19,9 @@
 typedef double T;
 typedef xt::xarray<T> Array;
 typedef xt::xarray<int32_t> intArray;
-typedef std::tuple<double, intArray, double, intArray> FourRet;
+typedef std::tuple<int32_t, int32_t> IntRet;
+typedef std::tuple<T, intArray> OptRet;
+typedef std::tuple<T, intArray, T, intArray> FourRet;
 
 /**
  * cost_function
@@ -70,7 +72,7 @@ void index_adjust(Array & L, uint32_t start = 0);
  * @param L_pre - (n,1) Array.
  * @return - An array with first value as i_start, and second value as j_start.
  */
-Array startIndex(Array & L_pre);
+IntRet startIndex(Array & L_pre);
 
 
 
@@ -80,7 +82,7 @@ Array startIndex(Array & L_pre);
  * @param L1
  * @return
  */
-Array unassign_y(Array & L1);
+IntRet unassign_y(Array & L1);
 
 
 

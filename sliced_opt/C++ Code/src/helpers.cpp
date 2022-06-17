@@ -99,26 +99,22 @@ void index_adjust(intArray & L, uint32_t start){
  * @param L_pre - (n,1) Array.
  * @return - An array with first value as i_start, and second value as j_start.
  */
-intArray startIndex(intArray & L_pre){
+IntRet startIndex(intArray & L_pre){
     uint32_t i_start = L_pre.shape(0);
     int len = (int) i_start;
 
-    intArray ret = {0,0};
 
     if (i_start == 0){
-        return ret;
+        return {0,0};
     }
 
     for (int i = len-1 ; i > -1; --i ){
         if (L_pre(i) >= 0){
-            ret(0) = len;
-            ret(1) = (int32_t) L_pre(i) + 1;
-            return ret;
+            return {len, L_pre(i)+1};
         }
     }
 
-    ret(0) = len;
-    return ret;
+    return {len, 0};
 }
 
 
@@ -130,7 +126,7 @@ intArray startIndex(intArray & L_pre){
  * @param L1
  * @return
  */
-intArray unassign_y(intArray & L1){
+IntRet unassign_y(intArray & L1){
     auto i_last = L1.size() -1;
     auto j_last = L1(i_last);
 
@@ -139,13 +135,11 @@ intArray unassign_y(intArray & L1){
         auto i = (int)(i_last - k + 1);
 
         if (j != L1(L1.size() - 1 - k)){
-            intArray ret {i, j};
-            return ret;
+            return {i, j};
         }
     }
 
-    intArray ret {0 ,-1};
-    return ret;
+    return {0, -1};
 }
 
 
