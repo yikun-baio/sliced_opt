@@ -82,7 +82,7 @@ IntRet startIndex(Array & L_pre);
  * @param L1
  * @return
  */
-IntRet unassign_y(Array & L1);
+IntRet unassign_y(intArray & L1);
 
 
 
@@ -93,7 +93,7 @@ IntRet unassign_y(Array & L1);
  * @param n - size of the L
  * @return - L -> Optimal plan array.
  */
-FourRet empty_Y_opt(uint32_t & n, double & Lambda);
+FourRet empty_Y_opt(int & n, double  Lambda);
 
 
 /**

@@ -52,7 +52,7 @@
 					"fragment" : " -Wall -Werror -Wextra -pedantic -pedantic-errors -g -g -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX11.1.sdk"
 				},
 				{
-					"fragment" : "-std=c++14"
+					"fragment" : "-std=c++17"
 				}
 			],
 			"includes" : 
@@ -70,7 +70,7 @@
 				[
 					3
 				],
-				"standard" : "14"
+				"standard" : "17"
 			},
 			"sourceIndexes" : 
 			[

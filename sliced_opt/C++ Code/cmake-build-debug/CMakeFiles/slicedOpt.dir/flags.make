@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = -isystem /Users/shahroz/opt/anaconda3/include
 
-CXX_FLAGS =  -Wall -Werror -Wextra -pedantic -pedantic-errors -g -g -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX11.1.sdk -std=c++14
+CXX_FLAGS =  -Wall -Werror -Wextra -pedantic -pedantic-errors -g -g -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX11.1.sdk -std=c++17
 
