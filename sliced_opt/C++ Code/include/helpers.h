@@ -104,7 +104,7 @@ FourRet empty_Y_opt(int & n, double  Lambda);
  * @param L2
  * @return
  */
-Array matrix_take(Array & X, Array & L1, Array & L2);
+Array matrix_take(Array & X, intArray & L1, intArray & L2);
 
 
 /**

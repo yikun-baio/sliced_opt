@@ -23,5 +23,16 @@ FourRet opt_sub(Array & M1, intArray & L1, double Lambda){
         return {cost_sub, L_sub, cost_sub_pre, L_sub_pre};
     }
 
-    
+    intArray L1_inact = xt::view(L1, xt::range(0, i_act, 1), xt::all());
+    intArray L1x_inact = xt::arange<int32_t>(0, i_act);
+    double cost_inact = xt::sum(matrix_take(M1, L1x_inact, L1_inact))[0];
+
+    if (i_act == n1- 1){
+        auto [cost_sub, L_sub, cost_sub_pre, L_sub_pre] = one_x_opt(M1, i_act, j_act, Lambda);
+        cost_sub = cost_inact + cost_sub;
+        L_sub = xt::concatenate(xtuple(L1_inact, L_sub));
+        if (L_sub(i_act) == -1){
+            
+        }
+    }
 }
