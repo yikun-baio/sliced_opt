@@ -134,7 +134,7 @@ intArray unassign_y(intArray & L1){
     auto i_last = L1.size() -1;
     auto j_last = L1(i_last);
 
-    for (size_t k = 0; k < j_last + 1; ++ k){
+    for (size_t k = 0; k < (size_t)j_last + 1; ++ k){
         auto j = (int)(j_last - k);
         auto i = (int)(i_last - k + 1);
 
@@ -146,4 +146,159 @@ intArray unassign_y(intArray & L1){
 
     intArray ret {0 ,-1};
     return ret;
+}
+
+
+
+
+/**
+ * empty_Y_opt
+ * Generates the plan.
+ *
+ * @param n - size of the L
+ * @return - L -> Optimal plan array.
+ */
+intArray empty_Y_opt(uint32_t & n){
+    intArray L = xt::zeros<int32_t>({n});
+
+    for (auto iterator = L.begin(); iterator != L.end(); ++iterator){
+        *iterator = -1;
+    }
+
+    return L;
+}
+
+
+/**
+ * cost_calc
+ * Works in conjunction with empty_Y_opt to calculate cost.
+ *
+ * @param n
+ * @param Lambda
+ * @return cost.
+ */
+double cost_calc(uint32_t & n, double & Lambda){
+    return n * Lambda;
+}
+
+
+
+/**
+ * matrix_take
+ *
+ * @param X
+ * @param L1
+ * @param L2
+ * @return
+ */
+Array matrix_take(Array & X, Array & L1, Array & L2){
+    auto size = L1.shape(0);
+
+    Array ret = xt::zeros<double>({size});
+
+    for (int i = 0; i < (int)size; ++i){
+        ret(i) = X(L1(i), L2(i));
+    }
+
+    return ret;
+}
+
+
+/**
+ * one_x_opt_1
+ * Takes care for the return of the first parameter from python version.
+ * @param M1
+ * @param i_act
+ * @param j_act
+ * @param Lambda
+ * @return
+ */
+double one_x_opt_1(Array & M1, int32_t & i_act, int32_t & j_act, double & Lambda){
+    if (j_act < 0 ){
+        return Lambda;
+    }
+    auto c_xy = M1(i_act, j_act);
+    if (c_xy >= Lambda){
+        return Lambda;
+    }
+    else{
+        return c_xy;
+    }
+}
+
+
+
+/**
+ * one_x_opt_2
+ * Takes care for the return of the second parameter from python version.
+ * @param M1
+ * @param i_act
+ * @param j_act
+ * @param Lambda
+ * @return
+ */
+intArray one_x_opt_2(Array & M1, int32_t & i_act, int32_t & j_act, double & Lambda){
+    if (j_act < 0 ){
+        intArray ret = {-1};
+        return ret;
+    }
+    auto c_xy = M1(i_act, j_act);
+    if (c_xy >= Lambda){
+        intArray ret = {-1};
+        return ret;
+    }
+    else{
+        intArray ret = {j_act};
+        return ret;
+    }
+}
+
+
+
+/**
+ * one_x_opt_3
+ * Takes care for the return of the third parameter from python version.
+ * @param M1
+ * @param i_act
+ * @param j_act
+ * @param Lambda
+ * @return
+ */
+double one_x_opt_3(Array & M1, int32_t & i_act, int32_t & j_act, double & Lambda){
+    if (j_act < 0 ){
+        return Lambda;
+    }
+    auto c_xy = M1(i_act, j_act);
+    if (c_xy >= Lambda){
+        return Lambda;
+    }
+    else{
+        return 0;
+    }
+}
+
+
+/**
+ * one_x_opt_4
+ * Takes care for the return of the fourth parameter from python version.
+ * @param M1
+ * @param i_act
+ * @param j_act
+ * @param Lambda
+ * @return
+ */
+intArray one_x_opt_4(Array & M1, int32_t & i_act, int32_t & j_act, double & Lambda){
+    if (j_act < 0 ){
+        intArray ret = {-1};
+        return ret;
+    }
+    auto c_xy = M1(i_act, j_act);
+    if (c_xy >= Lambda){
+        intArray ret = {-1};
+        return ret;
+    }
+    else{
+        intArray ret = xt::empty<int32_t>({0});
+        return ret;
+    }
 }

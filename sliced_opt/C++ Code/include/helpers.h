@@ -81,4 +81,89 @@ Array startIndex(Array & L_pre);
 Array unassign_y(Array & L1);
 
 
+
+/**
+ * empty_Y_opt
+ * Generates the plan.
+ *
+ * @param n - size of the L
+ * @return - L -> Optimal plan array.
+ */
+intArray empty_Y_opt(uint32_t & n);
+
+
+/**
+ * cost_calc
+ * Works in conjunction with empty_Y_opt to calculate cost.
+ *
+ * @param n
+ * @param Lambda
+ * @return cost.
+ */
+double cost_calc(uint32_t & n, double & Lambda);
+
+
+
+/**
+ * matrix_take
+ *
+ * @param X
+ * @param L1
+ * @param L2
+ * @return
+ */
+Array matrix_take(Array & X, Array & L1, Array & L2);
+
+
+/**
+ * one_x_opt_1
+ * Takes care for the return of the first parameter from python version.
+ * @param M1
+ * @param i_act
+ * @param j_act
+ * @param Lambda
+ * @return
+ */
+double one_x_opt_1(Array & M1, int32_t & i_act, int32_t & j_act, double & Lambda);
+
+
+
+/**
+ * one_x_opt_2
+ * Takes care for the return of the second parameter from python version.
+ * @param M1
+ * @param i_act
+ * @param j_act
+ * @param Lambda
+ * @return
+ */
+intArray one_x_opt_2(Array & M1, int32_t & i_act, int32_t & j_act, double & Lambda);
+
+
+
+/**
+ * one_x_opt_3
+ * Takes care for the return of the third parameter from python version.
+ * @param M1
+ * @param i_act
+ * @param j_act
+ * @param Lambda
+ * @return
+ */
+double one_x_opt_3(Array & M1, int32_t & i_act, int32_t & j_act, double & Lambda);
+
+
+
+/**
+ * one_x_opt_4
+ * Takes care for the return of the fourth parameter from python version.
+ * @param M1
+ * @param i_act
+ * @param j_act
+ * @param Lambda
+ * @return
+ */
+intArray one_x_opt_4(Array & M1, int32_t & i_act, int32_t & j_act, double & Lambda);
+
+
 #endif //C___CODE_HELPERS_H
