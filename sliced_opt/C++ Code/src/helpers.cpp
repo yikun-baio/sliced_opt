@@ -81,7 +81,7 @@ Array closest_y_M(Array & M){
  * @param L - 1d Array(list) -> Non-negative ints or -1. Labelled as Transportation Plan.
  * @param start - Offset to be added. Must be non-negative.
  */
-void index_adjust(Array & L, uint32_t start){
+void index_adjust(intArray & L, uint32_t start){
     uint32_t n = L.shape(0);
 
     for (uint32_t i=0; i < n; ++i){
@@ -99,11 +99,11 @@ void index_adjust(Array & L, uint32_t start){
  * @param L_pre - (n,1) Array.
  * @return - An array with first value as i_start, and second value as j_start.
  */
-Array startIndex(Array & L_pre){
+intArray startIndex(intArray & L_pre){
     uint32_t i_start = L_pre.shape(0);
     int len = (int) i_start;
 
-    xt::xarray<int32_t> ret = {0,0};
+    intArray ret = {0,0};
 
     if (i_start == 0){
         return ret;
@@ -118,5 +118,32 @@ Array startIndex(Array & L_pre){
     }
 
     ret(0) = len;
+    return ret;
+}
+
+
+
+
+/**
+ * unassign_y
+ *
+ * @param L1
+ * @return
+ */
+intArray unassign_y(intArray & L1){
+    auto i_last = L1.size() -1;
+    auto j_last = L1(i_last);
+
+    for (size_t k = 0; k < j_last + 1; ++ k){
+        auto j = (int)(j_last - k);
+        auto i = (int)(i_last - k + 1);
+
+        if (j != L1(L1.size() - 1 - k)){
+            intArray ret {i, j};
+            return ret;
+        }
+    }
+
+    intArray ret {0 ,-1};
     return ret;
 }

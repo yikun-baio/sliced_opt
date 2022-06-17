@@ -17,7 +17,7 @@
 // Some typedefs to make life easier.
 typedef double T;
 typedef xt::xarray<T> Array;
-
+typedef xt::xarray<int32_t> intArray;
 
 /**
  * cost_function
@@ -72,8 +72,13 @@ Array startIndex(Array & L_pre);
 
 
 
-
-
+/**
+ * unassign_y
+ *
+ * @param L1
+ * @return
+ */
+Array unassign_y(Array & L1);
 
 
 #endif //C___CODE_HELPERS_H
