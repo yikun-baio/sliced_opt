@@ -64,5 +64,33 @@ FourRet opt_sub(Array & M1, intArray & L1, double Lambda){
 
     int index_d1_opt = xt::argmin(cost_d1)[0] + i;
     double cost_d1_opt = xt::amin(cost_d1)[0] + Lambda;
-    
+
+    // Find the optimal d0 plan
+    double cost_d0 = std::numeric_limits<double>::max();
+    if (j_act >= 0 && i==0){
+        cost_d0 = cost_d1(0) + M1(i_act,j_act);
+    }
+
+    if (cost_d1_opt <= cost_d0){
+        double cost_sub = cost_inact + cost_d1_opt;
+        intArray tmp4 = xt::view(L1_act, xt::range(0, index_d1_opt, 1), xt::all());
+        intArray tmp5 = {-1};
+        intArray tmp6 = xt::view(L1_act, xt::range(index_d1_opt, L1_act.size() , 1), xt::all());
+        intArray L_sub = xt::concatenate(xtuple(L1_inact, tmp4, tmp5, tmp6));
+        intArray tmp7 = xt::view(cost_L2, xt::range(0, index_d1_opt, 1), xt::all());
+        double cost_sub_pre = cost_inact + xt::sum(tmp7)[0] + Lambda;
+        intArray L_sub_pre = xt::concatenate(xtuple(L1_inact, tmp4, tmp5));
+        return {cost_sub, L_sub, cost_sub_pre, L_sub_pre};
+    }
+
+    else {
+        intArray tmp8 = {j_act};
+        intArray L_sub = xt::concatenate(xtuple(L1_inact, tmp8, L1_act));
+        double cost_sub = cost_inact + cost_d0;
+        double cost_sub_pre = 0;
+        intArray L_sub_pre = xt::empty<int32_t>(0);
+        return {cost_sub, L_sub, cost_sub_pre, L_sub_pre};
+    }
 }
+
+
