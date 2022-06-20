@@ -94,3 +94,59 @@ FourRet opt_sub(Array & M1, intArray & L1, double Lambda){
 }
 
 
+OptRet opt_1d_v2(Array & X, Array & Y, const double & Lambda){
+    Array M = cost_matrix(X, Y);
+    int n = M.shape(0);
+    int m = M.shape(1);
+    // We already have lambda in float32 so no need to init it here.
+
+    intArray L = xt::empty<int32_t>({0});
+    double cost = 0;
+    intArray argmin_Y = closest_y_M(M);
+
+    // Initialize the Subproblem
+    double cost_pre = 0;
+    intArray L_pre = xt::empty<int32_t>({0});
+    double cost_pre_sub = 0;
+    intArray L_sub_pre = xt::empty<int32_t>({0});
+    int32_t i_start = 0;
+    int32_t j_start = 0;
+
+
+    // Initial Loop
+    int k = 0;
+    int jk = argmin_Y(k);
+    double cost_xk_yjk = M(k, jk);
+    if (cost_xk_yjk < Lambda){
+        cost += cost_xk_yjk;
+        intArray tmp = {jk};
+        L = xt::concatenate(xtuple(L, tmp));
+    }
+    else{
+        cost += Lambda;
+        intArray tmp = {-1};
+        L = xt::concatenate(xtuple(L, tmp));
+        cost_pre = cost;
+        L_pre = L;
+        auto [val1, val2] = startIndex(L_pre);
+        i_start = val1;
+        j_start = val2;
+    }
+
+
+    // Start Loop
+    Array cost_book_orig = { std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),  std::numeric_limits<double>::max()};
+
+    for (int i = 1; i < n; ++i){
+        Array cost_book = cost_book_orig;
+        if(j_start == m){
+            auto [cost_end, L_end, xx, yy] = empty_Y_opt(n-i, Lambda);
+            cost = cost + cost_end;
+            L = xt::concatenate(xtuple(L, L_end));
+            return {cost, L};
+        }
+
+        
+    }
+
+}

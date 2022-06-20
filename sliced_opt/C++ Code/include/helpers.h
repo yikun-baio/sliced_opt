@@ -72,7 +72,7 @@ void index_adjust(Array & L, uint32_t start = 0);
  * @param L_pre - (n,1) Array.
  * @return - An array with first value as i_start, and second value as j_start.
  */
-IntRet startIndex(Array & L_pre);
+IntRet startIndex(intArray & L_pre);
 
 
 
@@ -93,7 +93,7 @@ IntRet unassign_y(intArray & L1);
  * @param n - size of the L
  * @return - L -> Optimal plan array.
  */
-FourRet empty_Y_opt(int & n, double  Lambda);
+FourRet empty_Y_opt(int  n, double  Lambda);
 
 
 /**

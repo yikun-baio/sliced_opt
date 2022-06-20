@@ -152,7 +152,7 @@ IntRet unassign_y(intArray & L1){
  * @param n - size of the L
  * @return - L -> Optimal plan array.
  */
-FourRet empty_Y_opt(int & n, double & Lambda){
+FourRet empty_Y_opt(int  n, double & Lambda){
     intArray L = xt::zeros<int32_t>({n});
 
     for (auto iterator = L.begin(); iterator != L.end(); ++iterator){
