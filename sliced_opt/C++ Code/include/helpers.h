@@ -62,7 +62,7 @@ Array closest_y_M(Array & M);
  * @param L - 1d Array(list) -> Non-negative ints or -1. Labelled as Transportation Plan.
  * @param start - Offset to be added. Must be non-negative.
  */
-void index_adjust(Array & L, uint32_t start = 0);
+void index_adjust(intArray & L, uint32_t start = 0);
 
 
 

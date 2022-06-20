@@ -137,16 +137,104 @@ OptRet opt_1d_v2(Array & X, Array & Y, const double & Lambda){
     // Start Loop
     Array cost_book_orig = { std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),  std::numeric_limits<double>::max()};
 
-    for (int i = 1; i < n; ++i){
+    for (k=1; k < n; ++k){
         Array cost_book = cost_book_orig;
         if(j_start == m){
-            auto [cost_end, L_end, xx, yy] = empty_Y_opt(n-i, Lambda);
+            auto [cost_end, L_end, xx, yy] = empty_Y_opt(n-k, Lambda);
             cost = cost + cost_end;
             L = xt::concatenate(xtuple(L, L_end));
             return {cost, L};
         }
 
-        
+        jk = argmin_Y(k);
+        cost_xk_yjk = M(k,jk);
+
+        // Index of last y
+        int j_last = L(L.size() - 1);
+        if (j_last < 0){
+            j_last = j_start - 1;
+        }
+        intArray L_sub;
+        intArray L_Sub_Pre;
+        double cost_sub_pre;
+        double cost_sub;
+        // Case of no conflict
+        // No conflict L[-1] = j_last
+        if (jk > j_last){
+            cost_book(0) = cost+Lambda;
+            cost_book(1) = cost+cost_xk_yjk;
+        }
+        // Conflict
+        else {
+            cost_book(0) = cost+Lambda;
+
+            //  cost 1c
+            if (j_last + 1 <= m-1){
+                double cost_xk_yjlast1 = M(k, j_last + 1);
+                cost_book(2) = cost + cost_xk_yjlast1;
+            }
+
+            // cost 2c
+            double cost_xk_yjlast = M(k, j_last);
+            if (cost_xk_yjlast < Lambda && j_start <= m && i_start < k){
+                Array M1 = xt::view(M, xt::range(i_start, k, 1), xt::range(j_start, j_last, 1));
+                intArray X1 = xt::view(X, xt::range(i_start, k, 1), xt::all());
+                intArray Y1 = xt::view(Y, xt::range(j_start, j_last, 1), xt::all());
+                intArray L1 = xt::view(L, xt::range(i_start, k, 1), xt::all());
+
+                index_adjust(L1, -j_start);
+                auto [val1, L_Sub, val2, L_sub_Pre] = opt_sub(M1, L1, Lambda);
+                cost_sub = val1;
+                cost_book(3) = cost_pre + cost_sub + cost_xk_yjlast;
+                cost_sub_pre = val2;
+                L_sub = L_Sub;
+                L_Sub_Pre = L_sub_Pre;
+                index_adjust(L_Sub, j_start);
+                index_adjust(L_Sub_Pre, j_start);
+
+            }
+        }
+
+        // Find the optimal cost over all
+        int min_case = xt::argmin(cost_book)[0];
+        cost = xt::amin(cost_book)[0];
+
+        // update problem, if we destroy points, update pre-problem
+        if (min_case == 0){
+            intArray tmp = {-1};
+            L = xt::concatenate(xtuple(L, tmp));
+            cost_pre = cost;
+            auto [val1, val2] = startIndex(L_pre);
+            i_start = val1;
+            j_start = val2;
+        }
+        else if (min_case == 1){
+            intArray tmp = {jk};
+            L = xt::concatenate(xtuple(L, tmp));
+        }
+        else if(min_case == 2){
+            intArray tmp = {j_last + 1};
+            L = xt::concatenate(xtuple(L, tmp));
+        }
+        else if (min_case == 3){
+            intArray tmp = {j_last};
+            L = xt::concatenate(xtuple(L_pre, L_sub, tmp));
+            if (L_Sub_Pre.shape(0) >= 1){
+                cost_pre = cost_pre + cost_sub_pre;
+                L_pre = xt::concatenate(xtuple(L_pre, L_Sub_Pre));
+            }
+
+            // Empty the variable for the sub problem
+            L_sub = xt::empty<int32_t>({0});
+            L_Sub_Pre = xt::empty<int32_t>({0});
+            cost_sub = 0;
+            cost_sub_pre = 0;
+            auto [val5, val6] = startIndex(L_pre);
+            i_start = val5;
+            j_start = val6;
+        }
     }
+
+    return {cost, L};
 
 }
