@@ -144,7 +144,6 @@ class sopt_for():
         return cost,mass
 
     def get_projections(self):
-#        projections=random_projections(self.d,self.n_projections,self.device,self.dtype)
         projections=random_projections(self.d,self.n_projections,self.device,self.dtype)
         self.X_sliced=torch.matmul(projections.T,self.X.T)
         self.Y_sliced=torch.matmul(projections.T,self.Y.T)

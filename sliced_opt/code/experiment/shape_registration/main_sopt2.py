@@ -22,8 +22,9 @@ loc1=work_path.find('/code')
 parent_path=work_path[0:loc1+5]
 sys.path.append(parent_path)
 os.chdir(parent_path)
-label='39'
+label='105'
 from sopt2.library import *
+from sopt2.lib_shape import *
 from sopt2.sliced_opt import *   
 os.getcwd()
 data_path=parent_path+'/experiment/shape_registration/data/test'
@@ -53,21 +54,9 @@ X1T=X1.to(device)
 Y1T=Y1.to(device)
 n_iteration=300
 
-theta=torch.tensor([0,0,0],dtype=dtype,requires_grad=True,device=device)
-scalar=torch.tensor(1,dtype=dtype,requires_grad=True,device=device)
 
-#beta=torch.tensor([0,0,0],dtype=dtype,requires_grad=True)
-optimizer1=optim.Adam([scalar],lr=0.1,weight_decay=0.01)
-optimizer2=optim.SGD([theta],lr=0.3,weight_decay=0.01)
-
-
-# show the Wasserstein distance 
-paramlist=[]
-n_projections=72
-Lambda=np.float32(0.2)
-Delta=Lambda*0.1
 # compute the parameter error
-
+print('original figure')
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 ax.scatter(Y1[:,0],Y1[:,1],Y1[:,2],s=0.3,label='source') # plot the point (2,3,4) on the figure
@@ -79,21 +68,35 @@ plt.legend(loc='upper right')
 plt.savefig('experiment/shape_registration/result/exp1/sopt/init.jpg')
 plt.show()
 plt.close()
+
+theta=init_angle(X1,Y1)
+theta=theta.to(device).requires_grad_()
+scalar=torch.tensor(1,dtype=dtype,requires_grad=True,device=device)
+
+#beta=torch.tensor([0,0,0],dtype=dtype,requires_grad=True)
+optimizer1=optim.Adam([scalar],lr=0.1,weight_decay=0.01)
+optimizer2=optim.Adam([theta],lr=0.1,weight_decay=0.01)
+
+
+# show the Wasserstein distance 
+paramlist=[]
+n_projections=72
+Lambda=np.float32(0.04)
+Delta=Lambda*0.1
+
       
 
 for epoch in range(n_iteration):
     optimizer1.zero_grad()
     optimizer2.zero_grad()
-    rotation=rotation_matrix_3d(theta,'re')
+    rotation=rotation_3d_2(theta,'re')
     X1_hat=Y1T@rotation*scalar
     mean_X1=torch.mean(X1T,0)*(N+N_noise-N_a)/N
     mean_X1_hat=torch.mean(X1_hat,0)*(N+N_noise-N_a)/N
     beta=mean_X1-mean_X1_hat
-    
-    
     X1_hat2=X1_hat+beta
 #    A=sopt_majority(X1_hat2,X1T,Lambda,n_projections,'orth',n_destroy=N_noise-N_a)
-    A=sopt_majority(X1_hat2,X1T,Lambda,n_projections,'orth')
+    A=sopt_for(X1_hat2,X1T,Lambda,n_projections,'orth')
 
     loss,mass=A.sliced_cost()
     loss.backward()
