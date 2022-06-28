@@ -22,8 +22,8 @@ loc1=work_path.find('/code')
 parent_path=work_path[0:loc1+5]
 sys.path.append(parent_path)
 os.chdir(parent_path)
-label='105'
-exp_num='1'
+label='120'
+exp_num='3'
 from sopt2.library import *
 from sopt2.lib_shape import *
 from sopt2.sliced_opt import *   
@@ -99,7 +99,7 @@ optimizer3=optim.Adam([beta],lr=0.1,weight_decay=0.01)
 # show the Wasserstein distance 
 paramlist=[]
 n_projections=72
-Lambda=np.float32(0.04)
+Lambda=np.float32(0.1)
 Delta=Lambda*0.1
 
       

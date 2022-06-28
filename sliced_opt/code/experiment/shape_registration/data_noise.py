@@ -18,7 +18,7 @@ import  time
 
 
 # choose the data 
-label=105
+label=120
 
 
 work_path=os.path.dirname(__file__)
@@ -47,8 +47,8 @@ Y0=Y.clone()
 X0=Y0@rotation_op*scalar_op+beta_op
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-ax.scatter(Y0[:,0],Y0[:,1],Y0[:,2],s=0.5,label='source')  
-ax.scatter(X0[:,0],X0[:,1],X0[:,2],s=0.5,label='target') 
+ax.scatter(Y0[:,0],Y0[:,1],Y0[:,2],s=0.3,label='source')  
+ax.scatter(X0[:,0],X0[:,1],X0[:,2],s=0.3,label='target') 
 plt.legend(loc='upper right')
 plt.show()
 
@@ -59,10 +59,10 @@ N=X0.shape[0] # of clean data
 N_noise=int(per*N) # of noise
 nx=5*(torch.rand(N_noise,3)-0.5)
 time.sleep(2)
-torch.random.manual_seed(300)
+torch.random.manual_seed(130)
 ny=5*(torch.rand(N_noise,3)-0.5)
-nx=nx-torch.mean(nx,0)
-ny=nx-torch.mean(ny,0)
+#nx=nx-torch.mean(nx,0)
+#ny=nx-torch.mean(ny,0)
 Y1=torch.cat((Y0,ny))
 X1=torch.cat((X0,nx))
 fig = plt.figure(figsize=(10,10))
