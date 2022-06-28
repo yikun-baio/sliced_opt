@@ -36,8 +36,6 @@ from experiment.shape_registration.dataset import Dataset
 
 
     
-
-L=[]
 item=105
 #item =49
 d = Dataset(root=root, dataset_name=dataset_name,num_points=2048,   split=split, 
