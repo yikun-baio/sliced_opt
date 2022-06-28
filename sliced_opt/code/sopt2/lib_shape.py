@@ -132,7 +132,7 @@ def cosine_to_angle(sin_x,cos_x):
     x1=torch.arcsin(abs(sin_x))
     x2=torch.arccos(abs(cos_x))
    
-    if abs(x1-x2)>=1e-5:
+    if abs(x1-x2)>=1e-4:
         print('error')
         return 'error'
     else:

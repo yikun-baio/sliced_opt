@@ -56,10 +56,10 @@ ax = fig.add_subplot(111, projection='3d')
 ax.scatter(X[:,0],X[:,1],X[:,2],s=2.5) # plot the point   (2,3,4) on the figure
 plt.show()
 i=0
-theta=torch.tensor([-torch.pi/3,torch.pi/4,torch.pi/3])
+theta=torch.tensor([-torch.pi/3,torch.pi/3,2/3*torch.pi])
 rotation=rotation_3d_2(theta,'in')
-scalar=1 #0.6
-beta=torch.tensor([0,0,0]) #torch.tensor([1.8,0.5,0.5])
+scalar=1.5 #0.6
+beta=torch.tensor([1.6,0.8,-0.3]) #torch.tensor([1.8,0.5,0.5])
 Y=scalar*X@rotation+beta
 fig = plt.figure(figsize=(4,4))
 ax = fig.add_subplot(111, projection='3d')

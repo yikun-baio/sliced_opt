@@ -23,6 +23,7 @@ parent_path=work_path[0:loc1+5]
 sys.path.append(parent_path)
 os.chdir(parent_path)
 label='105'
+exp_num='1'
 from sopt2.library import *
 from sopt2.lib_shape import *
 from sopt2.sliced_opt import *   
@@ -65,17 +66,34 @@ ax.set_xlim3d(-1,2.5)
 ax.set_ylim3d(-1.5,1.5)
 ax.set_zlim3d(-1,1)
 plt.legend(loc='upper right')
-plt.savefig('experiment/shape_registration/result/exp1/sopt/init.jpg')
+plt.savefig('experiment/shape_registration/result/exp'+exp_num+'/sopt/init.jpg')
 plt.show()
 plt.close()
 
+
+# initlize 
+scalar=torch.tensor(1,dtype=dtype,requires_grad=True,device=device)
+
+#initilize theta
 theta=init_angle(X1,Y1)
 theta=theta.to(device).requires_grad_()
-scalar=torch.tensor(1,dtype=dtype,requires_grad=True,device=device)
+print('original theta is ',theta)
+
+# initilize beta 
+rotation=rotation_3d_2(theta,'re')
+X1_hat=Y1T@rotation*scalar
+mean_X1_hat=torch.mean(X1_hat.clone().detach(),0)*(N+N_noise-N_a)/N
+mean_X1=torch.mean(X1.clone(),0)*(N+N_noise-N_a)/N
+
+beta=mean_X1-mean_X1_hat
+beta=beta.to(device).requires_grad_()
+
+
 
 #beta=torch.tensor([0,0,0],dtype=dtype,requires_grad=True)
 optimizer1=optim.Adam([scalar],lr=0.1,weight_decay=0.01)
 optimizer2=optim.Adam([theta],lr=0.1,weight_decay=0.01)
+optimizer3=optim.Adam([beta],lr=0.1,weight_decay=0.01)
 
 
 # show the Wasserstein distance 
@@ -89,12 +107,13 @@ Delta=Lambda*0.1
 for epoch in range(n_iteration):
     optimizer1.zero_grad()
     optimizer2.zero_grad()
+    optimizer3.zero_grad()
     rotation=rotation_3d_2(theta,'re')
-    X1_hat=Y1T@rotation*scalar
-    mean_X1=torch.mean(X1T,0)*(N+N_noise-N_a)/N
-    mean_X1_hat=torch.mean(X1_hat,0)*(N+N_noise-N_a)/N
-    beta=mean_X1-mean_X1_hat
-    X1_hat2=X1_hat+beta
+    X1_hat=Y1T@rotation*scalar+beta
+#    mean_X1=torch.mean(X1,0)*(N+N_noise-N_a)/N
+#    mean_X1_hat=torch.mean(X1_hat,0)*(N+N_noise-N_a)/N
+#    beta=mean_X1-mean_X1_hat
+    X1_hat2=X1_hat #+beta
 #    A=sopt_majority(X1_hat2,X1T,Lambda,n_projections,'orth',n_destroy=N_noise-N_a)
     A=sopt_for(X1_hat2,X1T,Lambda,n_projections,'orth')
 
@@ -122,6 +141,7 @@ for epoch in range(n_iteration):
     
     optimizer1.step()
     optimizer2.step()
+    optimizer3.step()
     
     # 
     
@@ -142,7 +162,7 @@ for epoch in range(n_iteration):
       ax.set_ylim3d(-1.5,1.5)
       ax.set_zlim3d(-1,1)
       plt.legend(loc='upper right')
-      plt.savefig('experiment/shape_registration/result/exp2/sopt/'+str(epoch)+'.jpg')
+      plt.savefig('experiment/shape_registration/result/exp'+exp_num+'/sopt/'+str(epoch)+'.jpg')
       plt.show()
       plt.close()
       
@@ -154,5 +174,5 @@ for epoch in range(n_iteration):
       print('loss is ',loss.item())
       print('-' * 10)
 
-torch.save(paramlist,'experiment/shape_registration/result/exp2/sopt_param.pt')
+torch.save(paramlist,'experiment/shape_registration/result/exp'+exp_num+'/sopt_param.pt')
 
