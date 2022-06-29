@@ -18,7 +18,7 @@ import  time
 
 
 # choose the data 
-label=120
+label='340'
 
 
 work_path=os.path.dirname(__file__)
@@ -58,11 +58,10 @@ per=0.05
 N=X0.shape[0] # of clean data
 N_noise=int(per*N) # of noise
 nx=5*(torch.rand(N_noise,3)-0.5)
-time.sleep(2)
-torch.random.manual_seed(130)
+
 ny=5*(torch.rand(N_noise,3)-0.5)
-#nx=nx-torch.mean(nx,0)
-#ny=nx-torch.mean(ny,0)
+nx=nx-torch.mean(nx,0)
+ny=nx-torch.mean(ny,0)
 Y1=torch.cat((Y0,ny))
 X1=torch.cat((X0,nx))
 fig = plt.figure(figsize=(10,10))
@@ -87,5 +86,6 @@ param['scalar_op']=scalar_op
 param['beta_op']=beta_op
 
 data['param']=param
-
+print('theta_op',theta_op)
+print('theta_init',init_angle(X1,Y1))
 torch.save(data,data_path+'/data_noise'+str(label)+'.pt')

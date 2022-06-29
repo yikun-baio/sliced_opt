@@ -22,8 +22,8 @@ loc1=work_path.find('/code')
 parent_path=work_path[0:loc1+5]
 sys.path.append(parent_path)
 os.chdir(parent_path)
-label='120'
-exp_num='3'
+label='340'
+exp_num='5'
 from sopt2.library import *
 from sopt2.lib_shape import *
 from sopt2.sliced_opt import *   
@@ -31,7 +31,7 @@ os.getcwd()
 data_path=parent_path+'/experiment/shape_registration/data/test'
 
 data=torch.load(data_path+'/data_noise'+label+'.pt')
-
+L=[30,60,70,105]
 X0=data['X0']
 Y0=data['Y0']
 X1=data['X1']
@@ -66,7 +66,7 @@ ax.set_xlim3d(-1,2.5)
 ax.set_ylim3d(-1.5,1.5)
 ax.set_zlim3d(-1,1)
 plt.legend(loc='upper right')
-plt.savefig('experiment/shape_registration/result/exp'+exp_num+'/sopt/init.jpg')
+plt.savefig('experiment/shape_registration/result/exp'+exp_num+'/sopt/init'+label+'.jpg')
 plt.show()
 plt.close()
 
@@ -91,15 +91,15 @@ beta=beta.to(device).requires_grad_()
 
 
 #beta=torch.tensor([0,0,0],dtype=dtype,requires_grad=True)
-optimizer1=optim.Adam([scalar],lr=0.1,weight_decay=0.01)
-optimizer2=optim.Adam([theta],lr=0.1,weight_decay=0.01)
-optimizer3=optim.Adam([beta],lr=0.1,weight_decay=0.01)
+optimizer1=optim.Adam([scalar],lr=0.1,weight_decay=0.0)
+optimizer2=optim.Adam([theta],lr=0.2,weight_decay=0.0)
+#optimizer3=optim.Adam([beta],lr=0.1,weight_decay=0.01)
 
 
 # show the Wasserstein distance 
 paramlist=[]
 n_projections=72
-Lambda=np.float32(0.1)
+Lambda=np.float32(0.09)
 Delta=Lambda*0.1
 
       
@@ -107,14 +107,13 @@ Delta=Lambda*0.1
 for epoch in range(n_iteration):
     optimizer1.zero_grad()
     optimizer2.zero_grad()
-    optimizer3.zero_grad()
+#    optimizer3.zero_grad()
     rotation=rotation_3d_2(theta,'re')
-    X1_hat=Y1T@rotation*scalar+beta
-#    mean_X1=torch.mean(X1,0)*(N+N_noise-N_a)/N
-#    mean_X1_hat=torch.mean(X1_hat,0)*(N+N_noise-N_a)/N
-#    beta=mean_X1-mean_X1_hat
-    X1_hat2=X1_hat #+beta
-#    A=sopt_majority(X1_hat2,X1T,Lambda,n_projections,'orth',n_destroy=N_noise-N_a)
+    X1_hat=Y1T@rotation*scalar #+beta
+    mean_X1=torch.mean(X1,0)*(N+N_noise-N_a)/N
+    mean_X1_hat=torch.mean(X1_hat,0)*(N+N_noise-N_a)/N
+    beta=mean_X1-mean_X1_hat
+    X1_hat2=X1_hat +beta
     A=sopt_for(X1_hat2,X1T,Lambda,n_projections,'orth')
 
     loss,mass=A.sliced_cost()
@@ -141,11 +140,11 @@ for epoch in range(n_iteration):
     
     optimizer1.step()
     optimizer2.step()
-    optimizer3.step()
+#    optimizer3.step()
     
     # 
     
-    if epoch%10==0 or epoch<=50:
+    if epoch%10==0 or epoch<=50 or epoch==n_iteration-1:
       print('lambda',Lambda)
       print('mass_diff',mass_diff)
       print('scalar',scalar)

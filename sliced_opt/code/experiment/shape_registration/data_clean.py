@@ -36,7 +36,7 @@ from experiment.shape_registration.dataset import Dataset
 
 
     
-item=120
+item=340
 
 d = Dataset(root=root, dataset_name=dataset_name,num_points=2048,   split=split, 
         random_rotate=False, load_name=True)
@@ -55,10 +55,10 @@ fig = plt.figure(figsize=(4,4))
 ax = fig.add_subplot(111, projection='3d')
 ax.scatter(X[:,0],X[:,1],X[:,2],s=2.5) # plot the point   (2,3,4) on the figure
 plt.show()
-theta=torch.tensor([-torch.pi/3,torch.pi/3,-3/4*torch.pi])
+theta=torch.tensor([1/4*torch.pi,-1/4*torch.pi/3,-7/8*torch.pi])
 rotation=rotation_3d_2(theta,'in')
-scalar=0.5 #0.6
-beta=torch.tensor([1.6,0.8,-0.3]) #torch.tensor([1.8,0.5,0.5])
+scalar=0.7 #0.6
+beta=torch.tensor([1.2,1.2,-0.7]) #torch.tensor([1.8,0.5,0.5])
 Y=scalar*X@rotation+beta
 fig = plt.figure(figsize=(4,4))
 ax = fig.add_subplot(111, projection='3d')
