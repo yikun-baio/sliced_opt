@@ -138,8 +138,8 @@ class sopt_for():
         self.get_projections()
         self.get_plans()
 
-    def sliced_cost(self):
-        cost=self.refined_cost(self.X_sliced,self.Y_sliced,self.plans)
+    def sliced_cost(self,penulty=False):
+        cost=self.refined_cost(self.X_sliced,self.Y_sliced,self.plans,penulty)
         mass=torch.sum(self.plans>=0)/self.n_projections
         return cost,mass
 
@@ -158,7 +158,7 @@ class sopt_for():
         plans=torch.from_numpy(plans).to(device=self.device,dtype=torch.int64)
         self.plans=recover_indice_M(indices_X,indices_Y,plans)
     
-    def refined_cost(self,Xs,Ys,plans):
+    def refined_cost(self,Xs,Ys,plans,penulty=True):
         N=Xs.shape[0]
         Lx=[torch.arange(self.n,device=self.device)[plans[i]>=0] for i in range(N)]
         Ly=[plans[i][plans[i]>=0] for i in range(N)]
@@ -166,8 +166,11 @@ class sopt_for():
         Y_take=torch.cat([Ys[i][Ly[i]] for i in range(N)])        
         cost_trans=torch.sum(cost_function_T(X_take, Y_take))
         destroy_mass=N*self.n-X_take.shape[0]
-        penulty=self.Lambda*destroy_mass
-        return (cost_trans+penulty)/N    
+        penulty_value=self.Lambda*destroy_mass
+        if penulty==True:
+            return (cost_trans+penulty_value)/N    
+        elif penulty==False:
+            return cost_trans/N
 
 # class sopt():
     
@@ -231,17 +234,7 @@ class sopt_for():
 #         L2=recover_indice(indices_X,indices_Y,L1)
 #         self.plans[i,:]=L2
 #         self.costs[i]=cost1
-    
-#     def refined_cost(self,Xs,Ys,plans):
-#         N=Xs.shape[0]
-#         Lx=[torch.arange(self.n)[plans[i]>=0] for i in range(N)]
-#         Ly=[plans[i][plans[i]>=0] for i in range(N)]
-#         X_take=torch.cat([Xs[i][Lx[i]] for i in range(N)])
-#         Y_take=torch.cat([Ys[i][Ly[i]] for i in range(N)])        
-#         cost_trans=torch.sum(cost_function_T(X_take, Y_take))
-#         destroy_mass=N*self.n-X_take.shape[0]
-#         penulty=self.Lambda*destroy_mass
-#         return (cost_trans+penulty)/N
+
 
 
 
@@ -274,6 +267,22 @@ class sopt_majority(sopt_for):
         cost=self.refined_cost(self.X_sliced,self.Y_sliced,self.new_plans)
         mass=torch.sum(self.plans>=0)/self.n_projections
         return cost,mass
+
+class sopt_majority_cut(sopt_for):
+    def __init__(self,X,Y,Lambda,n_projections=2,Type=None,cut=0):
+        sopt_for.__init__(self,X,Y,Lambda,n_projections,Type)
+        self.new_plan(cut)
+    
+    def new_plan(self,cut):
+        self.new_plans=self.plans.clone()
+        X_frequency=torch.sum(self.plans>=0,0)
+        
+        self.new_plans[:,X_frequency<=cut]=-1
+    def sliced_cost(self):
+        cost=self.refined_cost(self.X_sliced,self.Y_sliced,self.new_plans)
+        mass=torch.sum(self.plans>=0)/self.n_projections
+        return cost,mass
+    
     
         
 

@@ -156,9 +156,9 @@ def order_vector(v,X):
     mid=(Xv.max()+Xv.min())/2  
     N1=torch.sum(Xv>mid)  
     N2=torch.sum(Xv<mid)  
-    if N1<N2:    
+    if N1<N2*1.01:    
         return 1  
-    elif N1>N2:    
+    elif N1>N2*1.01:    
         return -1
     elif N1==N2:
         print('error, the data is symmetric')

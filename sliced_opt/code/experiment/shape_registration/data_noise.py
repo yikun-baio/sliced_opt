@@ -18,7 +18,7 @@ import  time
 
 
 # choose the data 
-label='340'
+label='39'
 
 
 work_path=os.path.dirname(__file__)

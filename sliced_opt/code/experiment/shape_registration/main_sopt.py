@@ -22,8 +22,8 @@ loc1=work_path.find('/code')
 parent_path=work_path[0:loc1+5]
 sys.path.append(parent_path)
 os.chdir(parent_path)
-label='340'
-exp_num='5'
+label='39'
+exp_num='3'
 from sopt2.library import *
 from sopt2.lib_shape import *
 from sopt2.sliced_opt import *   
@@ -31,7 +31,7 @@ os.getcwd()
 data_path=parent_path+'/experiment/shape_registration/data/test'
 
 data=torch.load(data_path+'/data_noise'+label+'.pt')
-L=[30,60,70,105]
+L=[30,60,39,105,340]
 X0=data['X0']
 Y0=data['Y0']
 X1=data['X1']
@@ -96,7 +96,7 @@ optimizer2=optim.Adam([theta],lr=0.2,weight_decay=0.0)
 #optimizer3=optim.Adam([beta],lr=0.1,weight_decay=0.01)
 
 
-# show the Wasserstein distance 
+
 paramlist=[]
 n_projections=72
 Lambda=np.float32(0.09)
