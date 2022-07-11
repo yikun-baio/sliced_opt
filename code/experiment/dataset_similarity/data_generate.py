@@ -9,10 +9,6 @@ Created on Mon Jul  4 10:13:39 2022
 
 import matplotlib.pyplot as plt
 import numpy as np
-import cv2 
-from skimage.io import imread,imsave
-from skimage.segmentation import slic
-from sklearn.cluster import KMeans
 import torch
 from torchvision import datasets
 from torchvision.transforms import ToTensor 
@@ -49,7 +45,7 @@ Fashion_data=datasets.FashionMNIST(
 
 list_A=[0,1,2]
 list_B=[0,3,7]
-list_C=[0,1,3]
+list_C=[0,2,3]
 N=200
 A=[]
 for i in list_A:

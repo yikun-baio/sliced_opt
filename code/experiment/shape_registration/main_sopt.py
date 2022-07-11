@@ -133,7 +133,7 @@ for epoch in range(n_iteration):
     
 
     param={}
-    param['theta']=theta
+    param['rotation']=rotation
     param['beta']=beta
     param['scalar']=scalar
     paramlist.append(param)

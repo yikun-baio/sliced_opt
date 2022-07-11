@@ -96,6 +96,8 @@ for epoch in range(n_iteration):
 #    A.X[A.Lx]+=A.Y[A.Ly]-A.X[A.Lx]
     A.X[A.Lx]+=(A.Y_take-A.X_take).reshape((n,1))*A.projections[epoch]
     
+    
+    
     # extract the paired data 
     Y1_take=Y1T[A.Lx]
     X1_hat_take=A.X[A.Lx]

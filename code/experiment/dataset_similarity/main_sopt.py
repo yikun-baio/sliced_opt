@@ -23,19 +23,19 @@ from sopt2.library import *
 from sopt2.sliced_opt import *
 root='experiment/dataset_similarity/' 
 num='1'
-data=torch.load(root+'data/data'+num+'.pt')
-set_A=data['A']
-set_B=data['B']
-set_C=data['C']
+data=torch.load(root+'data/datae'+num+'.pt')
+set_A=data['Ae']
+set_B=data['Be']
+set_C=data['Ce']
 
 # load encoder 
 size=200
 #N=n*200
 print('OT method')
 n=3
-set_A=set_A.reshape((size*n,28*28))
-set_B=set_B.reshape((size*n,28*28))
-set_C=set_C.reshape((size*n,28*28))
+# set_A=set_A.reshape((size*n,28*28))
+# set_B=set_B.reshape((size*n,28*28))
+# set_C=set_C.reshape((size*n,28*28))
 
 # cost_list=torch.zeros(20,20)
 # for i in range(20):
@@ -119,8 +119,8 @@ print('distance between A,C',loss)
 
 
 print('sopt method')
-n_projections=28*28*100
-Lambda=8e-6
+n_projections=32*100
+Lambda=9e-6
 sopt_M=sopt(set_A,set_B,Lambda,n_projections,'orth')
 sopt_M.get_projections()
 sopt_M.get_plans()
@@ -128,7 +128,11 @@ loss,mass=sopt_M.sliced_cost(penulty=True)
 print('trasported mass',mass)
 print('distance between A,B',loss*n_projections)
 
-Lambda=8.0e-6
+Lambda=9target = torch.ones([10, 64], dtype=torch.float32)  # 64 classes, batch size = 10
+>>> output = torch.full([10, 64], 1.5)  # A prediction (logit)
+>>> pos_weight = torch.ones([64])  # All weights are equal to 1
+>>> criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+>>> criterion(output, target)  # -log(sigmoid(1.5))e-6
 sopt_M=sopt(set_A,set_C,Lambda,n_projections,'orth')
 sopt_M.get_projections()
 sopt_M.get_plans()

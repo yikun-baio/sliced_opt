@@ -157,8 +157,6 @@ class sopt():
     
     
 
-        
-    
     
     def get_plans(self):
         X_sliced_s,indices_X=self.X_sliced.detach().sort()
@@ -192,13 +190,7 @@ class sopt_correspondence(sopt):
             sopt_for.__init__(self,X,Y,Lambda,1,Type)
             self.update_X()
         
-    def update_X(self):
-        Lx=torch.arange(self.n,device=self.device)[self.plans[0]>=0]
-        Ly=self.plans[0][self.plans[0]>=0]
-        n=Lx.shape[0]
-        X_take=self.X_sliced[0][Lx]
-        Y_take=self.Y_sliced[0][Ly]         
-        self.X[Lx]+=(Y_take-X_take).reshape((n,1))*self.projections[0]
+   
         
         
 

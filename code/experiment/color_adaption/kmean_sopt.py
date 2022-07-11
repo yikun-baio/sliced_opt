@@ -29,7 +29,6 @@ from sopt2.sliced_opt import *
 from torch import optim
 
 
-
 work_path=os.path.dirname(__file__)
 # load the data 
 loc1=work_path.find('/code')
@@ -56,42 +55,46 @@ centroid2=kmean2.cluster_centers_.astype(np.float32)
 device='cpu'
 dtype=torch.float
 
-
-Lambda=0.3
-X1=torch.tensor(centroid1,device=device,requires_grad=True,dtype=dtype)
+#N=1500
+#Lambda=0.3
+X1=torch.tensor(centroid1,device=device,dtype=dtype)
 X2=torch.tensor(centroid2,device=device,dtype=dtype)
 error2_list=[]
-nb_iter_max=400
+nb_iter_max=3000
 n_projections=C*15
-optimizer=optim.Adam([X1],lr=0.1,weight_decay=0)
+Lambda=0.1
+Delta=Lambda*1/10
 print('Lambda',Lambda)
+A=sopt(X1,X2,Lambda,nb_iter_max,'orth')
+
+
+
 for epoch in range(0,nb_iter_max):
-    optimizer.zero_grad()
-     
-    A=sopt_majority_cut(X1,X2,Lambda,n_projections,'orth',6)
+    A.get_one_projection(epoch)
+    A.get_plans()
     loss,mass=A.sliced_cost()
-    loss.backward() 
-    if epoch%10==0:
-        print('training Epoch {}/{}'.format(epoch, nb_iter_max))
-        print('gradient is',torch.norm(X1.grad).item())
-        print('loss is ',loss.item())
-        print('mass is',mass)
-        print('-' * 10)
-    optimizer.step()
+    mass_diff=mass.item()-N
+    n=A.X_take.shape[0]
+    A.X[A.Lx]+=(A.Y_take-A.X_take).reshape((n,1))*A.projections[epoch]
+    
+    
+    if mass_diff>N*0.012:
+        A.Lambda-=Delta
+    
+    if mass_diff<-N*0.003:
+        A.Lambda+=Delta
+    if A.Lambda<=Delta:
+        A.Lambda=Delta
+        Delta=Delta/2
+    if epoch<=50 or epoch%10==0:
+        print('mass',mass)
+        print('lambda',A.Lambda)
 
-    grad_norm=torch.norm(X1.grad)
-    if grad_norm>=20:
-        optimizer.param_groups[0]['lr']=2
-    elif grad_norm>=10:
-        optimizer.param_groups[0]['lr']=1
-    elif grad_norm>=5:
-        optimizer.param_groups[0]['lr']=1
-    elif grad_norm>=1:
-        optimizer.param_groups[0]['lr']=0.5
-    else:
-        break
 
-centroid1_f=X1.clone().detach().cpu().numpy()
+    
+    
+
+centroid1_f=A.X.clone().detach().cpu().numpy()
 centroid1_f2=centroid1
 cost_M=cost_matrix_d(centroid1_f,centroid2)
 Delta=10
@@ -101,7 +104,7 @@ for i in range(n_clusters):
         centroid1_f2[i,:]=centroid1_f[i,:]
         n_point+=1
 
-torch.save(centroid1_f,'experiment/color_adaption/results/sopt'+str(Lambda)+'.pt')
+torch.save(centroid1_f,'experiment/color_adaption/results/sopt'+str(N)+'.pt')
 
 print('transfer {} colors'.format(n_point))
 I1_f2=centroid1_f2[label1,:].reshape(M1,N1,C)
@@ -111,6 +114,6 @@ ax[0].imshow(I1.astype(np.uint8))
 ax[1].imshow(I1_f.astype(np.uint8))
 #ax[2].imshow(I1_f2.astype(np.uint8))
 plt.show()
-imsave('experiment/color_adaption/results/sopt'+str(Lambda)+'.jpg',I1_f.astype(np.uint8))
+imsave('experiment/color_adaption/results/sopt'+str(N)+'.jpg',I1_f.astype(np.uint8))
 
   

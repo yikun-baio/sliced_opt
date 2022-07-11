@@ -16,8 +16,7 @@ import pandas as pd
 
 
 
-
-List=torch.load('List.pt')
+List=torch.load('costlist.pt')
 cost_list=List['cost_list']
 coste_list=List['coste_list']
 labels=["0","1", "2", "3","4","5","6","7","8","9","O",'I',"II","III","IV","V","VI","VII","VIII","IX"]
