@@ -45,15 +45,12 @@ Fashion_data=datasets.FashionMNIST(
 
 list_A=[0,1,2]
 list_B=[0,3,7]
-list_C=[0,2,3]
+list_C=[0,1,3]
 N=200
 A=[]
 for i in list_A:
     sample=data_extract(MNIST_data,i,N)
     A.append(sample)
-# for i in list_A:
-#     sample=data_extract(Fashion_data,i,N)
-#     A.append(sample)
 A=torch.cat(A)
 
 
@@ -61,9 +58,6 @@ B=[]
 for i in list_B:
     sample=data_extract(MNIST_data,i,N)
     B.append(sample)
-# for i in list_B:
-#     sample=data_extract(Fashion_data,i,N)
-#     B.append(sample)
 B=torch.cat(B)
 
 
@@ -83,6 +77,22 @@ data['C']=C
 
 torch.save(data,root+'/data'+num+'.pt')
 
+
+d = 20
+
+encoder = Encoder(encoded_space_dim=d,fc2_input_dim=128)
+decoder = Decoder(encoded_space_dim=d,fc2_input_dim=128)
+encoder.load_state_dict(torch.load(root+'/encoder.pt',map_location='cpu'))
+decoder.load_state_dict(torch.load(root+'/decoder.pt',map_location='cpu'))
+
+Ae=encoder.forward(A)
+Be=encoder.forward(B)
+Ce=encoder.forward(C)
+datae={}
+datae['Ae']=Ae
+datae['Be']=Be
+datae['Ce']=Ce
+torch.save(datae,root+'/datae'+num+'.pt')
 
 
 

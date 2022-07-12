@@ -23,63 +23,23 @@ from sopt2.library import *
 from sopt2.sliced_opt import *
 root='experiment/dataset_similarity/' 
 num='1'
-data=torch.load(root+'data/datae'+num+'.pt')
-set_A=data['Ae']
-set_B=data['Be']
-set_C=data['Ce']
+data=torch.load(root+'data/data'+num+'.pt')
+set_A=data['A']
+set_B=data['B']
+set_C=data['C']
 
 # load encoder 
 size=200
 #N=n*200
 print('OT method')
 n=3
-# set_A=set_A.reshape((size*n,28*28))
-# set_B=set_B.reshape((size*n,28*28))
-# set_C=set_C.reshape((size*n,28*28))
 
-# cost_list=torch.zeros(20,20)
-# for i in range(20):
-#     for j in range(20):
-#         A=set_A[size*i:size*(i+1)].reshape(size,28*28)
-#         B=set_B[size*j:size*(j+1)].reshape(size,28*28)
-#         mu=np.ones(size)/size
-#         nu=np.ones(size)/size
-#         cost_M=cost_matrix_T(A,B)
-#         cost_M1=cost_M.detach().cpu().numpy()
-#         plan=ot.lp.emd(mu,nu,cost_M1)
-#         plan_T=torch.from_numpy(plan).to(device)
-#         loss=torch.sum(cost_M*plan_T)
-#         cost_list[i,j]=loss
-#         if i==j:
-#             print('i=',i)
-#             print('distance between A,B',loss)
-
-# datae=torch.load(root+'data/data'+num+'e.pt')
-# set_Ae=datae['Ae']
-# set_Be=datae['Be']
-# coste_list=torch.zeros(20,20)
-# for i in range(20):
-#     for j in range(20):
-#         Ae=set_Ae[size*i:size*(i+1)]
-#         Be=set_Be[size*j:size*(j+1)]
-#         mu=np.ones(size)/size
-#         nu=np.ones(size)/size
-#         cost_M=cost_matrix_T(Ae,Be)
-#         cost_M1=cost_M.detach().cpu().numpy()
-#         plan=ot.lp.emd(mu,nu,cost_M1)
-#         plan_T=torch.from_numpy(plan).to(device)
-#         loss=torch.sum(cost_M*plan_T)
-#         coste_list[i,j]=loss
-#         if i==j:
-#             print('distance between Ae,Be',loss)
-
-# List={}
-# List['cost_list']=cost_list
-# List['coste_list']=coste_list
-# torch.save(root+'/List.pt')
-
+result={}
 #set_C[0:400]=set_A[0:400]
 #n=3
+set_A=set_A.reshape((600,28*28))
+set_B=set_B.reshape((600,28*28))
+set_C=set_C.reshape((600,28*28))
 print('OT method')
 mu=np.ones(size*n)
 nu=np.ones(size*n)
@@ -90,14 +50,14 @@ plan=ot.lp.emd(mu,nu,cost_M1)
 plan_T=torch.from_numpy(plan).to(device)
 loss=torch.sum(cost_M*plan_T)
 print('distance between A,B',loss)
-
+result['OT']['AB']=loss
 cost_M=cost_matrix_T(set_A,set_C)
 cost_M1=cost_M.detach().cpu().numpy()
 plan=ot.lp.emd(mu,nu,cost_M1)
 plan_T=torch.from_numpy(plan).to(device)
 loss=torch.sum(cost_M*plan_T)
 print('distance between A,C',loss)
-
+result['OT']['AC']=loss
 
 
 print('OPT method')
@@ -109,30 +69,33 @@ plan_T=torch.from_numpy(plan).to(device)
 loss=torch.sum(cost_M*plan_T)
 print('distance between A,B',loss)
 
+result['OPT']['AB']=loss
+
+
 cost_M=cost_matrix_T(set_A,set_C)
 cost_M1=cost_M.detach().cpu().numpy()
 plan=ot.partial.partial_wasserstein(mu, nu, cost_M1, Mass, nb_dummies=1, log=False)
 plan_T=torch.from_numpy(plan).to(device)
 loss=torch.sum(cost_M*plan_T)
 print('distance between A,C',loss)
+result['OPT']['AC']=loss
 
 
 
 print('sopt method')
-n_projections=32*100
-Lambda=9e-6
+n_projections=20*50
+Lambda=5e-5
 sopt_M=sopt(set_A,set_B,Lambda,n_projections,'orth')
 sopt_M.get_projections()
 sopt_M.get_plans()
 loss,mass=sopt_M.sliced_cost(penulty=True)
 print('trasported mass',mass)
 print('distance between A,B',loss*n_projections)
+result['Lambda']=Lambda
+result['SOPT']['AB']=loss
+redult['SOPT']['AB mass']=mass
 
-Lambda=9target = torch.ones([10, 64], dtype=torch.float32)  # 64 classes, batch size = 10
->>> output = torch.full([10, 64], 1.5)  # A prediction (logit)
->>> pos_weight = torch.ones([64])  # All weights are equal to 1
->>> criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
->>> criterion(output, target)  # -log(sigmoid(1.5))e-6
+
 sopt_M=sopt(set_A,set_C,Lambda,n_projections,'orth')
 sopt_M.get_projections()
 sopt_M.get_plans()
@@ -140,3 +103,6 @@ loss,mass=sopt_M.sliced_cost(penulty=True)
 print('transported mass',mass)
 print('distance between A,C',loss*n_projections)
 
+
+result['SOPT']['AC']=loss
+redult['SOPT']['AC mass']=mass

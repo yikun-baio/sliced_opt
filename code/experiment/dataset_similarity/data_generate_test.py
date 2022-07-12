@@ -52,9 +52,6 @@ for i in range(10):
 for i in range(10):
     sample=data_extract(Fashion_data,i,N)
     A.append(sample)
-    
-    
-
 A=torch.cat(A)
 
 

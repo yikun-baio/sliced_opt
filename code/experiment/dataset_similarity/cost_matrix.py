@@ -12,6 +12,7 @@ import sys
 import os 
 import numpy as np
 import ot
+import pandas as pd
 work_path=os.path.dirname(__file__)
 loc1=work_path.find('/code')
 parent_path=work_path[0:loc1+5]
@@ -55,7 +56,7 @@ for i in range(20):
             print('i=',i)
             print('distance between A,B',loss)
 
-datae=torch.load(root+'data/data'+num+'e.pt')
+datae=torch.load(root+'data/datae'+num+'.pt')
 set_Ae=datae['Ae']
 set_Be=datae['Be']
 coste_list=torch.zeros(20,20)
@@ -78,6 +79,14 @@ List={}
 List['cost_list']=cost_list
 List['coste_list']=coste_list
 torch.save(List,root+'/costlist.pt')
+
+
+
+labels=["0","1", "2", "3","4","5","6","7","8","9","O",'I',"II","III","IV","V","VI","VII","VIII","IX"]
+df = pd.DataFrame(cost_list).T
+df.to_excel(excel_writer = root+"test.xlsx")
+df = pd.DataFrame(coste_list.detach()).T
+df.to_excel(excel_writer = root+"teste.xlsx")
 
 # #set_C[0:400]=set_A[0:400]
 # #n=3

@@ -62,7 +62,7 @@ X2=torch.tensor(centroid2,device=device,dtype=dtype)
 error2_list=[]
 nb_iter_max=3000
 n_projections=C*15
-Lambda=0.1
+Lambda=30
 Delta=Lambda*1/10
 print('Lambda',Lambda)
 A=sopt(X1,X2,Lambda,nb_iter_max,'orth')
@@ -73,22 +73,22 @@ for epoch in range(0,nb_iter_max):
     A.get_one_projection(epoch)
     A.get_plans()
     loss,mass=A.sliced_cost()
-    mass_diff=mass.item()-N
+   # mass_diff=mass.item()-N
     n=A.X_take.shape[0]
     A.X[A.Lx]+=(A.Y_take-A.X_take).reshape((n,1))*A.projections[epoch]
     
     
-    if mass_diff>N*0.012:
-        A.Lambda-=Delta
+    # if mass_diff>N*0.012:
+    #     A.Lambda-=Delta
     
-    if mass_diff<-N*0.003:
-        A.Lambda+=Delta
-    if A.Lambda<=Delta:
-        A.Lambda=Delta
-        Delta=Delta/2
+    # if mass_diff<-N*0.003:
+    #     A.Lambda+=Delta
+    # if A.Lambda<=Delta:
+    #     A.Lambda=Delta
+    #     Delta=Delta/2
     if epoch<=50 or epoch%10==0:
         print('mass',mass)
-        print('lambda',A.Lambda)
+#        print('lambda',A.Lambda)
 
 
     
@@ -104,16 +104,17 @@ for i in range(n_clusters):
         centroid1_f2[i,:]=centroid1_f[i,:]
         n_point+=1
 
-torch.save(centroid1_f,'experiment/color_adaption/results/sopt'+str(N)+'.pt')
+torch.save(centroid1_f,'experiment/color_adaption/results/sopt'+str(Lambda)+'.pt')
+torch.save(centroid1_f2,'experiment/color_adaption/results/sopt'+str(Lambda)+'.pt')
 
 print('transfer {} colors'.format(n_point))
 I1_f2=centroid1_f2[label1,:].reshape(M1,N1,C)
 I1_f=centroid1_f[label1,:].reshape(M1,N1,C)
-fig,ax=plt.subplots(1,2,figsize=(15,5))
+fig,ax=plt.subplots(1,3,figsize=(15,5))
 ax[0].imshow(I1.astype(np.uint8))
 ax[1].imshow(I1_f.astype(np.uint8))
-#ax[2].imshow(I1_f2.astype(np.uint8))
+ax[2].imshow(I1_f2.astype(np.uint8))
 plt.show()
-imsave('experiment/color_adaption/results/sopt'+str(N)+'.jpg',I1_f.astype(np.uint8))
+imsave('experiment/color_adaption/results/sopt'+str(Lambda)+'.jpg',I1_f.astype(np.uint8))
 
   

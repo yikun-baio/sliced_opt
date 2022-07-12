@@ -30,7 +30,7 @@ def cost_function(x,y):
             (x-y)**2 n*1 float np array, whose i-th entry is (x_i-y_i)**2
     '''
 #    V=np.square(x-y) #**p
-    V=np.power(x-y,4)
+    V=np.power(x-y,2)
     return V
 
 

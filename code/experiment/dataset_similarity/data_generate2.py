@@ -25,14 +25,14 @@ sys.path.append(parent_path)
 os.chdir(parent_path)
 root='experiment/dataset_similarity/data'
 from sopt2.lib_set import *
-num='1'
+num='2'
 data=torch.load(root+'/data'+num+'.pt')
 A=data['A']
 B=data['B']
 C=data['C']
 
 
-d = 32
+d = 20
 
 encoder = Encoder(encoded_space_dim=d,fc2_input_dim=128)
 decoder = Decoder(encoded_space_dim=d,fc2_input_dim=128)
