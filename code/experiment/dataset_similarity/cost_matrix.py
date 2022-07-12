@@ -78,15 +78,15 @@ for i in range(20):
 List={}
 List['cost_list']=cost_list
 List['coste_list']=coste_list
-torch.save(List,root+'/costlist.pt')
+torch.save(List,root+'data/costlist.pt')
 
 
 
 labels=["0","1", "2", "3","4","5","6","7","8","9","O",'I',"II","III","IV","V","VI","VII","VIII","IX"]
 df = pd.DataFrame(cost_list).T
-df.to_excel(excel_writer = root+"test.xlsx")
+df.to_excel(excel_writer = root+"data/test.xlsx")
 df = pd.DataFrame(coste_list.detach()).T
-df.to_excel(excel_writer = root+"teste.xlsx")
+df.to_excel(excel_writer = root+"data/teste.xlsx")
 
 # #set_C[0:400]=set_A[0:400]
 # #n=3

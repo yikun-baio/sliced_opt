@@ -71,7 +71,7 @@ data['B']=B
 torch.save(data,root+'/data'+num+'.pt')
 
 
-d = 20
+d = 32
 encoder = Encoder(encoded_space_dim=d,fc2_input_dim=128)
 decoder = Decoder(encoded_space_dim=d,fc2_input_dim=128)
 encoder.load_state_dict(torch.load(root+'/encoder.pt',map_location='cpu'))
