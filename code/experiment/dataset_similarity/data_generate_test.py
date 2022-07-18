@@ -26,6 +26,7 @@ os.chdir(parent_path)
 root='experiment/dataset_similarity/data'
 from sopt2.lib_set import *
 num='test'
+Lambda='_1'
 #MNIST_data = datasets.MNIST(root='data',train=True,transform = ToTensor(),download=False)
 
 MNIST_data = datasets.MNIST(
@@ -68,20 +69,18 @@ data={}
 data['A']=A
 data['B']=B
 
-torch.save(data,root+'/data'+num+'.pt')
-
 
 d = 32
 encoder = Encoder(encoded_space_dim=d,fc2_input_dim=128)
 decoder = Decoder(encoded_space_dim=d,fc2_input_dim=128)
-encoder.load_state_dict(torch.load(root+'/encoder.pt',map_location='cpu'))
-decoder.load_state_dict(torch.load(root+'/decoder.pt',map_location='cpu'))
-
+encoder.load_state_dict(torch.load(root+'/encoder_'+Lambda+'.pt',map_location='cpu'))
+decoder.load_state_dict(torch.load(root+'/decoder_'+Lambda+'.pt',map_location='cpu'))
+encoder.eval()
 Ae=encoder.forward(A)
 Be=encoder.forward(B)
 
-datae={}
-datae['Ae']=Ae
-datae['Be']=Be
 
-torch.save(datae,root+'/datae'+num+'.pt')
+data['Ae']=Ae
+data['Be']=Be
+
+torch.save(data,root+'/data'+num+Lambda+'.pt')

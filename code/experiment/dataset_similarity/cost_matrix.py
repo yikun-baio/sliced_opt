@@ -25,7 +25,8 @@ from sopt2.library import *
 from sopt2.sliced_opt import *
 root='experiment/dataset_similarity/' 
 num='test'
-data=torch.load(root+'data/data'+num+'.pt')
+Lambda='_1'
+data=torch.load(root+'data/data'+num+Lambda+'.pt')
 set_A=data['A']
 set_B=data['B']
 
@@ -56,9 +57,9 @@ for i in range(20):
             print('i=',i)
             print('distance between A,B',loss)
 
-datae=torch.load(root+'data/datae'+num+'.pt')
-set_Ae=datae['Ae']
-set_Be=datae['Be']
+
+set_Ae=data['Ae']
+set_Be=data['Be']
 coste_list=torch.zeros(20,20)
 for i in range(20):
     for j in range(20):
@@ -78,7 +79,7 @@ for i in range(20):
 List={}
 List['cost_list']=cost_list
 List['coste_list']=coste_list
-torch.save(List,root+'data/costlist.pt')
+torch.save(List,root+'data/costlist_1.pt')
 
 
 

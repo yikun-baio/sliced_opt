@@ -44,7 +44,7 @@ def data_extract(data_set,label_t,size):
         sample_idx = torch.randint(len(data_set), size=(1,)).item()
         img, label = data_set[sample_idx]
         if label==label_t:
-            sample[i,0,:,:]=img
+            sample[i][0]=img
             i+=1
     return sample
 

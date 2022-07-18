@@ -10,7 +10,8 @@ import torch
 import os
 #os.environ['NUMBA_DISABLE_INTEL_SVML']  = '1'
 import numba as nb
-from typing import Tuple,List
+from typing import Tuple #,List
+from numba.typed import List
 
 
 @nb.jit(nopython=True)
@@ -144,7 +145,7 @@ def closest_y(x,Y):
     min_cost=cost_list[min_index]
     return min_index,min_cost
 
-@nb.jit([nb.int32[:](nb.float32[:,:])],nopython=True)
+@nb.jit([nb.int64[:](nb.float32[:,:])],nopython=True)
 def closest_y_M(M):
     '''
     Parameters
@@ -161,7 +162,7 @@ def closest_y_M(M):
 
     '''
     n,m=M.shape
-    argmin_Y=np.zeros(n,dtype=np.int32)
+    argmin_Y=np.zeros(n,dtype=np.int64)
     for i in range(n):
         argmin_Y[i]=M[i,:].argmin()
         
@@ -172,7 +173,7 @@ def closest_y_M(M):
 
 
 
-# @nb.jit((nb.int32[:],nb.int32),nopython=True)   
+# @nb.jit((nb.int64[:],nb.int64),nopython=True)   
 # def index_adjust(L,j_start=0):
 #     '''
 
@@ -199,7 +200,7 @@ def closest_y_M(M):
 #             L[i]=L[i]+j_start
 #     return None
     
- #   return np.int32(0)
+ #   return np.int64(0)
 
 
 @nb.jit(nopython=True)   
@@ -256,7 +257,7 @@ def index_adjust_T(L: torch.Tensor,j_start: int =0):
     L[positive_indices]=L[positive_indices]+j_start
     return None
 
-@nb.jit(nb.types.Tuple((nb.int32,nb.int32))(nb.int32[:]),nopython=True)  
+@nb.jit(nb.types.Tuple((nb.int64,nb.int64))(nb.int64[:]),nopython=True)  
 def startindex(L_pre):
     '''
     Parameters
@@ -301,7 +302,7 @@ def startindex(L_pre):
     return i_start,0
 
 
-@nb.jit(nb.types.Tuple((nb.int32,nb.int32))(nb.int32[:]),nopython=True)
+@nb.jit(nb.types.Tuple((nb.int64,nb.int64))(nb.int64[:]),nopython=True)
 def startindex_np(L_pre):
     '''
     Parameters
@@ -340,10 +341,10 @@ def startindex_np(L_pre):
     j_start=max(0,L_pre.max()+1)
     return i_start,j_start
 
-@nb.jit([nb.int32[:](nb.int32,nb.int32)],nopython=True)
+@nb.jit([nb.int64[:](nb.int64,nb.int64)],nopython=True)
 def arange(start,end):
     n=end-start
-    L=np.zeros(n,dtype=np.int32)
+    L=np.zeros(n,dtype=np.int64)
     for i in range(n):
         L[i]=i+start
     return L
@@ -398,7 +399,7 @@ def startindex_T(L_pre):
 
 
 
-@nb.jit([nb.types.Tuple((nb.int32,nb.int32))(nb.int32[:])],nopython=True)
+@nb.jit([nb.types.Tuple((nb.int64,nb.int64))(nb.int64[:])],nopython=True)
 def unassign_y(L1):
     '''
     Parameters
@@ -530,7 +531,7 @@ def recover_indice_M(indice_X,indice_Y,plans):
     '''
     device=indice_X.device.type
     N,n=plans.shape
-    indice_Y_mapped=torch.zeros((N,n),dtype=torch.int32,device=device)
+    indice_Y_mapped=torch.zeros((N,n),dtype=torch.int64,device=device)
     for i in range (N):
         indice_Y_mapped[i,:]=torch.where(plans[i]>=0,indice_Y[i].take(plans[i]),-1) 
 #    indice_Y_mapped=torch.where(plans>=0,indice_Y.gather(1,plans),-1).to(device) 
@@ -635,7 +636,7 @@ def list_to_plan(L,m):
     
 
 
-@nb.jit([nb.types.Tuple((nb.float32,nb.int32[:],nb.float32,nb.int32[:]))(nb.int32,nb.float32)],nopython=True)
+@nb.jit([nb.types.Tuple((nb.float32,nb.int64[:],nb.float32,nb.int64[:]))(nb.int64,nb.float32)],nopython=True)
 def empty_Y_opt(n,Lambda):
     '''
 
@@ -664,7 +665,7 @@ def empty_Y_opt(n,Lambda):
         in this function, L_pre=L
 
     '''
-    L=np.zeros(n,dtype=np.int32)+np.int32(-1)
+    L=np.full(n,-1,dtype=np.int64) #(n,dtype=np.int64)+np.int64(-1)
     #for i in range(n):
     #    L[i]=-1
     cost=Lambda*np.float32(n)
@@ -673,7 +674,7 @@ def empty_Y_opt(n,Lambda):
     return cost,L,cost_pre,L_pre
 
 
-# @nb.jit([nb.types.Tuple((nb.float32,nb.int32[:],nb.float32,nb.int32[:]))(nb.int32,nb.float32)],nopython=True)
+# @nb.jit([nb.types.Tuple((nb.float32,nb.int64[:],nb.float32,nb.int64[:]))(nb.int64,nb.float32)],nopython=True)
 # def empty_Y_opt_np(n,Lambda):
 #     '''
 
@@ -702,7 +703,7 @@ def empty_Y_opt(n,Lambda):
 #         in this function, L_pre=L
 
 #     '''
-#     L=np.zeros(n,dtype=np.int32)
+#     L=np.zeros(n,dtype=np.int64)
 #     for i in range(L.shape[0]):
 #         L[i]=-1
 #     cost=Lambda*n
@@ -741,14 +742,14 @@ def empty_Y_opt_T(n: 'int',Lambda: 'torch.Tensor'):
 
     '''
     device=Lambda.device.type
-    L=-1*torch.ones(n,device=device,dtype=torch.int32)
+    L=-1*torch.ones(n,device=device,dtype=torch.int64)
     cost=torch.mul(Lambda,n)
     cost_pre=cost
     L_pre=L.clone()
     return cost,L,cost_pre,L_pre
 
-@nb.jit([nb.types.Tuple((nb.float32,nb.int32[:],nb.float32,nb.int32[:]))(nb.float32[:,:],nb.int32,nb.int32,nb.float32)],nopython=True)
-def one_x_opt(M1,i_act:nb.int32,j_act:nb.int32,Lambda:nb.float32): 
+@nb.jit([nb.types.Tuple((nb.float32,nb.int64[:],nb.float32,nb.int64[:]))(nb.float32[:,:],nb.int64,nb.int64,nb.float32)],nopython=True)
+def one_x_opt(M1,i_act:nb.int64,j_act:nb.int64,Lambda:nb.float32): 
     '''
 
     Parameters
@@ -788,15 +789,25 @@ def one_x_opt(M1,i_act:nb.int32,j_act:nb.int32,Lambda:nb.float32):
     return 1.0, [1], 0,[]
     '''       
     if j_act<0:
-        return Lambda,np.array([-1],dtype=np.int32),Lambda,np.array([-1],dtype=np.int32)
+        return Lambda,np.array([-1],dtype=np.int64),Lambda,np.array([-1],dtype=np.int64)
     c_xy=M1[i_act,j_act]
     if c_xy>=Lambda:
-        return Lambda,np.array([-1],dtype=np.int32),Lambda,np.array([-1],dtype=np.int32)
+        return Lambda,np.array([-1],dtype=np.int64),Lambda,np.array([-1],dtype=np.int64)
     else:
-        return c_xy,np.array([j_act],dtype=np.int32),np.float32(0),np.empty(0,dtype=np.int32)
+        return c_xy,np.array([j_act],dtype=np.int64),np.float32(0),np.empty(0,dtype=np.int64)
 
-@nb.jit([nb.types.Tuple((nb.float32,nb.int32[:],nb.float32,nb.int32[:]))(nb.float32[:,:],nb.int32,nb.int32,nb.float32)],nopython=True)
-def one_x_opt_np(M1,i_act:nb.int32,j_act:nb.int32,Lambda:nb.float32): 
+@nb.njit()
+def merge_list(L):
+    n=len(L) 
+    merged_array=L[0]
+    for i in range(1,n):
+        merged_array=np.concatenate((merged_array,L[i]))
+    return merged_array
+  
+    
+
+@nb.jit([nb.types.Tuple((nb.float32,nb.int64[:],nb.float32,nb.int64[:]))(nb.float32[:,:],nb.int64,nb.int64,nb.float32)],nopython=True)
+def one_x_opt_np(M1,i_act:nb.int64,j_act:nb.int64,Lambda:nb.float32): 
     '''
 
     Parameters
@@ -837,12 +848,12 @@ def one_x_opt_np(M1,i_act:nb.int32,j_act:nb.int32,Lambda:nb.float32):
 
     '''       
     if j_act<0:
-        return Lambda,np.array([-1],dtype=np.int32),Lambda,np.array([-1],dtype=np.int32)
+        return Lambda,np.array([-1],dtype=np.int64),Lambda,np.array([-1],dtype=np.int64)
     c_xy=M1[i_act,j_act]
     if c_xy>=Lambda:
-        return Lambda,np.array([-1],dtype=np.int32),Lambda,np.array([-1],dtype=np.int32)
+        return Lambda,np.array([-1],dtype=np.int64),Lambda,np.array([-1],dtype=np.int64)
     else:
-        return c_xy,np.array([j_act],dtype=np.int32),np.float32(0),np.empty(0,dtype=np.int32)
+        return c_xy,np.array([j_act],dtype=np.int64),np.float32(0),np.empty(0,dtype=np.int64)
     
         
 @torch.jit.script  
@@ -888,12 +899,12 @@ def one_x_opt_T(M1: torch.Tensor,i_act:int,j_act:torch.Tensor,Lambda: torch.Tens
     '''      
     device=M1.device.type
     if j_act<0:
-        return Lambda,torch.tensor([-1],device=device,dtype=torch.int32),Lambda,torch.tensor([-1],device=device,dtype=torch.int32)
+        return Lambda,torch.tensor([-1],device=device,dtype=torch.int64),Lambda,torch.tensor([-1],device=device,dtype=torch.int64)
     c_xy=M1[i_act,j_act]
     if c_xy>=Lambda:
-        return Lambda,torch.tensor([-1],device=device,dtype=torch.int32),Lambda,torch.tensor([-1],device=device,dtype=torch.int32)
+        return Lambda,torch.tensor([-1],device=device,dtype=torch.int64),Lambda,torch.tensor([-1],device=device,dtype=torch.int64)
     else:
-        return c_xy,j_act.reshape(1),torch.tensor(0,device=device,dtype=torch.float32),torch.empty(0,device=device,dtype=torch.int32)
+        return c_xy,j_act.reshape(1),torch.tensor(0,device=device,dtype=torch.float32),torch.empty(0,device=device,dtype=torch.int64)
 
 
     
@@ -958,7 +969,7 @@ def rotation_matrix_3d(theta,order='in'):
 
     
 
-@nb.jit([nb.float32[:](nb.float32[:,:],nb.int32[:],nb.int32[:])],nopython=True)
+@nb.jit([nb.float32[:](nb.float32[:,:],nb.int64[:],nb.int64[:])],nopython=True)
 def matrix_take(X,L1,L2):
     return np.array([X[L1[i],L2[i]] for i in range(L1.shape[0])])
 
