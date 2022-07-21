@@ -178,8 +178,38 @@ def recover_rotation(X,Y):
     scaling=torch.sum(torch.abs(S))/torch.trace(Y_c.T@Y_c)
     return rotation,scaling
 
+def recover_rotation_du(X,Y):
+    n,d=X.shape
+    X_c=X-torch.mean(X,0)
+    Y_c=Y-torch.mean(Y,0)
+    YX=Y_c.T@X_c
+    U,S,VT=torch.linalg.svd(YX)
+    R=U@VT
+    diag=torch.eye(d)
+    diag[d-1,d-1]=torch.det(R)
+    rotation=U@diag@VT
+    E_list=torch.eye(3)
+    scaling=torch.zeros(3)
+    for i in range(3):
+        Ei=torch.diag(E_list[i])
+        num=0
+        denum=0
+        for j in range(3):
+            num+=X_c[j].T@rotation@Ei@Y_c[j]
+            denum+=Y_c[j].T@Ei@Y_c[j]
+        scaling[i]=num/denum
 
+    return rotation,scaling
 
+def int_rotation(X,Y):
+    n,d=X.shape
+    X_c=X-torch.mean(X,0)
+    Y_c=Y-torch.mean(Y,0)
+    Ux,Sx,VTx=torch.linalg.svd(X_c)
+    Uy,Sy,VTy=torch.linalg.svd(Y_c)
+    R=VTy.T@VTx
+    return R
+    
 
 def init_angle(X,Y):
     R_es=recover_rotation(X,Y)

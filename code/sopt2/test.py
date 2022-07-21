@@ -23,7 +23,7 @@ os.chdir(parent_path)
 from sopt2.library import *
 
 X=np.array([-5,  2,3,4],dtype=np.float32)
-Y=np.array([-5,1,2,3,7],dtype=np.float32)
+Y=np.array([-10,1,2,3,7],dtype=np.float32)
 M=cost_matrix(X,Y)
 n,m=M.shape
 argmin_Y=closest_y_M(M)

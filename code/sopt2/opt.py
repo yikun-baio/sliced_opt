@@ -342,21 +342,18 @@ def opt_decomposition(X,Y,Lambda):
     n,m=M.shape
     argmin_Y=closest_y_M(M)
     mass_loss=0
-    
-    Occupy=np.zeros(m,dtype=np.int64)
+    Occupy=np.full(m,False)
     free_Y=np.empty(0,dtype=np.int64)
     X_list=List()
     Y_list=List()
-
     k=0
     jk=argmin_Y[k]
-    previous_index=-1
+    previous_index=0 # this is the index of first subproblem we can merge 
     if CM[k,jk]==1:
-    
         X_list.append(np.array([k]))            
         Y_list.append(np.empty(0,dtype=np.int64))
         free_Y=np.concatenate((free_Y,np.array([-1])))
-        previous_index=len(X_list)-1
+        previous_index=len(X_list)
         mass_loss+=1
     else:
         X_list.append(np.array([k]))            
@@ -365,18 +362,20 @@ def opt_decomposition(X,Y,Lambda):
         if free_y>=0 and Occupy[free_y]==1:
             free_y=free_Y[-1]
         free_Y=np.concatenate((free_Y,np.array([free_y])))
-        Occupy[jk]=1
-    
-    for k in range(1,n):
+        Occupy[jk]=True
+
+        
+    for k in range(1,n): 
         
         jk=argmin_Y[k]
-        if Occupy[jk]==0:
+#        print('previous_index',previous_index)
+        if Occupy[jk]==False:
             #
-            if CM[k,jk]==1:
+            if CM[k,jk]==True:
                 X_list.append(np.array([k]))            
                 Y_list.append(np.empty(0,dtype=np.int64))
                 free_Y=np.concatenate((free_Y,np.array([-1])))
-                previous_index=len(X_list)-1
+                previous_index=len(X_list)
             else:
                 X_list.append(np.array([k]))            
                 Y_list.append(np.array([jk]))
@@ -384,22 +383,28 @@ def opt_decomposition(X,Y,Lambda):
                 if Occupy[free_y]==1:
                     free_y=free_Y[-1]
                 free_Y=np.concatenate((free_Y,np.array([free_y])))
-                Occupy[jk]=1     
+                Occupy[jk]=True    
+       
 
-        elif Occupy[jk]==1: # If it is occupied, we should extend the last problem
-             
+        else: # If it is occupied, we should extend the last problem
+        
             #check if we need to merge subproblems
             last_free_y=free_Y[-1] # it must be occupied by last problem 
-            
+            last_index=free_Y.shape[0]-1
             if last_free_y==-1:
                 index_start=previous_index
+                
             else:                  
-                last_index=free_Y.shape[0]-1
                 index_start=np.where(free_Y==last_free_y)[0][0]
             
+            # print('free_Y length',len(free_Y))
+            # print('X_list length',len(X_list))
+            
+            # print('last_index',last_index)
             if index_start<last_index:#Then we need to merge all the previous problems 
                 merged_X=X_list[last_index]
                 merged_Y=Y_list[last_index]
+                start=last_index
                 for i in range(last_index-1,index_start-1,-1):
                     Y_take=Y_list[i]
                     y_index=Y_take[-1]
@@ -408,46 +413,59 @@ def opt_decomposition(X,Y,Lambda):
                     if CM[x_index,y_index]:
                         previous_index=i
                         break
+                    start=i
                     merged_X=np.concatenate((X_list[i],merged_X))
                     merged_Y=np.concatenate((Y_list[i],merged_Y))
-                    
                 
-                X_list=X_list[0:i]
+                #print('before',free_Y)
+                # print('start',start)
+                X_list=X_list[0:start]
                 X_list.append(merged_X)
-                Y_list=Y_list[0:i]
+                Y_list=Y_list[0:start]
                 Y_list.append(merged_Y)
-                free_Y=free_Y[0:i+1]
-                if i>index_start:
+                free_Y=free_Y[0:start+1]
+                if start>index_start:
                     free_Y[-1]=-1
-
+                # print(free_Y)
 
             #extend the last problem      
+            # get the last part 
             last_X=X_list[-1] # the last problem must have jk
             last_Y=Y_list[-1]
             last_y=last_Y[-1]
             last_free_y=free_Y[-1]
-            last_X=np.concatenate((last_X,np.array([k])))    
+
+            
             #extend last_X
+            last_X=np.concatenate((last_X,np.array([k])))
             X_list=X_list[0:-1]
             X_list.append(last_X)
-            # estend last_Y from left 
-            x_start=last_X[0]
-            if last_free_y>=0 and CM[x_start,last_free_y]==0:
-                last_Y=np.concatenate((np.array([last_free_y]),last_Y))
-                Occupy[last_free_y]=1
+        #    print('after',X_list)
             
+            # extend last_Y from left 
+            x_start=last_X[0]
+            if last_free_y>=0 and not CM[x_start,last_free_y]:
+                last_Y=np.concatenate((np.array([last_free_y]),last_Y))
+                Occupy[last_free_y]=True
+               
             #extend last_Y from right
             x_end=last_X[-1]
-            if last_y+1<=m-1 and CM[x_end,last_y+1]==0:
+            if last_y+1<=m-1 and not CM[x_end,last_y+1]:
                 last_Y=np.concatenate((last_Y,np.array([last_y+1])))
-                Occupy[last_y+1]=1
+                Occupy[last_y+1]=True
+            elif CM[x_end,last_y+1]:
+                last_index=last_y
             Y_list=Y_list[0:-1]
             Y_list.append(last_Y)
-                
+            
+            # update free spot for last problem
             free_y=last_free_y-1
-            if free_y>=0 and Occupy[free_y]==1:
+            if free_y>=0 and Occupy[free_y]:
                 free_y=free_Y[-2]
+            elif free_y<0:
+                free_y=-1
             free_Y[-1]=free_y
+        
     return X_list,Y_list,free_Y
 
 @nb.njit([nb.types.Tuple((nb.float32,nb.int64[:]))(nb.float32[:],nb.float32[:],nb.float32)],parallel=True)
@@ -460,7 +478,7 @@ def opt_1d_v3(X,Y,Lambda):
     for i in range(K):
         plans.append(np.empty(0,dtype=np.int64))  
     
-    for i in nb.prange(K):
+    for i in range(K):
         indices_X=X_list[i]
         indices_Y=Y_list[i]
         Xs=X[indices_X]
@@ -965,25 +983,32 @@ def pot_1d(X,Y):
 
 
 
-
+data=torch.load('data.pt')
+X=data['X']
+Y=data['Y']
+X.sort()
+Y.sort()
+Lambda=np.float32(20)
+opt_decomposition(X,Y,Lambda)
+#torch.save(data,'data.pt')
 
 n=10000
-m=n+300
+m=n+500
 #Lambda=4
-Lambda=np.float32(0.01)
-for i in range(10):
-    X=torch.rand(n,dtype=torch.float32)*4-0.5
-    Y=torch.rand(m,dtype=torch.float32)*3+0.8
+Lambda=np.float32(10)
+for i in range(100):
+    X=torch.rand(n,dtype=torch.float32)*100-50
+    Y=torch.rand(m,dtype=torch.float32)*100+80
     X=X.sort().values
     Y=Y.sort().values
     X1=X.numpy()
     Y1=Y.numpy()
     X_list,Y_list,free_Y=opt_decomposition(X1,Y1,Lambda)
     cost1,L1=opt_1d_v3(X1,Y1,Lambda)
-#    cost2,L2=opt_1d_v2(X1,Y1,Lambda)
-  #   cost3,L3=pot_1d(X1,Y1)
-#    if abs(cost1-cost2)>=0.0001:
-#        print('error')
+    #cost2,L2=opt_1d_v2(X1,Y1,Lambda)
+    #if np.linalg.norm(L1-L2)>=1 and abs(cost1-cost2)>=0.01:
+     #   print('error')
+     #   break
 
 # X=np.array([0.47016394, 1.0328217 , 1.3818892 , 1.4757019 , 1.9214936 ,
 #        2.1895437 , 2.604464  , 2.7063289 , 2.7503216 , 2.922912  ],

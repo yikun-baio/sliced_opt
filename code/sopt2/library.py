@@ -599,15 +599,17 @@ def refined_cost(X,Y,L,Lambda,penulty=True):
         if penulty=True: sum_{i:L[i]>=0}c(X[i],Y[L[i]])+Lambda*#{i:L[i]=-1} 
 
     '''
-    L_X=[i for i,j in enumerate(L) if j>=0]    
-    L_Y=[j for j in L if j>=0]
+    n=L.shape[0]
+    Lx=arange(0,n)
+    L_X=Lx[L>=0] #[i for i,j in enumerate(L) if j>=0]    
+    L_Y=L[L>=0]
     Y_take=Y[L_Y]
     X_take=X[L_X]
-    num_destruction=len(L)-len(L_X)
+    num_destruction=L.shape[0]-L_X.shape[0]
     if penulty==True:
-        cost=sum(cost_function(X_take, Y_take))+Lambda*num_destruction
+        cost=np.sum(cost_function(X_take, Y_take))+Lambda*num_destruction
     else:
-        cost=sum(cost_function(X_take, Y_take))
+        cost=np.sum(cost_function(X_take, Y_take))
     return cost
 
 def list_to_plan(L,m):

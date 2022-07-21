@@ -52,7 +52,7 @@ def allplans(X_sliced,Y_sliced,Lambda):
     for i in nb.prange(N):
         X_theta=X_sliced[i]
         Y_theta=Y_sliced[i]
-        cost,L=opt_1d_v2(X_theta,Y_theta,Lambda)
+        cost,L=opt_1d_v3(X_theta,Y_theta,Lambda)
         plans[i]=L
 
     return plans
