@@ -18,7 +18,7 @@ import  time
 
 
 # choose the data 
-label='340'
+label='30'
 
 
 work_path=os.path.dirname(__file__)
@@ -54,7 +54,7 @@ plt.show()
 
 
 # add noise
-per=1/10
+per=1/16
 N=X0.shape[0] # of clean data
 N_noise=int(per*N) # of noise
 nx=5*(torch.rand(N_noise,3)-0.5)#+torch.mean(X0,0)
@@ -62,6 +62,8 @@ ny=5*(torch.rand(N_noise,3)-0.5)#+torch.mean(Y0,0)
 #nx=nx-torch.mean(nx,0)
 #ny=nx-torch.mean(ny,0)
 Y1=torch.cat((Y0,ny))
+randindex=torch.randperm(N+N_noise)
+Y1=Y1[randindex]
 X1=torch.cat((X0,nx))
 fig = plt.figure(figsize=(10,10))
 ax = fig.add_subplot(111, projection='3d')
@@ -69,7 +71,7 @@ ax.scatter(Y1[:,0],Y1[:,1],Y1[:,2],s=3,label='source') # plot the point (2,3,4) 
 ax.scatter(X1[:,0],X1[:,1],X1[:,2],s=3,label='target') # plot the point 
 ax.set_xlim3d(-1,2.5)
 ax.set_ylim3d(-1.5,1.5)
-ax.set_zlim3d(-1,1)
+ax.set_zlim3d(-1,1.5)
 plt.legend(loc='upper right')
 plt.show()
 data={}
@@ -85,10 +87,9 @@ param['scalar_op']=scalar_op
 param['beta_op']=beta_op
 
 data['param']=param
-print('theta_op',theta_op)
-print('theta_init',init_angle(X1,Y1))
-rotation_es=recover_rotation(X1,Y1)
-scalar_es=torch.sqrt(torch.trace(torch.cov(X0.T))/torch.trace(torch.cov(Y0.T)))
+
+rotation_es,scalar_es=recover_rotation(X1,Y1)
+#scalar_es=torch.sqrt(torch.trace(torch.cov(X0.T))/torch.trace(torch.cov(Y0.T)))
 beta_es=torch.mean(X0,0)-torch.mean(scalar_es*Y0@rotation_es,0)
 #beta_es=torch.mean(Y0)
 torch.save(data,data_path+'/data_noise'+str(label)+'.pt')

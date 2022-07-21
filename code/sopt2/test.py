@@ -43,10 +43,6 @@ Range=arange(1,n)
 for k in Range:
     jk=argmin_Y[k]
     cxy=M[k,jk]
-  
-
-
-        
         
     if Occupy[jk]==0:
         free_y=jk-1

@@ -350,7 +350,6 @@ def opt_decomposition(X,Y,Lambda):
 
     k=0
     jk=argmin_Y[k]
-#    cxy=M[k,jk]
     previous_index=-1
     if CM[k,jk]==1:
     
@@ -413,8 +412,6 @@ def opt_decomposition(X,Y,Lambda):
                     merged_Y=np.concatenate((Y_list[i],merged_Y))
                     
                 
-#                merged_X=merge_list(X_list[index_start:last_index+1])
-#                merged_Y=merge_list(Y_list[index_start:last_index+1])
                 X_list=X_list[0:i]
                 X_list.append(merged_X)
                 Y_list=Y_list[0:i]
@@ -453,15 +450,14 @@ def opt_decomposition(X,Y,Lambda):
             free_Y[-1]=free_y
     return X_list,Y_list,free_Y
 
-@nb.njit([nb.types.Tuple((nb.float32,nb.int64[:]))(nb.float32[:],nb.float32[:],nb.float32)]) #,parallel=True)
+@nb.njit([nb.types.Tuple((nb.float32,nb.int64[:]))(nb.float32[:],nb.float32[:],nb.float32)],parallel=True)
 def opt_1d_v3(X,Y,Lambda):
     X_list,Y_list,free_Y=opt_decomposition(X,Y,Lambda)
     K=len(X_list)
     costs=np.zeros(K,dtype=np.float32)
     plans=List()
-#    plans.append(np.array([0]))
+
     for i in range(K):
-#        n=X_list[i].shape[0]
         plans.append(np.empty(0,dtype=np.int64))  
     
     for i in nb.prange(K):
@@ -971,7 +967,7 @@ def pot_1d(X,Y):
 
 
 
-n=200
+n=10000
 m=n+300
 #Lambda=4
 Lambda=np.float32(0.01)
@@ -982,11 +978,12 @@ for i in range(10):
     Y=Y.sort().values
     X1=X.numpy()
     Y1=Y.numpy()
+    X_list,Y_list,free_Y=opt_decomposition(X1,Y1,Lambda)
     cost1,L1=opt_1d_v3(X1,Y1,Lambda)
-    cost2,L2=opt_1d_v2(X1,Y1,Lambda)
+#    cost2,L2=opt_1d_v2(X1,Y1,Lambda)
   #   cost3,L3=pot_1d(X1,Y1)
-    if abs(cost1-cost2)>=0.0001:
-        print('error')
+#    if abs(cost1-cost2)>=0.0001:
+#        print('error')
 
 # X=np.array([0.47016394, 1.0328217 , 1.3818892 , 1.4757019 , 1.9214936 ,
 #        2.1895437 , 2.604464  , 2.7063289 , 2.7503216 , 2.922912  ],

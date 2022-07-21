@@ -36,7 +36,7 @@ from experiment.shape_registration.dataset import Dataset
 
 
     
-item=39
+item=30
 
 d = Dataset(root=root, dataset_name=dataset_name,num_points=2048,   split=split, 
         random_rotate=False, load_name=True)
@@ -55,10 +55,10 @@ fig = plt.figure(figsize=(4,4))
 ax = fig.add_subplot(111, projection='3d')
 ax.scatter(X[:,0],X[:,1],X[:,2],s=2.5) # plot the point   (2,3,4) on the figure
 plt.show()
-theta=torch.tensor([1/3*torch.pi,1/3*torch.pi/3,1/3*torch.pi])
+theta=torch.tensor([1/3*torch.pi,1/2*torch.pi,-1/3*torch.pi])
 rotation=rotation_3d_2(theta,'in')
 scalar=1.2 #0.6
-beta=torch.tensor([0.1,0.4,0.5]) #torch.tensor([1.8,0.5,0.5])
+beta=torch.tensor([1.1,1.4,0.3]) #torch.tensor([1.8,0.5,0.5])
 Y=scalar*X@rotation+beta
 fig = plt.figure(figsize=(4,4))
 ax = fig.add_subplot(111, projection='3d')
@@ -78,7 +78,7 @@ data['item']=item
 # test if the data is symmetric 
 recover_rotation(X,Y)
 
-torch.save(data,save_root+'/data'+str(item)+'test.pt')
+torch.save(data,save_root+'/data'+str(item)+'.pt')
 
 #X1T_c=X-torch.mean(X,0)
 #Y1T_c=Y-torch.mean(Y,0)

@@ -166,12 +166,18 @@ def order_vector(v,X):
     
     
 def recover_rotation(X,Y):
+    n,d=X.shape
     X_c=X-torch.mean(X,0)
     Y_c=Y-torch.mean(Y,0)
     YX=Y_c.T@X_c
     U,S,VT=torch.linalg.svd(YX)
     R=U@VT
-    return R
+    diag=torch.eye(d)
+    diag[d-1,d-1]=torch.det(R)
+    rotation=U@diag@VT
+    scaling=torch.sum(torch.abs(S))/torch.trace(Y_c.T@Y_c)
+    return rotation,scaling
+
 
 
 
@@ -179,7 +185,7 @@ def init_angle(X,Y):
     R_es=recover_rotation(X,Y)
     theta_es=recover_angle(R_es)
     return theta_es
-    
+
     
     
 
