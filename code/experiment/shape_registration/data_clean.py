@@ -83,7 +83,7 @@ ax.scatter(Y0[:,0],Y0[:,1],Y0[:,2],s=0.03,label='source') # plot the point (2,3,
 plt.legend()
 plt.show()
 plt.close()
-data={}
+
 
 N1=5*int(1e3)
 N2=8*int(1e3)
@@ -99,16 +99,17 @@ Y03=Y0[randint]
 #N4=10*int(1e3)
 
 randint=torch.randint(0,n,(N1,))
-Y01=Y0
+#Y01=Y0
+data={}
 data['X0']=X0
-data['Y0']=Y0
+data['Y00']=Y0
 data['Y01']=Y01
 data['Y02']=Y02
 data['Y03']=Y03
-
-data['theta']=theta
-data['beta']=beta
-data['scalar']=scalar
+data['param']={}
+data['param']['theta']=theta
+data['param']['beta']=beta
+data['param']['scalar']=scalar
 # test if the data is symmetric 
 #recover_rotation(X,Y)
 

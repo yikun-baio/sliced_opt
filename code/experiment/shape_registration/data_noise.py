@@ -21,6 +21,7 @@ import  time
 label='castle'
 
 
+
 work_path=os.path.dirname(__file__)
 # load the data 
 loc1=work_path.find('/code')
@@ -32,11 +33,13 @@ from sopt2.lib_shape import *
 data_path=parent_path+'/experiment/shape_registration/data/test2'
 data=torch.load(data_path+'/data'+str(label)+'.pt')
 dtype=torch.float32
-theta=data['theta']
 X=data['X0']
-Y=data['Y0']
-beta=data['beta']
-scalar=data['scalar']
+Y=data['Y03']
+param=data['param']
+theta=param['theta']
+
+beta=param['beta']
+scalar=param['scalar']
 
 # compute the optimal parameters 
 theta_op=-theta
@@ -55,15 +58,19 @@ plt.show()
 
 
 # add noise
-per=1/19
-N=Y0.shape[0] # of clean data
-N_noise=int(per*N) # of noise
-nx=40*(torch.rand(N_noise,3)-0.5)#+torch.mean(X0,0)
-ny=40*(torch.rand(N_noise,3)-0.5)#+torch.mean(Y0,0)
+per=1/9
+Nc_y=Y0.shape[0] # of clean data
+Nc_x=X0.shape[0] # of clean data
+Nn_y=int(per*Nc_y) # of noise
+Nn_x=int(per*Nc_x) # of noise
+torch.manual_seed(0)
+nx=50*(torch.rand(Nn_x,3)-0.5)#+torch.mean(X0,0)
+time.sleep(3)
+ny=50*(torch.rand(Nn_y,3)-0.5)#+torch.mean(Y0,0)
 #nx=nx-torch.mean(nx,0)
 #ny=nx-torch.mean(ny,0)
 Y1=torch.cat((Y0,ny))
-randindex=torch.randperm(N+N_noise)
+randindex=torch.randperm(Nc_y+Nn_y)
 Y1=Y1[randindex]
 X1=torch.cat((X0,nx))
 fig = plt.figure(figsize=(10,10))
@@ -75,12 +82,9 @@ ax.set_ylim3d(-5,20)
 ax.set_zlim3d(-20,20)
 plt.legend(loc='upper right')
 plt.show()
-data['X1']=X1 
-data['Y1']=Y1 
-data['N']=N
-data['N_noise']=N_noise
-param={}
-param['theta_op']=theta_op
+data['X1']=X1
+data['Y13']=Y1 
+param['rotation_op']=rotation_op
 param['scalar_op']=scalar_op
 param['beta_op']=beta_op
 

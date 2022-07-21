@@ -23,7 +23,7 @@ sys.path.append(parent_path)
 os.chdir(parent_path)
 
 
-from sopt2.library import *
+from sopt1.library import *
 
 
 def opt_1d_v1(X: np.array,Y: np.array,Lambda: np.float32) -> 'np.float,np.array':

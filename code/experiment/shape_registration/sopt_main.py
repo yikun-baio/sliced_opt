@@ -33,20 +33,20 @@ data_path=parent_path+'/experiment/shape_registration/data/test2'
 data=torch.load(data_path+'/data'+label+'.pt')
 L=[30,60,39,105,340]
 X0=data['X0']
-Y0=data['Y0']
+Y0=data['Y02']
 X1=data['X1']
-Y1=data['Y1']
-N=data['N']
-N_noise=data['N_noise']
+Y1=data['Y12']
 param=data['param']
-theta_op=param['theta_op']
+
+n_point='/8k'
+rotation_op=param['rotation_op']
 scalar_op=param['scalar_op']
 beta_op=param['beta_op']
-print('theta_op',theta_op)
-print('N_noise',N_noise)
-N_a=0
-X1=X1[0:N+N_noise].clone()
-Y1=Y1[0:N+N_noise].clone()
+print('rotation_op',rotation_op)
+#print('N_noise',N_noise)
+N=Y0.shape[0]
+X1=X1.clone()
+Y1=Y1.clone()
 device='cpu'
 dtype=torch.float32
 X0T=X0.to(device).clone()
@@ -67,7 +67,7 @@ ax.set_xlim3d(-40,15)
 ax.set_ylim3d(-5,20)
 ax.set_zlim3d(-20,20)
 plt.legend(loc='upper right')
-plt.savefig('experiment/shape_registration/result/'+exp_num+'/sopt/init'+label+'.jpg')
+plt.savefig('experiment/shape_registration/result/'+exp_num+n_point+'/sopt/init'+label+'.jpg')
 plt.show()
 plt.close()
 
@@ -76,13 +76,11 @@ plt.close()
 rotation=torch.eye(3)
 scalar=1.0 #
 
-beta=0 #torch.mean(X1,0)-torch.mean(scalar*Y1@rotation,0)
-
-
+beta=0.0 #torch.mean(X1,0)-torch.mean(scalar*Y1@rotation,0)
 
 paramlist=[]
 #n_projections=1
-Lambda=np.float32(100)
+Lambda=np.float32(200)
 Delta=Lambda*0.1
 X1_hat=Y1T@rotation*scalar+beta   
 A=sopt(X1_hat,X1T,Lambda,n_iteration,'orth')
@@ -143,7 +141,7 @@ for epoch in range(n_iteration):
       ax.set_ylim3d(-5,20)
       ax.set_zlim3d(-20,20)
       plt.legend(loc='upper right')
-      plt.savefig('experiment/shape_registration/result/'+exp_num+'/sopt/'+str(epoch)+'.jpg')
+      plt.savefig('experiment/shape_registration/result/'+exp_num+n_point+'/sopt/'+str(epoch)+'.jpg')
       plt.show()
       plt.close()
       
@@ -151,4 +149,4 @@ for epoch in range(n_iteration):
       print('loss is ',loss.item())
       print('-' * 10)
 
-torch.save(paramlist,'experiment/shape_registration/result/'+exp_num+'/sopt_param.pt')
+torch.save(paramlist,'experiment/shape_registration/result/'+exp_num+n_point+'/sopt_param.pt')

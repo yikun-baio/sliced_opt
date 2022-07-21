@@ -8,13 +8,13 @@
 import numpy as np
 import torch
 import os
-#os.environ['NUMBA_DISABLE_INTEL_SVML']  = '1'
+
 import numba as nb
 from typing import Tuple #,List
 from numba.typed import List
 
 
-@nb.jit(nopython=True)
+@nb.njit()
 def cost_function(x,y): 
     ''' 
     case 1:
@@ -53,8 +53,16 @@ def cost_function_T(x,y):
     '''
     return torch.square(x-y)
 
+@nb.njit(nb.float32[:,:](nb.float32[:]),fastmath=True)
+def transpose(X):
+    n=X.shape[0]
+    XT=np.zeros((n,1),dtype=np.float32)
+    for i in range(n):
+        XT[i]=X[i]
+    return XT
+
 #@nb.jit(nopython=True)
-@nb.jit(nb.float32[:,:](nb.float32[:],nb.float32[:]),nopython=True)
+@nb.njit(nb.float32[:,:](nb.float32[:],nb.float32[:]))
 def cost_matrix(X,Y):
     '''
     input: 
@@ -64,17 +72,18 @@ def cost_matrix(X,Y):
         M: n*m matrix, M_ij=c(X_i,Y_j) where c is defined by cost_function.
     
     '''
-    n=X.shape[0]
-    m=Y.shape[0]
-    M=np.zeros((n,m),dtype=nb.float32)
-    for i in range(n):
-        for j in range(m):
-            M[i,j]=cost_function(X[i],Y[j])
+    XT=transpose(X)
+
+
+    M=cost_function(XT,Y)
     return M
 
 
+    
+
+
 #@nb.jit(nopython=True)
-@nb.jit(nb.float32[:,:](nb.float32[:,:],nb.float32[:,:]),nopython=True)
+@nb.njit(nb.float32[:,:](nb.float32[:,:],nb.float32[:,:]),fastmath=True)
 def cost_matrix_d(X,Y):
     '''
     input: 
@@ -93,7 +102,14 @@ def cost_matrix_d(X,Y):
     return M
 
 
-
+@nb.njit(nb.float32[:](nb.float32[:,:],nb.float32[:]),fastmath=True)
+def mat_vec_mul(XT,theta):
+    d,n=XT.shape 
+    result=np.zeros(n,dtype=np.float32)
+    for i in range(n):
+        result[i]=np.dot(XT[:,i],theta)
+    return result
+    
 
 #@nb.jit([float32[:,:](float32[:],float32[:])],forceobj=True)
 @torch.jit.script
@@ -145,7 +161,7 @@ def closest_y(x,Y):
     min_cost=cost_list[min_index]
     return min_index,min_cost
 
-@nb.jit([nb.int64[:](nb.float32[:,:])],nopython=True)
+@nb.njit()
 def closest_y_M(M):
     '''
     Parameters
@@ -203,7 +219,7 @@ def closest_y_M(M):
  #   return np.int64(0)
 
 
-@nb.jit(nopython=True)   
+@nb.njit()   
 def index_adjust(L,j_start=0):
     '''
 
@@ -481,7 +497,7 @@ def unassign_y_T(L1) -> Tuple[int,torch.Tensor]:
 # not test
 
 @torch.jit.script   
-def recover_indice(indice_X,indice_Y,L):
+def recover_indice_T(indice_X,indice_Y,L):
     '''
     input:
         indice_X: n*1 float torch tensor, whose entry is integer 0,1,2,....
@@ -505,6 +521,33 @@ def recover_indice(indice_X,indice_Y,L):
 #    indice_Y_mapped=torch.tensor([indice_Y[i] if i>=0 else -1 for i in L],device=device)
     indice_Y_mapped=torch.where(L>=0,indice_Y[L],-1).to(device) 
     mapping=torch.stack([indice_X,indice_Y_mapped])
+    mapping_final=mapping[1].take(mapping[0].argsort())
+    return mapping_final
+
+#@torch.jit.script   
+@nb.njit(nb.int64[:](nb.int64[:],nb.int64[:],nb.int64[:]))
+def recover_indice(indice_X,indice_Y,L):
+    '''
+    input:
+        indice_X: n*1 float torch tensor, whose entry is integer 0,1,2,....
+        indice_Y: m*1 float torch tensor, whose entry is integer 0,1,2,.... 
+        L: n*1 list, whose entry could be 0,1,2,... and -1.
+        L is the original transportation plan for sorted X,Y 
+        L[i]=j denote x_i->y_j and L[i]=-1 denote we destroy x_i. 
+        If we ignore -1, it must be in increasing order  
+    output:
+        mapping_final: the transportation plan for original unsorted X,Y
+        
+        Eg. X=[2,1,3], indice_X=[1,0,2]
+            Y=[3,1,2], indice_Y=[1,2,0]
+            L=[0,1,2] which means the mapping 1->1, 2->2, 3->3
+        return: 
+            L=[2,1,0], which also means the mapping 2->2, 1->1,3->3.
+    
+    '''
+    n=L.shape[0]
+    indice_Y_mapped=np.where(L>=0,indice_Y[L],-1)
+    mapping=np.stack((indice_X,indice_Y_mapped))
     mapping_final=mapping[1].take(mapping[0].argsort())
     return mapping_final
 

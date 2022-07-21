@@ -9,8 +9,8 @@ import numpy as np
 from typing import Tuple
 import torch
 from scipy.stats import ortho_group
-import torch.multiprocessing as mp
 import sys
+import numba as nb
 work_path=os.path.dirname(__file__)
 loc1=work_path.find('/code')
 parent_path=work_path[0:loc1+5]
@@ -45,17 +45,57 @@ def random_projections(d,n_projections,device='cpu',dtype=torch.float,Type=None)
         print('Type must be None or orth')
     return projections
 
-@nb.jit([nb.int32[:,:](nb.float32[:,:],nb.float32[:,:],nb.float32)],nopython=True,parallel=True)
-def allplans(X_sliced,Y_sliced,Lambda):
+@nb.njit([nb.int64[:,:](nb.float32[:,:],nb.float32[:,:],nb.float32)],parallel=True,fastmath=True)
+def allplans_s(X_sliced,Y_sliced,Lambda):
     N,n=X_sliced.shape
-    plans=np.zeros((N,n),dtype=np.int32)
+    plans=np.zeros((N,n),dtype=np.int64)
     for i in nb.prange(N):
         X_theta=X_sliced[i]
         Y_theta=Y_sliced[i]
-        cost,L=opt_1d_v3(X_theta,Y_theta,Lambda)
+        M=cost_matrix(X_theta,Y_theta)
+        cost,L=opt_1d_v2_apro(X_theta,Y_theta,Lambda)
         plans[i]=L
-
     return plans
+
+@nb.njit([nb.types.Tuple((nb.int64[:],nb.float32))(nb.float32[:,:],nb.float32[:,:],nb.float32[:,:],nb.float32,nb.int64)])
+def X_correspondence(X,Y,projections,Lambda,mass):
+    N,d=projections.shape
+    n=X.shape[0]
+    Delta=Lambda
+    Lx_org=arange(0,n)
+    frequency=np.zeros(n,dtype=np.int64)
+    for i in range(N):
+        theta=projections[i]
+        X_theta=mat_vec_mul(X.T,theta)
+        Y_theta=mat_vec_mul(Y.T,theta)
+        X_indice=X_theta.argsort()
+        Y_indice=Y_theta.argsort()
+        X_s=X_theta[X_indice]
+        Y_s=Y_theta[Y_indice]
+        cost,L=opt_1d_v2_apro(X_s,Y_s,Lambda)
+        L=recover_indice(X_indice,Y_indice,L)
+        #move X
+        Lx=Lx_org.copy()
+        Lx=Lx[L>=0]
+        Ly=L[L>=0]
+        X_take=X_theta[Lx]
+        Y_take=Y_theta[Ly]
+        X+=transpose(Y_take-X_take)*theta
+        # update frequency
+        frequency[Lx]+=1       
+        
+        #update Lambda
+        mass1=np.sum(L>=0)
+        mass_diff=mass1-mass
+        if mass_diff>mass*0.01:
+            Lambda-=Delta
+        if mass_diff<-mass*0.01:
+            Lambda+=Delta
+        if Lambda<=Delta:
+            Lambda=Delta
+            Delta=Delta/2
+ 
+    return frequency,Lambda
 
 
 
@@ -127,7 +167,7 @@ def max_sopt_orig(X,Y,Lambda=40,n_projections=50,Type=None):
 
     
     
-class sopt():
+class sopt():    
     def __init__(self,X,Y,Lambda,n_projections,Type=None):
         self.X=X
         self.Y=Y
@@ -150,21 +190,21 @@ class sopt():
     def get_projections(self):
         self.X_sliced=torch.matmul(self.projections,self.X.T)
         self.Y_sliced=torch.matmul(self.projections,self.Y.T)
-    
+        
     def get_one_projection(self,i):
         self.X_sliced=torch.matmul(self.projections[i],self.X.T).unsqueeze(0)
         self.Y_sliced=torch.matmul(self.projections[i],self.Y.T).unsqueeze(0)
     
-    
 
     
+
     def get_plans(self):
         X_sliced_s,indices_X=self.X_sliced.detach().sort()
         Y_sliced_s,indices_Y=self.Y_sliced.detach().sort()
         #Lambda=np.float32(self.Lambda)
         X_sliced_np=X_sliced_s.cpu().numpy()
         Y_sliced_np=Y_sliced_s.cpu().numpy()
-        plans=allplans(X_sliced_np,Y_sliced_np,self.Lambda)
+        plans=allplans_s(X_sliced_np,Y_sliced_np,self.Lambda)
         plans=torch.from_numpy(plans).to(device=self.device,dtype=torch.int64)
         self.plans=recover_indice_M(indices_X,indices_Y,plans)
 
@@ -188,7 +228,20 @@ class sopt_correspondence(sopt):
     def __init__(self,X,Y,Lambda,N_projections=20,Type=None):
         for i in range(N_projections):
             sopt_for.__init__(self,X,Y,Lambda,1,Type)
-            self.update_X()
+        self.X_trans=self.X.clone().numpy()
+    def correspond(self,mass):
+        self.X_frequency,self.Lambda=X_correspondence(self.X_trans,self.Y,self.projections,self.Lambda,mass)
+        X_order=X_frequency.argsort()
+        Lx=arange(0,self.n)
+        Lx=[X_order>=self.n-mass]
+        self.X[Lx]=self.X_trans[Lx] # we only trans the x which has highest frequency to move
+        
+        
+        
+    
+
+
+        
         
    
         
@@ -214,21 +267,21 @@ class max_sopt(sopt):
         return max_cost,max_mass
     
 
-class sopt_majority(sopt):
-    def __init__(self,X,Y,Lambda,n_projections=2,Type=None,n_destroy=0):
-        sopt_for.__init__(self,X,Y,Lambda,n_projections,Type)
-        #self.n_preserve=N
-        self.new_plan(n_destroy)
+# class sopt_majority(sopt):
+#     def __init__(self,X,Y,Lambda,n_projections=2,Type=None,n_destroy=0):
+#         sopt_for.__init__(self,X,Y,Lambda,n_projections,Type)
+#         #self.n_preserve=N
+#         self.new_plan(n_destroy)
     
-    def new_plan(self,n_destroy):
-        self.new_plans=self.plans.clone()
-        X_frequency=torch.sum(self.plans>=0,0)
-        lowest_frequency=X_frequency.sort().indices[0:n_destroy]
-        self.new_plans[:,lowest_frequency]=-1
-    def sliced_cost(self):
-        cost=self.refined_cost(self.X_sliced,self.Y_sliced,self.new_plans)
-        mass=torch.sum(self.plans>=0)/self.n_projections
-        return cost,mass
+#     def new_plan(self,n_destroy):
+#         self.new_plans=self.plans.clone()
+#         X_frequency=torch.sum(self.plans>=0,0)
+#         lowest_frequency=X_frequency.sort().indices[0:n_destroy]
+#         self.new_plans[:,lowest_frequency]=-1
+#     def sliced_cost(self):
+#         cost=self.refined_cost(self.X_sliced,self.Y_sliced,self.new_plans)
+#         mass=torch.sum(self.plans>=0)/self.n_projections
+#         return cost,mass
 
 class sopt_majority_cut(sopt):
     def __init__(self,X,Y,Lambda,n_projections=2,Type=None,cut=0):

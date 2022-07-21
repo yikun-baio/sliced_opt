@@ -30,10 +30,10 @@ from sopt2.library import *
 
 
 
-Lambda=8.0
+Lambda=np.float32(8.0)
 
-start_n=20
-end_n=200
+start_n=100
+end_n=600
 step=5
 cost1_list=[]
 cost2_list=[]
@@ -50,8 +50,8 @@ for n in range (start_n,end_n,step):
     nu=np.ones(m)
     X=X1.numpy()
     Y=Y1.numpy()    
-    cost1,L1=opt_1d_np(X,Y,Lambda)
-    cost2,L2=opt_1d_T(X1,Y1,Lambda)
+    cost1,L1=opt_1d_v2_apro(X,Y,Lambda)
+    cost2,L2=opt_1d_v2(X,Y,Lambda)
 
 
     mass=np.sum(L1>=0) 
@@ -63,19 +63,19 @@ for n in range (start_n,end_n,step):
     
 
     M=cost_matrix(X,Y)
-    L4=ot.partial.entropic_partial_wasserstein(mu,nu,M,0.1,mass)
-    cost4=sum(sum(M*L4))+(n-mass)*Lambda
+#    L4=ot.partial.entropic_partial_wasserstein(mu,nu,M,0.1,mass)
+#    cost4=sum(sum(M*L4))+(n-mass)*Lambda
     
     cost1_list.append(cost1)
     cost2_list.append(cost2)
     cost3_list.append(cost3)
-    cost4_list.append(cost4)
+#    cost4_list.append(cost4)
      
     
 
 
-plt.plot(range(start_n,end_n,step),cost1_list,'-',label='ours v2 np')
-plt.plot(range(start_n,end_n,step),cost2_list,label='ours v2 torch')
+plt.plot(range(start_n,end_n,step),cost1_list,'-',label='ours v2-apro')
+plt.plot(range(start_n,end_n,step),cost2_list,label='ours v2')
 plt.plot(range(start_n,end_n,step),cost3_list,label='Lp: python OT')
 #plt.plot(range(start_n,end_n,step),cost4_list,label='Sinkhorn: python OT')
 plt.xlabel("n: size of X")
