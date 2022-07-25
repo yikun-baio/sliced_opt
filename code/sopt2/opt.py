@@ -178,16 +178,25 @@ def opt_sub(M1,L1,Lambda):
     cost_L2=matrix_take(M1,L1x_act[0:n_L1-1],L1_act) # cost list of original plan
     s=cost_L2.shape[0]        
     cost_list=np.concatenate((cost_L1,cost_L2))
-    cost_d1=np.zeros(s+1,dtype=np.float32)
     i=0
-    for i in range(s,-1,-1):
-        cost_d1[i]=np.sum(cost_list[i:i+s])
-        if i-1>=0 and cost_list[i-1]>=Lambda:
-            cost_d1=cost_d1[i:]  
-            break
-#    get_cost_d1(cost_d1,cost_list,s)
-        
-    index_d1_opt=cost_d1.argmin()+i
+
+#    cost_d1=np.zeros(s+1,dtype=np.float32)   
+#     for i in range(s,-1,-1):
+#         cost_d1[i]=np.sum(cost_list[i:i+s])
+#         if i-1>=0 and cost_list[i-1]>=Lambda:
+#             cost_d1=cost_d1[i:]  
+#             break
+# #    get_cost_d1(cost_d1,cost_list,s)
+#    index_d1_opt=cost_d1.argmin()+i
+    i_list=np.where(cost_L1>=Lambda)[0]
+    if i_list.shape[0]>=1:
+        i_start=i_list[-1]+1
+    else:
+        i_start=0
+    cost_d1=np.zeros(s+1-i_start,dtype=np.float32)
+    for i in range(i_start,s+1):
+        cost_d1[i-i_start]=np.sum(cost_list[i:i+s])
+    index_d1_opt=cost_d1.argmin()+i_start
     cost_d1_opt=cost_d1.min()+Lambda
     #find the optimal d0 plan
     cost_d0=np.float32(np.inf)
@@ -232,6 +241,7 @@ def opt_sub_apro(M1,L1,Lambda):
               L_sub_pre[end]=-1 or L_sub_pre=[], otherwise, there is bug in this function. 
     
     '''
+
     n1,m1=M1.shape
     L_sub_pre=np.empty(0,dtype=np.int64)
     cost_sub_pre=np.float32(0)
@@ -270,16 +280,32 @@ def opt_sub_apro(M1,L1,Lambda):
     n_L1=n1-i_act  
     cost_L1=matrix_take(M1,L1x_act[1:n_L1],L1_act) # cost list with 1 left shift
     cost_L2=matrix_take(M1,L1x_act[0:n_L1-1],L1_act) # cost list of original plan
-    cost_d11=np.sum(cost_L2)+Lambda
-    cost_d12=np.sum(cost_L1)+Lambda
-    if cost_d11<=cost_d12:
-        index_d1_opt=cost_L2.shape[0]
-        cost_d1_opt=cost_d11
+    s=cost_L2.shape[0]
+    cost_L=np.concatenate((cost_L1,cost_L2))
+    cost_d11=np.sum(cost_L2)+Lambda    
+    i_list=np.where(cost_L1>=Lambda)[0]
+    if i_list.shape[0]>=1:
+        i_start=i_list[-1]+1
     else:
+        i_start=0
+    cost_d12=np.sum(cost_L[i_start:i_start+s])+Lambda
+    
+    i_rand=np.random.randint(i_start,s+1)
+    cost_d13=np.sum(cost_L[i_rand:i_rand+s])+Lambda
+    
+    if cost_d11<=cost_d12 and cost_d11<=cost_d13:            
+        cost_d1_opt=cost_d11
+        index_d1_opt=s
+        
+    elif cost_d12<cost_d11 and cost_d12<=cost_d13:
         cost_d1_opt=cost_d12
-        index_d1_opt=0
+        index_d1_opt=i_start
+    else:
+        cost_d1_opt=cost_d13
+        index_d1_opt=i_rand
+
     cost_d0=np.float32(np.inf)
-    if j_act>=0: #and i==0:
+    if j_act>=0 and i_start==0:
         cost_d0=cost_d12-Lambda+M1[i_act,j_act]
         
     if cost_d1_opt<=cost_d0:    
@@ -1040,15 +1066,12 @@ def opt_1d_T(X,Y,Lambda: float):
 
     for k in range (1,n):
 #   case_set # 0 is for cost with destroying, 1n is for cost without conflict, 1c,2c are cost with conflict
-
         
         if j_start==m: # There is no y, so we destroy point
             cost_end,L_end,xx,yy=empty_Y_opt_T(n-k, Lambda)
             cost=cost+cost_end
             L=torch.cat((L,L_end))
             return cost,L
-
-        
         jk=min_Y[k]
         cost_xk_yjk=M[k,jk]
         cost_book=cost_book_orig.clone()

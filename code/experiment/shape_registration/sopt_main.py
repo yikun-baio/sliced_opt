@@ -23,37 +23,40 @@ loc1=work_path.find('/code')
 parent_path=work_path[0:loc1+5]
 sys.path.append(parent_path)
 os.chdir(parent_path)
-label='castle'
+item='castle'
 exp_num='castle'
+
 from sopt2.library import *
 from sopt2.lib_shape import *
 from sopt2.sliced_opt import *   
 data_path=parent_path+'/experiment/shape_registration/data/test2'
 
-data=torch.load(data_path+'/data'+label+'.pt')
-L=[30,60,39,105,340]
-X0=data['X0']
-Y0=data['Y02']
-X1=data['X1']
-Y1=data['Y12']
+data=torch.load(data_path+'/data'+item+'.pt')
+label_L=['0','1','2','3']
+L=['10k','5k','8k','9k']
+label='2'
+n_point='/8k'
+
+X0=data['X0'].to(torch.float32)
+Y0=data['Y0'+label].to(torch.float32)
+X1=data['X1'].to(torch.float32)
+Y1=data['Y1'+label].to(torch.float32)
 param=data['param']
 
-n_point='/8k'
 rotation_op=param['rotation_op']
 scalar_op=param['scalar_op']
 beta_op=param['beta_op']
 print('rotation_op',rotation_op)
 #print('N_noise',N_noise)
 N=Y0.shape[0]
-X1=X1.clone()
-Y1=Y1.clone()
+
 device='cpu'
 dtype=torch.float32
 X0T=X0.to(device).clone()
 Y0T=Y0.to(device).clone()
 X1T=X1.to(device).clone()
 Y1T=Y1.to(device).clone()
-n_iteration=3000
+n_iteration=300
 
 
 
@@ -73,35 +76,43 @@ plt.close()
 
 
 # initlize 
-rotation=torch.eye(3)
+rotation=torch.eye(3,dtype=torch.float32)
 scalar=1.0 #
 
 beta=0.0 #torch.mean(X1,0)-torch.mean(scalar*Y1@rotation,0)
 
 paramlist=[]
 #n_projections=1
-Lambda=np.float32(200)
+Lambda=np.float32(150)
 Delta=Lambda*0.1
 X1_hat=Y1T@rotation*scalar+beta   
-A=sopt(X1_hat,X1T,Lambda,n_iteration,'orth')
-torch.save(A,'A.pt')
+
+# A=sopt(X1_hat,X1T,Lambda,n_iteration,'orth')
+A=sopt_correspondence(X1_hat,X1T,Lambda,100,'orth')
+mass_diff=0
 for epoch in range(n_iteration):
-    A.get_one_projection(epoch)
-    A.get_plans()
-    loss,mass=A.sliced_cost()
-    mass_diff=mass.item()-N
-    n=A.X_take.shape[0]
-#    A.X[A.Lx]+=A.Y[A.Ly]-A.X[A.Lx]
-    A.X[A.Lx]+=(A.Y_take-A.X_take).reshape((n,1))*A.projections[epoch]
+    # A.get_directions()
+    # A.get_one_projection(epoch)
+    # A.get_plans()
+    # loss,mass=A.sliced_cost()
+    # mass_diff=mass.item()-N
+    # n=A.X_take.shape[0]
     
+    #A.X[A.Lx]+=(A.Y_take-A.X_take).reshape((n,1))*A.projections[epoch]
+    #extract the paired data
+    #Y1_take=Y1T[A.Lx]
+    #X1_hat_take=A.X[A.Lx]
     
-    # extract the paired data 
+    A.get_directions()
+    A.correspond(N)
     Y1_take=Y1T[A.Lx]
     X1_hat_take=A.X[A.Lx]
+    
     rotation,scalar=recover_rotation(X1_hat_take,Y1_take)
     scalar=torch.sqrt(torch.trace(torch.cov(X1_hat_take.T))/torch.trace(torch.cov(Y1_take.T)))
     beta=torch.mean(X1_hat_take,0)-torch.mean(scalar*Y1_take@rotation,0)
     A.X=Y1T@rotation*scalar+beta
+    
     
     if mass_diff>N*0.012:
         A.Lambda-=Delta
@@ -123,7 +134,7 @@ for epoch in range(n_iteration):
     
     # 
     
-    if epoch%30==0 or epoch<=50 or epoch==n_iteration-1:
+    if epoch%20==0 or epoch<=50 or epoch==n_iteration-1:
       print('training Epoch {}/{}'.format(epoch, n_iteration))
       print('lambda',A.Lambda)
       print('mass_diff',mass_diff)
@@ -146,7 +157,7 @@ for epoch in range(n_iteration):
       plt.close()
       
     
-      print('loss is ',loss.item())
+      #print('loss is ',loss.item())
       print('-' * 10)
 
 torch.save(paramlist,'experiment/shape_registration/result/'+exp_num+n_point+'/sopt_param.pt')

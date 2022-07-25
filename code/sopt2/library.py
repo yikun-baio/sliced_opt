@@ -185,7 +185,13 @@ def closest_y_M(M):
     return argmin_Y
 
 
-
+@nb.njit(nb.float32[:](nb.float32[:]))
+def test(L):
+    print(L)
+    n=np.random.randint(0,10)
+    print(n)
+    return L
+    
 
 
 

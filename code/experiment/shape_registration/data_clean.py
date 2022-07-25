@@ -7,6 +7,7 @@ Created on Thu May 26 11:36:23 2022
 """
 
 import numpy as np
+import open3d as o3d
 import torch
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
@@ -21,7 +22,6 @@ parent_path=work_path[0:loc1+5]
 sys.path.append(parent_path)
 os.chdir(parent_path)
 from sopt2.lib_shape import *
-
 
 
 root = parent_path+'/experiment/shape_registration/data/test2'
@@ -62,11 +62,18 @@ data=load(root+'/WitchCastle_150000.txt')
 
 
 data=torch.from_numpy(data)
-data=data.to(torch.float32)
+data=data
 n,d=data.shape
 N=10*int(1e3)
 randint=torch.randint(0,n,(N,))
 X0=data[randint]
+pcd_X0 = o3d.geometry.PointCloud()
+pcd_X0.points = o3d.utility.Vector3dVector(X0.numpy())
+o3d.visualization.draw_geometries([pcd_X0])
+
+
+#o3d.io.write_point_cloud("../../TestData/sync.ply", pcd)
+
 fig = plt.figure(figsize=(4,4))
 ax = fig.add_subplot(111, projection='3d')
 ax.scatter(X0[:,0],X0[:,1],X0[:,2],s=0.03) # plot the point   (2,3,4) on the figure
@@ -85,7 +92,7 @@ plt.show()
 plt.close()
 
 
-N1=5*int(1e3)
+N1=7*int(1e3)
 N2=8*int(1e3)
 N3=9*int(1e3)
 
@@ -97,19 +104,31 @@ randint=torch.randint(0,N,(N3,))
 Y03=Y0[randint]
 
 #N4=10*int(1e3)
-
+theta_op=-theta
+rotation_op=rotation_3d_2(theta_op,'re')
+scalar_op=1/scalar
+beta_op=-1/scalar*beta@rotation_op
 randint=torch.randint(0,n,(N1,))
-#Y01=Y0
+X0=Y0@rotation_op*scalar_op+beta_op
 data={}
 data['X0']=X0
 data['Y00']=Y0
 data['Y01']=Y01
 data['Y02']=Y02
 data['Y03']=Y03
-data['param']={}
-data['param']['theta']=theta
-data['param']['beta']=beta
-data['param']['scalar']=scalar
+param={}
+
+param['theta']=theta
+param['beta']=beta
+param['scalar']=scalar
+param['rotation_op']=rotation_op
+param['scalar_op']=scalar_op
+param['beta_op']=beta_op
+
+data['param']=param
+
+
+
 # test if the data is symmetric 
 #recover_rotation(X,Y)
 

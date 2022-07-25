@@ -30,31 +30,34 @@ from sopt2.library import *
 
 
 
-Lambda=np.float32(8.0)
+Lambda=np.float32(10.0)
 
 start_n=100
-end_n=600
+end_n=1000
 step=5
 cost1_list=[]
 cost2_list=[]
 cost3_list=[]
 cost4_list=[]
 for n in range (start_n,end_n,step):
-    m=n+10
+    m=n+200
 
-    X1=2*torch.rand(n,dtype=torch.float32)
-    Y1=3*torch.rand(m,dtype=torch.float32)-0.3
-    X1=X1.sort().values
-    Y1=Y1.sort().values
+#    X1=2*torch.rand(n,dtype=torch.float32)
+#    Y1=3*torch.rand(m,dtype=torch.float32)-0.3
+#    X1=X1.sort().values
+#    Y1=Y1.sort().values
+    X=np.float32(np.random.uniform(-20,20,n))
+    Y=np.float32(np.random.uniform(-40,40,m))
+    X.sort()
+    Y.sort()
     mu=np.ones(n)
     nu=np.ones(m)
-    X=X1.numpy()
-    Y=Y1.numpy()    
+    
     cost1,L1=opt_1d_v2_apro(X,Y,Lambda)
     cost2,L2=opt_1d_v2(X,Y,Lambda)
 
 
-    mass=np.sum(L1>=0) 
+    mass=np.sum(L2>=0) 
     M=cost_matrix(X,Y)
 #    L3=ot.partial.partial_wasserstein
     L3=ot.partial.partial_wasserstein(mu,nu,M,mass)

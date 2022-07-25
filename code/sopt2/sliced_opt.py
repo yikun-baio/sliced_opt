@@ -57,11 +57,12 @@ def allplans_s(X_sliced,Y_sliced,Lambda):
         plans[i]=L
     return plans
 
+
 @nb.njit([nb.types.Tuple((nb.int64[:],nb.float32))(nb.float32[:,:],nb.float32[:,:],nb.float32[:,:],nb.float32,nb.int64)])
 def X_correspondence(X,Y,projections,Lambda,mass):
     N,d=projections.shape
     n=X.shape[0]
-    Delta=Lambda
+    Delta=Lambda*1/10
     Lx_org=arange(0,n)
     frequency=np.zeros(n,dtype=np.int64)
     for i in range(N):
@@ -77,91 +78,30 @@ def X_correspondence(X,Y,projections,Lambda,mass):
         #move X
         Lx=Lx_org.copy()
         Lx=Lx[L>=0]
-        Ly=L[L>=0]
-        X_take=X_theta[Lx]
-        Y_take=Y_theta[Ly]
-        X+=transpose(Y_take-X_take)*theta
-        # update frequency
-        frequency[Lx]+=1       
-        
+        if Lx.shape[0]>=1:
+            Ly=L[L>=0]
+            X_take=X_theta[Lx]
+            Y_take=Y_theta[Ly]
+            X[Lx]+=transpose(Y_take-X_take)*theta
+            frequency[Lx]+=1       
+          
+
         #update Lambda
         mass1=np.sum(L>=0)
         mass_diff=mass1-mass
-        if mass_diff>mass*0.01:
+        if mass_diff>mass*0.02:
             Lambda-=Delta
-        if mass_diff<-mass*0.01:
+        if mass_diff<-mass*0.02:
             Lambda+=Delta
         if Lambda<=Delta:
             Lambda=Delta
             Delta=Delta/2
- 
+    print('mass_diff',mass_diff)
+
     return frequency,Lambda
+    
 
 
-
-def sopt_orig(X,Y,Lambda=40,n_projections=50,Type=None):
-    '''
-    input: 
-    X: X is n*d dimension torch tensor
-    Y: Y is m*d dimension torch tensor
-
-    output: 
-    cost_sum: 0-dimension tensor
-    n_point_sum: int tensor
-    '''
-    d=X.shape[1]
-    device=X.device.type
-    dtype=X.dtype
-    projections=random_projections(d,n_projections,device,dtype,Type)
-    X_sliced=torch.matmul(projections,X.T)
-    Y_sliced=torch.matmul(projections,Y.T)
-    cost_sum=0
-    n_point_sum=0
-    for i in range(0,n_projections):
-        X_theta=X_sliced[i,:]
-        Y_theta=Y_sliced[i,:]
-        X_theta1=X_theta.sort().values
-        Y_theta1=Y_theta.sort().values
-        cost,L=opt_1d_T(X_theta1, Y_theta1, Lambda)
-        cost_sum+=cost
-        n_point_sum+=torch.sum(L>=0)
-
-        
-    cost_sum=cost_sum/n_projections
-    n_point_sum=n_point_sum/n_projections
-    return cost_sum,n_point_sum
-
-
-
-def max_sopt_orig(X,Y,Lambda=40,n_projections=50,Type=None):
-    '''
-    input: 
-    X: X is n*d dimension torch tensor
-    Y: Y is m*d dimension torch tensor
-
-    output: 
-    cost_sum: 0-dimension tensor
-    n_point_sum: int tensor
-    '''
-    device=X.device.type
-    dtype=X.dtype
-    d=X.shape[1]
-    projections=random_projections(d,n_projections,device,dtype,Type)
-    X_sliced=torch.matmul(projections,X.T)
-    Y_sliced=torch.matmul(projections,Y.T)
-    cost_opt=-1
-    for i in range(0,n_projections):
-        X_theta=X_sliced[i,:]
-        Y_theta=Y_sliced[i,:]
-        X_theta=X_theta.sort().values
-        Y_theta=Y_theta.sort().values
-        cost,L=opt_1d_T(X_theta, Y_theta, Lambda)
-        if cost_opt<cost:
-            cost_opt=cost
-            L_opt=L
-    mass_opt=torch.sum(L_opt>=0)
-
-    return cost_opt,mass_opt
 
 
 
@@ -178,16 +118,17 @@ class sopt():
         self.n_projections=n_projections
         self.Lambda=Lambda
         self.Type=Type
-        self.projections=random_projections(self.d,self.n_projections,self.device,self.dtype)
-#        self.get_projections()
-#        self.get_plans()
+
 
     def sliced_cost(self,penulty=False):
         cost=self.refined_cost(self.X_sliced,self.Y_sliced,self.plans,penulty)
         mass=torch.sum(self.plans>=0)/self.plans.shape[0]
         return cost,mass
+    
+    def get_directions(self):
+        self.projections=random_projections(self.d,self.n_projections,self.device,self.dtype)
 
-    def get_projections(self):
+    def get_all_projections(self):
         self.X_sliced=torch.matmul(self.projections,self.X.T)
         self.Y_sliced=torch.matmul(self.projections,self.Y.T)
         
@@ -226,15 +167,16 @@ class sopt():
 
 class sopt_correspondence(sopt):
     def __init__(self,X,Y,Lambda,N_projections=20,Type=None):
-        for i in range(N_projections):
-            sopt_for.__init__(self,X,Y,Lambda,1,Type)
-        self.X_trans=self.X.clone().numpy()
+        sopt.__init__(self,X,Y,Lambda,N_projections,Type)
     def correspond(self,mass):
-        self.X_frequency,self.Lambda=X_correspondence(self.X_trans,self.Y,self.projections,self.Lambda,mass)
-        X_order=X_frequency.argsort()
+        self.X_frequency,self.Lambda=X_correspondence(self.X.numpy(),self.Y.numpy(),self.projections.numpy(),self.Lambda,mass)
+        X_order=self.X_frequency.argsort()
         Lx=arange(0,self.n)
-        Lx=[X_order>=self.n-mass]
-        self.X[Lx]=self.X_trans[Lx] # we only trans the x which has highest frequency to move
+#        self.Lx=torch.from_numpy(Lx[self.X_frequency>=18])
+        self.Lx=torch.from_numpy(Lx[X_order>=self.n-mass]) 
+#        self.X_take=self.X[self.Lx]
+        
+#        self.X[Lx]=self.X_trans[Lx] # we only trans the x which has highest frequency to move
         
         
         
@@ -315,6 +257,71 @@ class sopt_majority_cut(sopt):
     
 
     
+
+
+def sopt_orig(X,Y,Lambda=40,n_projections=50,Type=None):
+    '''
+    input: 
+    X: X is n*d dimension torch tensor
+    Y: Y is m*d dimension torch tensor
+
+    output: 
+    cost_sum: 0-dimension tensor
+    n_point_sum: int tensor
+    '''
+    d=X.shape[1]
+    device=X.device.type
+    dtype=X.dtype
+    projections=random_projections(d,n_projections,device,dtype,Type)
+    X_sliced=torch.matmul(projections,X.T)
+    Y_sliced=torch.matmul(projections,Y.T)
+    cost_sum=0
+    n_point_sum=0
+    for i in range(0,n_projections):
+        X_theta=X_sliced[i,:]
+        Y_theta=Y_sliced[i,:]
+        X_theta1=X_theta.sort().values
+        Y_theta1=Y_theta.sort().values
+        cost,L=opt_1d_T(X_theta1, Y_theta1, Lambda)
+        cost_sum+=cost
+        n_point_sum+=torch.sum(L>=0)
+
+        
+    cost_sum=cost_sum/n_projections
+    n_point_sum=n_point_sum/n_projections
+    return cost_sum,n_point_sum
+
+
+
+def max_sopt_orig(X,Y,Lambda=40,n_projections=50,Type=None):
+    '''
+    input: 
+    X: X is n*d dimension torch tensor
+    Y: Y is m*d dimension torch tensor
+
+    output: 
+    cost_sum: 0-dimension tensor
+    n_point_sum: int tensor
+    '''
+    device=X.device.type
+    dtype=X.dtype
+    d=X.shape[1]
+    projections=random_projections(d,n_projections,device,dtype,Type)
+    X_sliced=torch.matmul(projections,X.T)
+    Y_sliced=torch.matmul(projections,Y.T)
+    cost_opt=-1
+    for i in range(0,n_projections):
+        X_theta=X_sliced[i,:]
+        Y_theta=Y_sliced[i,:]
+        X_theta=X_theta.sort().values
+        Y_theta=Y_theta.sort().values
+        cost,L=opt_1d_T(X_theta, Y_theta, Lambda)
+        if cost_opt<cost:
+            cost_opt=cost
+            L_opt=L
+    mass_opt=torch.sum(L_opt>=0)
+
+    return cost_opt,mass_opt
 
 
     

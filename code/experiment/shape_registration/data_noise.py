@@ -18,7 +18,7 @@ import  time
 
 
 # choose the data 
-label='castle'
+item='castle'
 
 
 
@@ -31,23 +31,21 @@ os.chdir(parent_path)
 from sopt2.lib_shape import *
 
 data_path=parent_path+'/experiment/shape_registration/data/test2'
-data=torch.load(data_path+'/data'+str(label)+'.pt')
+data=torch.load(data_path+'/data'+item+'.pt')
 dtype=torch.float32
-X=data['X0']
-Y=data['Y03']
-param=data['param']
-theta=param['theta']
 
-beta=param['beta']
-scalar=param['scalar']
+label='0'
+
+Y0=data['Y0'+label]
+X0=data['X0']
 
 # compute the optimal parameters 
-theta_op=-theta
-rotation_op=rotation_3d_2(theta_op,'re')
-scalar_op=1/scalar
-beta_op=-1/scalar*beta@rotation_op
-Y0=Y.clone()
-X0=Y0@rotation_op*scalar_op+beta_op
+# theta_op=-theta
+# rotation_op=rotation_3d_2(theta_op,'re')
+# scalar_op=1/scalar
+# beta_op=-1/scalar*beta@rotation_op
+#Y0=Y.clone()
+
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 ax.scatter(Y0[:,0],Y0[:,1],Y0[:,2],s=0.03,label='source')  
@@ -83,15 +81,13 @@ ax.set_zlim3d(-20,20)
 plt.legend(loc='upper right')
 plt.show()
 data['X1']=X1
-data['Y13']=Y1 
-param['rotation_op']=rotation_op
-param['scalar_op']=scalar_op
-param['beta_op']=beta_op
+data['Y1'+label]=Y1 
 
-data['param']=param
 
-rotation_es,scalar_es=recover_rotation(X1,Y1)
+# data['param']=param
+
+#rotation_es,scalar_es=recover_rotation(X1,Y1)
 #scalar_es=torch.sqrt(torch.trace(torch.cov(X0.T))/torch.trace(torch.cov(Y0.T)))
-beta_es=torch.mean(X0,0)-torch.mean(scalar_es*Y0@rotation_es,0)
+#beta_es=torch.mean(X0,0)-torch.mean(scalar_es*Y0@rotation_es,0)
 #beta_es=torch.mean(Y0)
-torch.save(data,data_path+'/data'+str(label)+'.pt')
+torch.save(data,data_path+'/data'+item+'.pt')

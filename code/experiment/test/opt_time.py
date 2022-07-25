@@ -31,7 +31,7 @@ import matplotlib.pyplot as plt
 import time
 
 
-Lambda=10
+Lambda=60
 
 time1_list=[]
 time2_list=[]
@@ -45,7 +45,7 @@ device='cpu'
 step=500
 k=1
 for n in range (start_n,end_n,step):
-    m=n+0
+    m=n+1000
 
     time1=0
     time2=0
@@ -53,14 +53,12 @@ for n in range (start_n,end_n,step):
     time4=0
     time5=0
     mu=np.ones(n)
-    nu=np.ones(m)
+    nu=np.ones(n)
     for i in range (k):
-        torch.manual_seed(0)
-        X=0+(20-0)*torch.rand(n,device=device)
-        Y=torch.rand(m,device=device)*(30-5)+5
-        X1=X.numpy().copy()
-        Y1=Y.numpy().copy()
-        
+        X=np.float32(np.random.uniform(-20,20,n))
+        Y=np.float32(np.random.uniform(-40,40,m))
+        X1=X.copy()
+        Y1=Y.copy()
         start_time = time.time()
         X1.sort()
         Y1.sort()        
@@ -68,8 +66,8 @@ for n in range (start_n,end_n,step):
         end_time = time.time()
         time1+=end_time-start_time
         
-        X1=X.numpy().copy()
-        Y1=Y.numpy().copy()
+        X1=X.copy()
+        Y1=Y.copy()
         start_time = time.time()
         X1.sort()
         Y1.sort()       
@@ -79,8 +77,8 @@ for n in range (start_n,end_n,step):
     
     
         mass=np.sum(L2>=0)
-        X1=X.numpy().copy()
-        Y1=Y.numpy().copy()
+        X1=X.copy()
+        Y1=Y.copy()
         start_time = time.time()
 #        M=cost_matrix(X1,Y1)
         X1.sort()
@@ -91,7 +89,7 @@ for n in range (start_n,end_n,step):
         time3+=end_time-start_time
     
     
-
+        Y1=Y[0:n]
         start_time = time.time()
         M=cost_matrix(X1,Y1)
         plan=ot.lp.emd(mu,nu,M)

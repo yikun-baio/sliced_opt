@@ -89,7 +89,7 @@ def rotation_3d_2(theta,order='re'):
     return M
 
 def rotation_re(cos_x,sin_x,cos_y,sin_y,cos_z,sin_z):
-    M=torch.zeros((3,3))
+    M=torch.zeros((3,3),dtype=torch.float32)
     M[0,0]=cos_y*cos_z
     M[0,1]=-cos_y*sin_z
     M[0,2]=sin_y
