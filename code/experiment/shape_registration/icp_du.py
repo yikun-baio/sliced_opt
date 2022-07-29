@@ -1,20 +1,20 @@
+
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jul 20 09:32:42 2022
+Created on Tue Jul  5 18:27:49 2022
 
 @author: baly
 """
 
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Jul 19 17:37:01 2022
-
-@author: baly
-"""
 
 import sys
+import open3d as o3d
 from mpl_toolkits import mplot3d
 from mpl_toolkits.mplot3d import Axes3D
 import os
@@ -30,102 +30,143 @@ loc1=work_path.find('/code')
 parent_path=work_path[0:loc1+5]
 sys.path.append(parent_path)
 os.chdir(parent_path)
+item='/witchcastle' 
+#'/stanford_bunny' #'/witchcastle' #'mumble_sitting'
+exp_num='/witchcastle' 
+#'/stanford_bunny'#'/witchcastle' #'mumble_sitting'
 
-# load the data
-label='30'
-exp_num='1'
 from sopt2.library import *
 from sopt2.lib_shape import *
-data_path=parent_path+'/experiment/shape_registration/data/test'
+from sopt2.sliced_opt import *   
+label_L=['0','1','2','3']
+L=['10k','9k','8k','7k']
+label='0'
+n_point='/10k'
+per_s='-5p'
+data_path=parent_path+'/experiment/shape_registration/data/test2/saved'
+save_path='experiment/shape_registration/result'+exp_num+n_point
+data=torch.load(data_path+item+'.pt')
 
-data=torch.load(data_path+'/data_noise'+label+'.pt')
-L=[30,60,39,105,340]
-X0=data['X0']
-Y0=data['Y0']
-X1=data['X1']
-Y1=data['Y1']
-N=data['N']
-N_noise=data['N_noise']
-param=data['param']
-theta_op=param['theta_op']
-scalar_op=param['scalar_op']
-beta_op=param['beta_op']
-print('theta_op',theta_op)
-print('N_noise',N_noise)
-N_a=206
-X1=X1[0:N+N_noise-N_a].clone()
-Y1=Y1[0:N+N_noise-N_a].clone()
+
+X0=data['X0'].to(torch.float32)
+Y0=data['Y0'+label].to(torch.float32)
+X1=data['X1'+per_s].to(torch.float32)
+Y1=data['Y1'+label+per_s].to(torch.float32)
+#param=data['param']
+
+
+N=Y1.shape[0]
+
 device='cpu'
 dtype=torch.float32
 X0T=X0.to(device).clone()
 Y0T=Y0.to(device).clone()
 X1T=X1.to(device).clone()
 Y1T=Y1.to(device).clone()
-n_iteration=300
 
-# compute the parameter error
+
 print('original figure')
-fig = plt.figure()
+fig = plt.figure(figsize=(10,10))
+ncolors = len(plt.rcParams['axes.prop_cycle'])
 ax = fig.add_subplot(111, projection='3d')
-ax.scatter(Y1[:,0],Y1[:,1],Y1[:,2],s=0.3,label='source') # plot the point (2,3,4) on the figure
-ax.scatter(X1[:,0],X1[:,1],X1[:,2],s=0.3,label='target') # plot the point (2,3,4) 
-ax.set_xlim3d(-1,2.5)
-ax.set_ylim3d(-1.5,1.5)
-ax.set_zlim3d(-1,1)
-plt.legend(loc='upper right')
-plt.savefig('experiment/shape_registration/result/exp'+exp_num+'/icp_du/init'+label+'.jpg')
+ax.scatter(X1[:,0],X1[:,1],X1[:,2],s=2,label='target',color='blue') # plot the point (2,3,4) on the figure
+ax.scatter(Y1[:,0],Y1[:,1],Y1[:,2],s=2,label='source',color='red') # plot the point (2,3,4) on the figure
+plt.axis('off')
+ax.set_facecolor("grey")
+ax.grid(False)
+ax.set_xticks([])
+ax.set_yticks([])
+ax.set_zticks([])
+#ax.view_init(10,5,'y')
+plt.legend(loc='upper right',scatterpoints=100)
+ax.set_xlim3d(-25,25)
+ax.set_ylim3d(-15,15)
+ax.set_zlim3d(0,24)
+plt.savefig('experiment/shape_registration/result'+exp_num+n_point+per_s+'/icp_du/'+'init'+'.jpg')
 plt.show()
 plt.close()
 
 
+
+n_iteration=400
+
 # initlize 
-rotation=torch.eye(3).to(dtype=torch.float32)
+rotation=torch.eye(3,dtype=torch.float32)
+scalar=1.0 #
 
-X_c=X1-torch.mean(X1,0)
-Y_c=Y1-torch.mean(Y1,0)
-scalar=5
-
-beta=torch.mean(X1,0)-torch.mean(scalar*Y1@rotation,0)
+beta=(torch.mean(X1,0)-torch.mean(scalar*Y1@rotation,0))*(9.5/9)
 
 paramlist=[]
 #n_projections=1
-Lambda=np.float32(0.08)
+Lambda=np.float32(200)
 Delta=Lambda*0.1
+X1_hat=Y1T@rotation*scalar+beta   
 
 
+mass_diff=0
 for epoch in range(n_iteration):
-    X1_hat=Y1T@rotation*scalar+beta
     M=cost_matrix_T(X1_hat,X1)
-    n,m=M.shape 
     argmin_X1=M.argmin(dim=1)
     X1_take=X1[argmin_X1]
     X1_hat_take=X1_take
     rotation,scalar_d=recover_rotation_du(X1_hat_take,Y1)
     scalar=torch.mean(scalar_d)
     beta=torch.mean(X1_hat_take,0)-torch.mean(scalar*Y1@rotation,0)
+    X1_hat=Y1T@rotation*scalar+beta
     
-    if epoch%30==0 or epoch<=50 or epoch==n_iteration-1:
-      print('training Epoch {}/{}'.format(epoch, n_iteration))
-      print('scalar',scalar)
-      print('rotation',rotation)
-      print('beta',beta)
+    param={}
+    param['rotation']=rotation
+    param['beta']=beta
+    param['scalar']=scalar
+    paramlist.append(param)
+
+    
+    if epoch<=200 or epoch%20==0 or epoch==n_iteration-1:
+        print('training Epoch {}/{}'.format(epoch, n_iteration))
+        print('scalar',scalar)
+        print('rotation',rotation)
+        print('beta',beta)
+    
+        X1_hat_c=X1_hat.clone().detach().cpu()
+        fig = plt.figure(figsize=(10,10))
+        ncolors = len(plt.rcParams['axes.prop_cycle'])
+        ax = fig.add_subplot(111, projection='3d')
+        ax.scatter(X1[:,0],X1[:,1],X1[:,2],s=2,label='target',color='blue') # plot the point (2,3,4) on the figure
+        ax.scatter(X1_hat_c[:,0],X1_hat_c[:,1],X1_hat_c[:,2],s=2,label='source',color='red') # plot the point (2,3,4) on the figure
+        plt.axis('off')
+        ax.set_facecolor("grey")
+        ax.grid(False)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_zticks([])
+
+        
+        plt.legend(loc='upper right',scatterpoints=100)
+       # ax.view_init(10,5,'y')
+        ax.set_xlim3d(-25,25)
+        ax.set_ylim3d(-15,15)
+        ax.set_zlim3d(0,24)
+
+        plt.savefig('experiment/shape_registration/result/'+exp_num+n_point+per_s+'/icp_du/'+str(epoch)+'.jpg')
+        plt.show()
+        plt.close()
+        print('-' * 10)
     
 
-      X1_hat_c=X1_hat_take.clone().detach().cpu()
-      fig = plt.figure()
-      ax = fig.add_subplot(111, projection='3d')
-      ax.scatter(X1_hat_c[:,0],X1_hat_c[:,1],X1_hat_c[:,2],s=0.3,label='source') # plot the point (2,3,4) on the figure
-      ax.scatter(X1[:,0],X1[:,1],X1[:,2],s=0.3,label='target') # plot the point (2,3,4) on the figure
-      ax.set_xlim3d(-1,2.5)
-      ax.set_ylim3d(-1.5,1.5)
-      ax.set_zlim3d(-1,1)
-      plt.legend(loc='upper right')
-      plt.savefig('experiment/shape_registration/result/exp'+exp_num+'/icp_du/'+str(epoch)+'.jpg')
-      plt.show()
-      plt.close()
-      print('-' * 10)
+torch.save(paramlist,'experiment/shape_registration/result/'+exp_num+n_point+per_s+'/icp_du_param.pt')
 
-torch.save(paramlist,'experiment/shape_registration/result/exp'+exp_num+'/icp_du.pt')
+
+
+# for epoch in range(n_iteration):
+#     X1_hat=Y1T@rotation*scalar+beta
+#     M=cost_matrix_T(X1_hat,X1)
+#     n,m=M.shape 
+#     argmin_X1=M.argmin(dim=1)
+#     X1_take=X1[argmin_X1]
+#     X1_hat_take=X1_take
+#     rotation,scalar_d=recover_rotation_du(X1_hat_take,Y1)
+#     scalar=torch.mean(scalar_d)
+#     beta=torch.mean(X1_hat_take,0)-torch.mean(scalar*Y1@rotation,0)
     
     
     

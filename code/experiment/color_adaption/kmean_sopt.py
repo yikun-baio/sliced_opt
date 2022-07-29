@@ -35,7 +35,7 @@ loc1=work_path.find('/code')
 parent_path=work_path[0:loc1+5]
 sys.path.append(parent_path)
 os.chdir(parent_path)
-task_num='1'
+task_num='0'
 data_path='experiment/color_adaption/data/task'+task_num
 I1=imread(data_path+'/source.jpg')
 I2=imread(data_path+'/target.jpg')
@@ -66,7 +66,6 @@ Lambda=30
 Delta=Lambda*1/10
 print('Lambda',Lambda)
 A=sopt(X1,X2,Lambda,nb_iter_max,'orth')
-
 
 
 for epoch in range(0,nb_iter_max):

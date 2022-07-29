@@ -73,7 +73,8 @@ def X_correspondence(X,Y,projections,Lambda,mass):
         Y_indice=Y_theta.argsort()
         X_s=X_theta[X_indice]
         Y_s=Y_theta[Y_indice]
-        cost,L=opt_1d_v2_apro(X_s,Y_s,Lambda)
+        cost,L=pot_1d(X_s,Y_s)
+#        cost,L=opt_1d_v2_apro(X_s,Y_s,Lambda)
         L=recover_indice(X_indice,Y_indice,L)
         #move X
         Lx=Lx_org.copy()
@@ -100,11 +101,6 @@ def X_correspondence(X,Y,projections,Lambda,mass):
 
     return frequency,Lambda
     
-
-
-
-
-
     
     
 class sopt():    
