@@ -9,6 +9,7 @@ Created on Mon Jun 27 15:58:45 2022
 import numpy as np
 import open3d as o3d
 import torch
+
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 from mpl_toolkits.mplot3d import Axes3D
@@ -19,13 +20,13 @@ import  time
 
 
 # choose the data 
-item='/stanford_bunny'
+item='/mumble_sitting' 
 #'/witchcastle' #'/mumble_sitting' #'dragon' 
 #'stanford_bunny'
 #'dragon'
 #'mumble_sitting'
 #'witchcastle'
-#'mumble_sitting' 
+#
 
 
 work_path=os.path.dirname(__file__)
@@ -46,18 +47,18 @@ Y0=data['Y0'+label]
 X0=data['X0']
 
 # add noise
-per=0.5/9
-per_s='-5p'
+per=0.7/9
+per_s='-7p'
 Nc_y=Y0.shape[0] # of clean data
 Nc_x=X0.shape[0] # of clean data
 Nn_y=int(per*Nc_y) # of noise
 Nn_x=int(per*Nc_x) # of noise
 torch.manual_seed(0)
-nx=0.8*(torch.rand(Nn_x,3)-0.5)#+torch.mean(X0,0)
+nx=200*(torch.rand(Nn_x,3)-0.5)#+torch.mean(X0,0)
 
 
 time.sleep(3)
-ny=0.8*(torch.rand(Nn_y,3)-0.5)#+torch.mean(Y0,0)
+ny=200*(torch.rand(Nn_y,3)-0.5)#+torch.mean(Y0,0)
 
 Y1=torch.cat((Y0,ny))
 randindex=torch.randperm(Nc_y+Nn_y)
@@ -76,9 +77,9 @@ ax.set_xticks([])
 ax.set_yticks([])
 ax.set_zticks([])
 plt.legend(loc='upper right',scatterpoints=100)
-# ax.set_xlim3d(-45,45)
-# ax.set_ylim3d(-30,30)
-# ax.set_zlim3d(0,60)
+#ax.set_xlim3d(-45,45)
+#ax.set_ylim3d(-30,30)
+#ax.set_zlim3d(0,60)
 ax.view_init(10,5,'y')
 # ax.set_xlim3d(-0.08,0.12)
 # ax.set_ylim3d(0.06,0.2)
@@ -133,4 +134,4 @@ data['Y1'+label+per_s]=Y1
 #scalar_es=torch.sqrt(torch.trace(torch.cov(X0.T))/torch.trace(torch.cov(Y0.T)))
 #beta_es=torch.mean(X0,0)-torch.mean(scalar_es*Y0@rotation_es,0)
 #beta_es=torch.mean(Y0)
-torch.save(data,data_path+'/'+item+'.pt')
+#torch.save(data,data_path+'/'+item+'.pt')

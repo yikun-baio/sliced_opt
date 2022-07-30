@@ -23,7 +23,7 @@ parent_path=work_path[0:loc1+5]
 sys.path.append(parent_path)
 os.chdir(parent_path)
 
-method='/icp_umeyama'
+method='/sopt'
 data_list=[
 '/witchcastle',
 '/mumble_sitting',
@@ -50,7 +50,7 @@ for data in data_list:
     rotation_op=param_op['rotation_op']
     scalar_op=param_op['scalar_op']
     n=data_pt['X0'].shape[0] # nomalized 
-    std=torch.sqrt(torch.trace(torch.cov(data_pt['X0'].T)*(n-1)/n))
+    std=torch.sqrt(torch.trace(torch.cov(data_pt['X0'].T)))
     beta_op=param_op['beta_op']/std
     trans_op=torch.cat((beta_op.reshape((3,1)),rotation_op*scalar_op),1)
     trans_op_list.append(trans_op)
