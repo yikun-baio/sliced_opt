@@ -31,21 +31,45 @@ def convert_ply(X1_data, Y1_data):
     
     return X, Y
 
-def generate_o3d(ply1, ply2, path, name, ext = ".jpg"):
+def generate_o3d(ply1, ply2, path, name, dataset="lol", ext = ".jpg"):
     vis = o3d.visualization.Visualizer()
-    vis.create_window(width = 1400, height= 1080, left=10)  
-    ply1x = ply1.get_rotation_matrix_from_xyz((32/20 * np.pi, 2/20 * np.pi, -11/10 * np.pi))
-    ply2x = ply2.get_rotation_matrix_from_xyz((32/20 * np.pi, 2/20 * np.pi, -11/10 * np.pi))
-    ply1.rotate(ply1x, center=(0,0,0))
-    ply2.rotate(ply2x, center=(0,0,0))
-    vis.add_geometry(ply1)
-    vis.add_geometry(ply2)
-    vis.get_render_option().point_size = 1.9
+    vis.create_window(width = 1080, height= 1080, top = 100, left=50)  
+    # ply1x = ply1.get_rotation_matrix_from_xyz((4/20 * np.pi,0,0))
+    # ply2x = ply2.get_rotation_matrix_from_xyz((4/20 * np.pi, 0,0))
+    # ply1.rotate(ply1x, center=(0,0,0))
+    # ply2.rotate(ply2x, center=(0,0,0))
+    
+    vis.add_geometry(ply1, reset_bounding_box = True)
+    vis.add_geometry(ply2, reset_bounding_box = False)
+    vis.get_render_option().point_size = 2.25  
+    vis.get_view_control().translate(30, 0, 0, 0)
     vis.get_render_option().background_color = [211/255, 211/255, 211/255]
-    o3d.visualization.ViewControl.set_zoom(vis.get_view_control(), 0.35)
+    o3d.visualization.ViewControl.set_zoom(vis.get_view_control(), 0.37)
     vis.capture_screen_image(path + name + ext, do_render= True)
+    vis.destroy_window()
     # vis.run()
 
+
+
+# Stanford Bunny 
+    # ply1x = ply1.get_rotation_matrix_from_xyz((4/20 * np.pi,0,0))
+    # ply2x = ply2.get_rotation_matrix_from_xyz((4/20 * np.pi, 0,0))
+    # ply1.rotate(ply1x, center=(0,0,0))
+    # ply2.rotate(ply2x, center=(0,0,0))
+
+
+# Dragon11
+    # ply1x = ply1.get_rotation_matrix_from_xyz((4/20 * np.pi,0,0))
+    # # ply2x = ply2.get_rotation_matrix_from_xyz((2/20 * np.pi, 0,0))
+    # ply1.rotate(ply1x, center=(0,0,0))
+    # # ply2.rotate(ply2x, center=(0,0,0))
+
+
+# Witch castle
+    # ply1x = ply1.get_rotation_matrix_from_xyz((34/20 * np.pi, 0/20 * np.pi, -12/10 * np.pi))
+    # ply2x = ply2.get_rotation_matrix_from_xyz((34/20 * np.pi, 2/20 * np.pi, -12/10 * np.pi))
+    # ply1.rotate(ply1x, center=(1,1,1))
+    # ply2.rotate(ply2x, center=(0,0,0))
 
 def generate(X, Y, save_path, name):
     X_ply, Y_ply = convert_ply(X,Y)

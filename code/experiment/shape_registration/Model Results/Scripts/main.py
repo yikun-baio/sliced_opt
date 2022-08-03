@@ -13,7 +13,7 @@ args = {}
     
 models = ['sopt_param', 'spot_param', 'icp_du_param', 'icp_umeyama_param']
 ver = ['9k-5p', '9k-7p', '10k-5p', '10k-7p']
-datas = ['witchcastle']
+datas = ['mumble_sitting']
 
 for data in datas : 
     for model in models : 
