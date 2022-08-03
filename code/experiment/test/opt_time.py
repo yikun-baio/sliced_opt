@@ -26,6 +26,7 @@ device='cpu'
 
 from sopt2.opt import *
 from sopt2.library import *
+from sopt2.lib_ot import *
 import ot 
 import matplotlib.pyplot as plt
 import time
@@ -89,12 +90,9 @@ for n in range (start_n,end_n,step):
             time_v2_a[j]+=end_time-start_time
     
     
-        Y1=Y[0:n]
+#        Y1=Y[0:n]
         start_time = time.time()
-        M=cost_matrix(X1,Y1)
-        plan=ot.lp.emd(mu,nu,M)
-#       ot.lp.emd(mu,nu,cost_M1)
-#       L5=ot.partial.partial_wasserstein(mu,nu,M,mass,280)
+        opt_lp(X,Y,Lambda)
         end_time = time.time()
         time_lp+=end_time-start_time
     
@@ -103,7 +101,6 @@ for n in range (start_n,end_n,step):
     for j in range(3):
         time_v2_list[j].append(time_v2[j]/k)
         time_v2_a_list[j].append(time_v2_a[j]/k)
-#    time4_list.append(time4/k)
     time_lp_list.append(time_lp/k)
 
 time_list={}
@@ -126,11 +123,11 @@ plt.semilogy(n_list,time_lp_list,label='lp: python ot, C')
 box = ax.get_position()
 ax.set_position([box.x0, box.y0 + box.height * 0.1,
                  box.width, box.height * 0.9])
-plt.legend(loc='upper center',bbox_to_anchor=(0.5, -0.05),
+plt.legend(loc='upper center',bbox_to_anchor=(0.5, 1.25),
           fancybox=True, shadow=True, ncol=3)
 plt.xlabel('n: size of X')
 plt.ylabel("wall time")
-plt.savefig('experiment/test/results/time_numba.jpg')
+plt.savefig('experiment/test/results/time_numba.jpg',dpi=fig.dpi,bbox_inches='tight')
 #plt.title('wall-clock time with accelaration')
 plt.show()
 #plt.semilogy(range(start_n,end_n),time4_list,label='Sinkhon in POT package')

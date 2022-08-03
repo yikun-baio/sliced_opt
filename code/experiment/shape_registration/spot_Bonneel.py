@@ -120,38 +120,38 @@ for (label,per_s) in [('0','-7p'),('1','-5p'),('1','-7p')]:
         paramlist.append(param)
     
         
-        if epoch<=200 or epoch%20==0 or epoch==n_iteration-1:
-            print('training Epoch {}/{}'.format(epoch, n_iteration))
-            print('scalar',scalar)
-            print('rotation',rotation)
-            print('beta',beta)
+    #     if epoch<=200 or epoch%20==0 or epoch==n_iteration-1:
+    #         print('training Epoch {}/{}'.format(epoch, n_iteration))
+    #         print('scalar',scalar)
+    #         print('rotation',rotation)
+    #         print('beta',beta)
         
-            X1_hat_c=A.X.clone().detach().cpu()
+    #         X1_hat_c=A.X.clone().detach().cpu()
             
-            fig = plt.figure(figsize=(10,10))
-            ncolors = len(plt.rcParams['axes.prop_cycle'])
-            ax = fig.add_subplot(111, projection='3d')
-            ax.scatter(X1[:,0],X1[:,1],X1[:,2],s=2,label='target',color='blue') # plot the point (2,3,4) on the figure
-            ax.scatter(X1_hat_c[:,0],X1_hat_c[:,1],X1_hat_c[:,2],s=2,label='source',color='red') # plot the point (2,3,4) on the figure
-            plt.axis('off')
-            ax.set_facecolor("grey")
-            ax.grid(False)
-            ax.set_xlim3d(-0.08,0.12)
-            ax.set_ylim3d(0.06,0.2)
-            ax.set_zlim3d(-0.02,0.14)
-            ax.view_init(10,5,'y')
-    #        ax.view_init(10,5,'y')
-            # ax.set_xticks([])
-            # ax.set_yticks([])
-            # ax.set_zticks([])
-            # ax.view_init(10,5,'y')
+    #         fig = plt.figure(figsize=(10,10))
+    #         ncolors = len(plt.rcParams['axes.prop_cycle'])
+    #         ax = fig.add_subplot(111, projection='3d')
+    #         ax.scatter(X1[:,0],X1[:,1],X1[:,2],s=2,label='target',color='blue') # plot the point (2,3,4) on the figure
+    #         ax.scatter(X1_hat_c[:,0],X1_hat_c[:,1],X1_hat_c[:,2],s=2,label='source',color='red') # plot the point (2,3,4) on the figure
+    #         plt.axis('off')
+    #         ax.set_facecolor("grey")
+    #         ax.grid(False)
+    #         ax.set_xlim3d(-0.08,0.12)
+    #         ax.set_ylim3d(0.06,0.2)
+    #         ax.set_zlim3d(-0.02,0.14)
+    #         ax.view_init(10,5,'y')
+    # #        ax.view_init(10,5,'y')
+    #         # ax.set_xticks([])
+    #         # ax.set_yticks([])
+    #         # ax.set_zticks([])
+    #         # ax.view_init(10,5,'y')
             
-            plt.legend(loc='upper right',scatterpoints=100)
+    #         plt.legend(loc='upper right',scatterpoints=100)
     
-            plt.savefig('experiment/shape_registration/result/'+exp_num+n_point+per_s+'/spot/'+str(epoch)+'.jpg')
-            plt.show()
-            plt.close()
-            print('-' * 10)
+    #         plt.savefig('experiment/shape_registration/result/'+exp_num+n_point+per_s+'/spot/'+str(epoch)+'.jpg')
+    #         plt.show()
+    #         plt.close()
+    #         print('-' * 10)
         
     
     

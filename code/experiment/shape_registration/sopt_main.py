@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import torch
 from torch import optim
 import ot
-
+import time
 work_path=os.path.dirname(__file__)
 loc1=work_path.find('/code')
 parent_path=work_path[0:loc1+5]
@@ -61,29 +61,28 @@ for (label,per_s) in [('0','-5p')]:
     X1T=X1.to(device).clone()
     Y1T=Y1.to(device).clone()
     
-    # print('original figure')
-    # fig = plt.figure(figsize=(10,10))
-    # ncolors = len(plt.rcParams['axes.prop_cycle'])
-    # ax = fig.add_subplot(111, projection='3d')
-    # ax.scatter(X1[:,0],X1[:,1],X1[:,2],s=2,label='target',color='blue') # plot the point (2,3,4) on the figure
-    # ax.scatter(Y1[:,0],Y1[:,1],Y1[:,2],s=2,label='source',color='red') # plot the point (2,3,4) on the figure
-    # plt.axis('off')
-    # ax.set_facecolor("grey")
-    # ax.grid(False)
-    # ax.set_xticks([])
-    # ax.set_yticks([])
-    # ax.set_zticks([])
-    # ax.set_xlim3d(-0.08,0.12)
-    # ax.set_ylim3d(0.06,0.2)
-    # ax.set_zlim3d(-0.02,0.14)
-    # ax.view_init(10,5,'y')
+    print('original figure')
+    fig = plt.figure(figsize=(10,10))
+    ncolors = len(plt.rcParams['axes.prop_cycle'])
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(X1[:,0],X1[:,1],X1[:,2],s=2,label='target',color='blue') # plot the point (2,3,4) on the figure
+    ax.scatter(Y1[:,0],Y1[:,1],Y1[:,2],s=2,label='source',color='red') # plot the point (2,3,4) on the figure
+    plt.axis('off')
+    ax.set_facecolor("grey")
+    ax.grid(False)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_zticks([])
+    ax.set_xlim3d(-0.08,0.12)
+    ax.set_ylim3d(0.06,0.2)
+    ax.set_zlim3d(-0.02,0.14)
+    ax.view_init(10,5,'y')
+    plt.legend(loc='upper right',scatterpoints=100)
     
-    # plt.legend(loc='upper right',scatterpoints=100)
-    
-    # # ax.view_init(15,15,'y')
-    # plt.savefig('experiment/shape_registration/result'+exp_num+n_point+per_s+'/sopt/'+'init'+'.jpg')
-    # plt.show()
-    # plt.close()
+    # ax.view_init(15,15,'y')
+    plt.savefig('experiment/shape_registration/result'+exp_num+n_point+per_s+'/sopt/'+'init'+'.jpg')
+    plt.show()
+    plt.close()
     start_time=time.time()
     n_iteration=3000
     

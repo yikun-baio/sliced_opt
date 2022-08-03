@@ -131,12 +131,12 @@ plt.semilogy(n_list,time_sinkhorn_list,label='Sinkhorn: python ot')
 box = ax.get_position()
 ax.set_position([box.x0, box.y0 + box.height * 0.1,
                  box.width, box.height * 0.9])
-plt.legend(loc='upper center',bbox_to_anchor=(0.5, -0.05),
+plt.legend(loc='upper center',bbox_to_anchor=(0.5, 1.25),
           fancybox=True, shadow=True, ncol=3)
 plt.xlabel('n: size of X')
 plt.ylabel("wall time")
 #plt.title('wall-clock time without accelaration')
-plt.savefig('experiment/test/results/time_no.jpg')
+plt.savefig('experiment/test/results/time_no.jpg',dpi=fig.dpi,bbox_inches='tight')
 plt.show()
 #plt.semilogy(range(start_n,end_n),time4_list,label='Sinkhon in POT package')
 

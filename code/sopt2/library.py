@@ -185,45 +185,6 @@ def closest_y_M(M):
     return argmin_Y
 
 
-@nb.njit(nb.float32[:](nb.float32[:]))
-def test(L):
-    print(L)
-    n=np.random.randint(0,10)
-    print(n)
-    return L
-    
-
-
-
-# @nb.jit((nb.int64[:],nb.int64),nopython=True)   
-# def index_adjust(L,j_start=0):
-#     '''
-
-#     Parameters
-#     ----------
-#     L : List, whose entry is 0,1,2,..... or -1. 
-#           transporportation plan. L[i]=j denote we assign x_i to y_j, L[i]=-1, denote we destroy x_i. 
-#           If we ignore -1, it must be in increasing order, e.g. if L=[2,1,3], there is a bug. 
-       
-#     j_start : integer>=0 
-#           index of y 
-#     Returns
-#     -------
-#     L : List, whose entry is 0,1,.... or -1 
-#     Go through all the entries in L, if the entry>=0, add j_start,
-#     eg. input (L=[1,2,3], j_start=2)
-#         return L=[3,4,5]
-#     eg. input (L=[1,2,-1,3], j_start=2)
-#         return L=[3,4,-1,5]
-
-#     '''
-#     for i in range(L.shape[0]):
-#         if L[i]>=0:
-#             L[i]=L[i]+j_start
-#     return None
-    
- #   return np.int64(0)
-
 
 @nb.njit()   
 def index_adjust(L,j_start=0):
@@ -958,64 +919,7 @@ def one_x_opt_T(M1: torch.Tensor,i_act:int,j_act:torch.Tensor,Lambda: torch.Tens
         return c_xy,j_act.reshape(1),torch.tensor(0,device=device,dtype=torch.float32),torch.empty(0,device=device,dtype=torch.int64)
 
 
-    
-def get_swiss(N=100,a = 4,r_min = 0.1,r_max = 1):  
-  theta = np.linspace(0, a * np.pi, N)
-  r = np.linspace(r_min, r_max, N)
-  X = np.stack([r * np.cos(theta),r * np.sin(theta)],1)
-  return X
 
-
-def rotation_matrix(theta):
-      return torch.stack([torch.cos(theta).reshape([1]),torch.sin(theta).reshape([1]),
-            -torch.sin(theta).reshape([1]),torch.cos(theta).reshape([1])]).reshape([2,2])
-
-def scalar_matrix(scalar):
-  return torch.stack([scalar[0:2],scalar[1:3]])
-
-
-
-def rotation_matrix_3d_x(theta_x):
-    device=theta_x.device.type
-    rotation_x=torch.zeros((3,3),dtype=torch.float32,device=device)
-    rotation_x[1,1]=torch.cos(theta_x)
-    rotation_x[1,2]=torch.sin(theta_x)
-    rotation_x[2,1]=-torch.sin(theta_x)
-    rotation_x[2,2]=torch.cos(theta_x)
-    rotation_x[0,0]=1.0
-    return rotation_x
-
-
-def rotation_matrix_3d_y(theta_y):
-    device=theta_y.device.type
-    rotation_y=torch.zeros((3,3),dtype=torch.float32,device=device)
-    rotation_y[0,0]=torch.cos(theta_y)
-    rotation_y[0,2]=torch.sin(theta_y)
-    rotation_y[2,0]=-torch.sin(theta_y)
-    rotation_y[2,2]=torch.cos(theta_y)
-    rotation_y[1,1]=1.0
-    return rotation_y
-
-def rotation_matrix_3d_z(theta_z):
-    device=theta_z.device.type
-    rotation_z=torch.zeros((3,3),dtype=torch.float32,device=device)
-    rotation_z[0,0]=torch.cos(theta_z)
-    rotation_z[0,1]=-torch.sin(theta_z)
-    rotation_z[1,0]=torch.sin(theta_z)
-    rotation_z[1,1]=torch.cos(theta_z)
-    rotation_z[2,2]=1.0
-    return rotation_z
-
-def rotation_matrix_3d(theta,order='in'):
-    theta_x,theta_y,theta_z=theta
-    rotatioin_x=rotation_matrix_3d_x(theta_x)
-    rotatioin_y=rotation_matrix_3d_y(theta_y)
-    rotatioin_z=rotation_matrix_3d_z(theta_z)
-    if order=='in':
-        rotation_3d=torch.linalg.multi_dot((rotatioin_z,rotatioin_y,rotatioin_x))
-    else:
-        rotation_3d=torch.linalg.multi_dot((rotatioin_x,rotatioin_y,rotatioin_z))
-    return rotation_3d
     
 
     

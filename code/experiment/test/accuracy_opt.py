@@ -27,6 +27,7 @@ sys.path.append(parent_path)
 
 from sopt2.opt import *
 from sopt2.library import *
+from sopt2.lib_ot import *
 
 
 
@@ -35,17 +36,14 @@ Lambda=np.float32(10.0)
 start_n=100
 end_n=1000
 step=5
-cost1_list=[]
-cost2_list=[]
-cost3_list=[]
-cost4_list=[]
+cost_v2_list=[]
+cost_v2_a_list=[]
+cost_pr_list=[]
+cost_lp_list=[]
+cost_sinkhorn_list=[]
 for n in range (start_n,end_n,step):
     m=n+200
 
-#    X1=2*torch.rand(n,dtype=torch.float32)
-#    Y1=3*torch.rand(m,dtype=torch.float32)-0.3
-#    X1=X1.sort().values
-#    Y1=Y1.sort().values
     X=np.float32(np.random.uniform(-20,20,n))
     Y=np.float32(np.random.uniform(-40,40,m))
     X.sort()
@@ -53,37 +51,49 @@ for n in range (start_n,end_n,step):
     mu=np.ones(n)
     nu=np.ones(m)
     
-    cost1,L1=opt_1d_v2_apro(X,Y,Lambda)
-    cost2,L2=opt_1d_v2(X,Y,Lambda)
+    cost_v2_a,L_v2_a=opt_1d_v2_apro(X,Y,Lambda)
+    cost_v2,L_v2=opt_1d_v2(X,Y,Lambda)
 
 
-    mass=np.sum(L2>=0) 
+    mass=np.sum(L_v2>=0) 
     M=cost_matrix(X,Y)
 #    L3=ot.partial.partial_wasserstein
-    L3=ot.partial.partial_wasserstein(mu,nu,M,mass)
-    cost3=sum(sum(M*L3))
-    cost3+=(n-mass)*Lambda
+    L_pr=ot.partial.partial_wasserstein(mu,nu,M,mass)
+    cost_pr=np.sum(M*L_pr)+(n-mass)*Lambda
     
 
-    M=cost_matrix(X,Y)
-#    L4=ot.partial.entropic_partial_wasserstein(mu,nu,M,0.1,mass)
-#    cost4=sum(sum(M*L4))+(n-mass)*Lambda
+    cost_lp,L_lp=opt_lp(X,Y,Lambda)
+    mass_lp=np.sum(L_lp)
+    cost_lp+=(n-mass_lp)*Lambda
+
+
+
+    L_sinkhorn=ot.partial.entropic_partial_wasserstein(mu,nu,M,0.1,mass)
+    cost_sinkhorn=np.sum(M*L_sinkhorn)+(n-mass)*Lambda
     
-    cost1_list.append(cost1)
-    cost2_list.append(cost2)
-    cost3_list.append(cost3)
-#    cost4_list.append(cost4)
+    cost_v2_list.append(cost_v2)
+    cost_v2_a_list.append(cost_v2_a)
+    cost_pr_list.append(cost_pr)
+    cost_lp_list.append(cost_lp)
+    cost_sinkhorn_list.append(cost_sinkhorn)
      
     
 
-
-plt.plot(range(start_n,end_n,step),cost1_list,'-',label='ours v2-apro')
-plt.plot(range(start_n,end_n,step),cost2_list,label='ours v2')
-plt.plot(range(start_n,end_n,step),cost3_list,label='Lp: python OT')
-#plt.plot(range(start_n,end_n,step),cost4_list,label='Sinkhorn: python OT')
+fig = plt.figure()
+ax = plt.subplot(111)
+plt.plot(range(start_n,end_n,step),cost_v2_list,'-',label='ours v2-apro')
+plt.plot(range(start_n,end_n,step),cost_v2_a_list,label='ours v2')
+plt.plot(range(start_n,end_n,step),cost_pr_list,label='Lp (primal): python OT')
+plt.plot(range(start_n,end_n,step),cost_lp_list,label='Lp: python OT')
+lt.plot(range(start_n,end_n,step),cost_lp_list,label='Sinkhorn: python OT')
 plt.xlabel("n: size of X")
 plt.ylabel("OPT distances")
-plt.legend(loc='best')
+box = ax.get_position()
+ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                 box.width, box.height * 0.9])
+plt.legend(loc='upper center',bbox_to_anchor=(0.5, 1.25),
+          fancybox=True, shadow=True, ncol=3)
+plt.savefig('experiment/test/results/accuracy.jpg',dpi=fig.dpi,bbox_inches='tight')
 plt.show()
 
 #plt.plot(range(start_n,end_n),cost4_list,label='Sinkhorn: python OT')
