@@ -41,7 +41,7 @@ save_root=root+'/saved'
 #print("datasize:", d.__len__())
 
     
-#item='/witchcastle.txt'
+item='/stanford_bunny'
 #'mumble_sitting.txt'
 #'dragon.ply' #'mumble_sitting' #'witchcastle'
 
@@ -67,10 +67,10 @@ save_root=root+'/saved'
 #     return L
 
 
-# path=root+'/'+item
-# #data0=load(path)
-# pcd = o3d.io.read_point_cloud(path)
-# data0=np.float32(np.asarray(pcd.points))
+path=root+'/'+item
+#data0=load(path)
+pcd = o3d.io.read_point_cloud(path)
+data0=np.float32(np.asarray(pcd.points))
 
 
 # data0=torch.from_numpy(data0)

@@ -85,7 +85,7 @@ for (label,per_s) in [('0','-7p'),('1','-5p'),('1','-7p')]:
     plt.close()
     
     
-    
+    start_time=time.time()
     n_iteration=200
     
     # initlize 

@@ -8,12 +8,13 @@
 import numpy as np
 import torch
 import os
-#os.environ['NUMBA_DISABLE_INTEL_SVML']  = '1'
+
 import numba as nb
-from typing import Tuple,List
+from typing import Tuple #,List
+from numba.typed import List
 
 
-@nb.jit(nopython=True)
+#@nb.njit()
 def cost_function(x,y): 
     ''' 
     case 1:
@@ -30,11 +31,11 @@ def cost_function(x,y):
             (x-y)**2 n*1 float np array, whose i-th entry is (x_i-y_i)**2
     '''
 #    V=np.square(x-y) #**p
-    V=np.power(x-y,4)
+    V=np.power(x-y,2)
     return V
 
 
-@torch.jit.script
+#@torch.jit.script
 def cost_function_T(x,y): 
     ''' 
     case 1:
@@ -52,8 +53,16 @@ def cost_function_T(x,y):
     '''
     return torch.square(x-y)
 
+#@nb.njit(nb.float32[:,:](nb.float32[:]),fastmath=True)
+def transpose(X):
+    n=X.shape[0]
+    XT=np.zeros((n,1),dtype=np.float32)
+    for i in range(n):
+        XT[i]=X[i]
+    return XT
+
 #@nb.jit(nopython=True)
-@nb.jit(nb.float32[:,:](nb.float32[:],nb.float32[:]),nopython=True)
+#@nb.njit(nb.float32[:,:](nb.float32[:],nb.float32[:]))
 def cost_matrix(X,Y):
     '''
     input: 
@@ -63,17 +72,18 @@ def cost_matrix(X,Y):
         M: n*m matrix, M_ij=c(X_i,Y_j) where c is defined by cost_function.
     
     '''
-    n=X.shape[0]
-    m=Y.shape[0]
-    M=np.zeros((n,m),dtype=nb.float32)
-    for i in range(n):
-        for j in range(m):
-            M[i,j]=cost_function(X[i],Y[j])
+    XT=transpose(X)
+
+
+    M=cost_function(XT,Y)
     return M
 
 
+    
+
+
 #@nb.jit(nopython=True)
-@nb.jit(nb.float32[:,:](nb.float32[:,:],nb.float32[:,:]),nopython=True)
+#@nb.njit(nb.float32[:,:](nb.float32[:,:],nb.float32[:,:]),fastmath=True)
 def cost_matrix_d(X,Y):
     '''
     input: 
@@ -92,10 +102,17 @@ def cost_matrix_d(X,Y):
     return M
 
 
-
+#@nb.njit(nb.float32[:](nb.float32[:,:],nb.float32[:]),fastmath=True)
+def mat_vec_mul(XT,theta):
+    d,n=XT.shape 
+    result=np.zeros(n,dtype=np.float32)
+    for i in range(n):
+        result[i]=np.dot(XT[:,i],theta)
+    return result
+    
 
 #@nb.jit([float32[:,:](float32[:],float32[:])],forceobj=True)
-@torch.jit.script
+#@torch.jit.script
 def cost_matrix_T(X,Y):
     '''
     input: 
@@ -122,8 +139,8 @@ def cost_matrix_T(X,Y):
 
 #types.Tuple
 
-#@nb.jit([float32(float32,float32)],forceobj=True)
-@nb.jit(nopython=True)
+#@nb.jit([float32(float32,float32)],forceobj=True) 
+#@nb.jit(nopython=True)
 def closest_y(x,Y):
     '''
     Parameters
@@ -144,7 +161,7 @@ def closest_y(x,Y):
     min_cost=cost_list[min_index]
     return min_index,min_cost
 
-#@nb.jit([nb.int32[:](nb.float32[:,:])],nopython=True)
+#@nb.njit()
 def closest_y_M(M):
     '''
     Parameters
@@ -161,19 +178,54 @@ def closest_y_M(M):
 
     '''
     n,m=M.shape
-    argmin_Y=np.zeros(n,dtype=np.int32)
+    argmin_Y=np.zeros(n,dtype=np.int64)
     for i in range(n):
         argmin_Y[i]=M[i,:].argmin()
         
     return argmin_Y
 
 
+#@nb.njit(nb.float32[:](nb.float32[:]))
+def test(L):
+    print(L)
+    n=np.random.randint(0,10)
+    print(n)
+    return L
+    
 
 
 
+# @nb.jit((nb.int64[:],nb.int64),nopython=True)   
+# def index_adjust(L,j_start=0):
+#     '''
+
+#     Parameters
+#     ----------
+#     L : List, whose entry is 0,1,2,..... or -1. 
+#           transporportation plan. L[i]=j denote we assign x_i to y_j, L[i]=-1, denote we destroy x_i. 
+#           If we ignore -1, it must be in increasing order, e.g. if L=[2,1,3], there is a bug. 
+       
+#     j_start : integer>=0 
+#           index of y 
+#     Returns
+#     -------
+#     L : List, whose entry is 0,1,.... or -1 
+#     Go through all the entries in L, if the entry>=0, add j_start,
+#     eg. input (L=[1,2,3], j_start=2)
+#         return L=[3,4,5]
+#     eg. input (L=[1,2,-1,3], j_start=2)
+#         return L=[3,4,-1,5]
+
+#     '''
+#     for i in range(L.shape[0]):
+#         if L[i]>=0:
+#             L[i]=L[i]+j_start
+#     return None
+    
+ #   return np.int64(0)
 
 
-@nb.jit(nopython=True)   
+#@nb.njit()   
 def index_adjust(L,j_start=0):
     '''
 
@@ -200,7 +252,7 @@ def index_adjust(L,j_start=0):
     return None
          
 
-@torch.jit.script   
+#@torch.jit.script   
 def index_adjust_T(L: torch.Tensor,j_start: int =0):
     '''
 
@@ -227,7 +279,7 @@ def index_adjust_T(L: torch.Tensor,j_start: int =0):
     L[positive_indices]=L[positive_indices]+j_start
     return None
 
-#@nb.jit(nb.types.Tuple((nb.int32,nb.int32))(nb.int32[:]),nopython=True)  
+#@nb.jit(nb.types.Tuple((nb.int64,nb.int64))(nb.int64[:]),nopython=True)  
 def startindex(L_pre):
     '''
     Parameters
@@ -272,7 +324,7 @@ def startindex(L_pre):
     return i_start,0
 
 
-@nb.jit(nb.types.Tuple((nb.int32,nb.int32))(nb.int32[:]),nopython=True)
+#@nb.jit(nb.types.Tuple((nb.int64,nb.int64))(nb.int64[:]),nopython=True)
 def startindex_np(L_pre):
     '''
     Parameters
@@ -311,17 +363,17 @@ def startindex_np(L_pre):
     j_start=max(0,L_pre.max()+1)
     return i_start,j_start
 
-@nb.jit([nb.int32[:](nb.int32,nb.int32)],nopython=True)
+@nb.jit([nb.int64[:](nb.int64,nb.int64)],nopython=True)
 def arange(start,end):
     n=end-start
-    L=np.zeros(n,dtype=np.int32)
+    L=np.zeros(n,dtype=np.int64)
     for i in range(n):
         L[i]=i+start
     return L
 
 
 
-@torch.jit.script   
+#@torch.jit.script   
 def startindex_T(L_pre):    
       '''
       Parameters
@@ -369,7 +421,7 @@ def startindex_T(L_pre):
 
 
 
-#@nb.jit([nb.types.Tuple((nb.int32,nb.int32))(nb.int32[:])],nopython=True)
+#@nb.jit([nb.types.Tuple((nb.int64,nb.int64))(nb.int64[:])],nopython=True)
 def unassign_y(L1):
     '''
     Parameters
@@ -411,7 +463,7 @@ def unassign_y(L1):
 
 
 
-@torch.jit.script   
+#@torch.jit.script   
 def unassign_y_T(L1) -> Tuple[int,torch.Tensor]:
     '''
     Parameters
@@ -450,8 +502,8 @@ def unassign_y_T(L1) -> Tuple[int,torch.Tensor]:
 
 # not test
 
-@torch.jit.script   
-def recover_indice(indice_X,indice_Y,L):
+#@torch.jit.script   
+def recover_indice_T(indice_X,indice_Y,L):
     '''
     input:
         indice_X: n*1 float torch tensor, whose entry is integer 0,1,2,....
@@ -478,8 +530,35 @@ def recover_indice(indice_X,indice_Y,L):
     mapping_final=mapping[1].take(mapping[0].argsort())
     return mapping_final
 
+#@torch.jit.script   
+#@nb.njit(nb.int64[:](nb.int64[:],nb.int64[:],nb.int64[:]))
+def recover_indice(indice_X,indice_Y,L):
+    '''
+    input:
+        indice_X: n*1 float torch tensor, whose entry is integer 0,1,2,....
+        indice_Y: m*1 float torch tensor, whose entry is integer 0,1,2,.... 
+        L: n*1 list, whose entry could be 0,1,2,... and -1.
+        L is the original transportation plan for sorted X,Y 
+        L[i]=j denote x_i->y_j and L[i]=-1 denote we destroy x_i. 
+        If we ignore -1, it must be in increasing order  
+    output:
+        mapping_final: the transportation plan for original unsorted X,Y
+        
+        Eg. X=[2,1,3], indice_X=[1,0,2]
+            Y=[3,1,2], indice_Y=[1,2,0]
+            L=[0,1,2] which means the mapping 1->1, 2->2, 3->3
+        return: 
+            L=[2,1,0], which also means the mapping 2->2, 1->1,3->3.
+    
+    '''
+    n=L.shape[0]
+    indice_Y_mapped=np.where(L>=0,indice_Y[L],-1)
+    mapping=np.stack((indice_X,indice_Y_mapped))
+    mapping_final=mapping[1].take(mapping[0].argsort())
+    return mapping_final
 
-@torch.jit.script   
+
+#@torch.jit.script   
 def recover_indice_M(indice_X,indice_Y,plans):
     '''
     input:
@@ -501,7 +580,7 @@ def recover_indice_M(indice_X,indice_Y,plans):
     '''
     device=indice_X.device.type
     N,n=plans.shape
-    indice_Y_mapped=torch.zeros((N,n),dtype=torch.int32,device=device)
+    indice_Y_mapped=torch.zeros((N,n),dtype=torch.int64,device=device)
     for i in range (N):
         indice_Y_mapped[i,:]=torch.where(plans[i]>=0,indice_Y[i].take(plans[i]),-1) 
 #    indice_Y_mapped=torch.where(plans>=0,indice_Y.gather(1,plans),-1).to(device) 
@@ -510,7 +589,7 @@ def recover_indice_M(indice_X,indice_Y,plans):
     return mapping_final
 
 
-@torch.jit.script                        
+#@torch.jit.script                        
 def refined_cost_T(X,Y,L,Lambda,penulty: bool =False):
     '''
 
@@ -546,7 +625,7 @@ def refined_cost_T(X,Y,L,Lambda,penulty: bool =False):
         cost=torch.sum(cost_function_T(X_take, Y_take))+Lambda*num_destruction
     return cost
 
-@nb.jit(nopython=True)
+#@nb.jit(nopython=True)
 def refined_cost(X,Y,L,Lambda,penulty=True):
     '''
 
@@ -569,15 +648,17 @@ def refined_cost(X,Y,L,Lambda,penulty=True):
         if penulty=True: sum_{i:L[i]>=0}c(X[i],Y[L[i]])+Lambda*#{i:L[i]=-1} 
 
     '''
-    L_X=[i for i,j in enumerate(L) if j>=0]    
-    L_Y=[j for j in L if j>=0]
+    n=L.shape[0]
+    Lx=arange(0,n)
+    L_X=Lx[L>=0] #[i for i,j in enumerate(L) if j>=0]    
+    L_Y=L[L>=0]
     Y_take=Y[L_Y]
     X_take=X[L_X]
-    num_destruction=len(L)-len(L_X)
+    num_destruction=L.shape[0]-L_X.shape[0]
     if penulty==True:
-        cost=sum(cost_function(X_take, Y_take))+Lambda*num_destruction
+        cost=np.sum(cost_function(X_take, Y_take))+Lambda*num_destruction
     else:
-        cost=sum(cost_function(X_take, Y_take))
+        cost=np.sum(cost_function(X_take, Y_take))
     return cost
 
 def list_to_plan(L,m):
@@ -606,7 +687,7 @@ def list_to_plan(L,m):
     
 
 
-@nb.jit([nb.types.Tuple((nb.float32,nb.int32[:],nb.float32,nb.int32[:]))(nb.int32,nb.float32)],nopython=True)
+#@nb.jit([nb.types.Tuple((nb.float32,nb.int64[:],nb.float32,nb.int64[:]))(nb.int64,nb.float32)],nopython=True)
 def empty_Y_opt(n,Lambda):
     '''
 
@@ -635,7 +716,7 @@ def empty_Y_opt(n,Lambda):
         in this function, L_pre=L
 
     '''
-    L=np.zeros(n,dtype=np.int32)+np.int32(-1)
+    L=np.full(n,-1,dtype=np.int64) #(n,dtype=np.int64)+np.int64(-1)
     #for i in range(n):
     #    L[i]=-1
     cost=Lambda*np.float32(n)
@@ -644,7 +725,7 @@ def empty_Y_opt(n,Lambda):
     return cost,L,cost_pre,L_pre
 
 
-# @nb.jit([nb.types.Tuple((nb.float32,nb.int32[:],nb.float32,nb.int32[:]))(nb.int32,nb.float32)],nopython=True)
+# @nb.jit([nb.types.Tuple((nb.float32,nb.int64[:],nb.float32,nb.int64[:]))(nb.int64,nb.float32)],nopython=True)
 # def empty_Y_opt_np(n,Lambda):
 #     '''
 
@@ -673,7 +754,7 @@ def empty_Y_opt(n,Lambda):
 #         in this function, L_pre=L
 
 #     '''
-#     L=np.zeros(n,dtype=np.int32)
+#     L=np.zeros(n,dtype=np.int64)
 #     for i in range(L.shape[0]):
 #         L[i]=-1
 #     cost=Lambda*n
@@ -682,7 +763,7 @@ def empty_Y_opt(n,Lambda):
 #     return cost,L,cost_pre,L_pre
 
 
-@torch.jit.script      
+#@torch.jit.script      
 def empty_Y_opt_T(n: 'int',Lambda: 'torch.Tensor'):
     '''
 
@@ -712,14 +793,14 @@ def empty_Y_opt_T(n: 'int',Lambda: 'torch.Tensor'):
 
     '''
     device=Lambda.device.type
-    L=-1*torch.ones(n,device=device,dtype=torch.int32)
+    L=-1*torch.ones(n,device=device,dtype=torch.int64)
     cost=torch.mul(Lambda,n)
     cost_pre=cost
     L_pre=L.clone()
     return cost,L,cost_pre,L_pre
 
-@nb.jit([nb.types.Tuple((nb.float32,nb.int32[:],nb.float32,nb.int32[:]))(nb.float32[:,:],nb.int32,nb.int32,nb.float32)],nopython=True)
-def one_x_opt(M1,i_act:nb.int32,j_act:nb.int32,Lambda:nb.float32): 
+#@nb.jit([nb.types.Tuple((nb.float32,nb.int64[:],nb.float32,nb.int64[:]))(nb.float32[:,:],nb.int64,nb.int64,nb.float32)],nopython=True)
+def one_x_opt(M1,i_act:nb.int64,j_act:nb.int64,Lambda:nb.float32): 
     '''
 
     Parameters
@@ -759,15 +840,25 @@ def one_x_opt(M1,i_act:nb.int32,j_act:nb.int32,Lambda:nb.float32):
     return 1.0, [1], 0,[]
     '''       
     if j_act<0:
-        return Lambda,np.array([-1],dtype=np.int32),Lambda,np.array([-1],dtype=np.int32)
+        return Lambda,np.array([-1],dtype=np.int64),Lambda,np.array([-1],dtype=np.int64)
     c_xy=M1[i_act,j_act]
     if c_xy>=Lambda:
-        return Lambda,np.array([-1],dtype=np.int32),Lambda,np.array([-1],dtype=np.int32)
+        return Lambda,np.array([-1],dtype=np.int64),Lambda,np.array([-1],dtype=np.int64)
     else:
-        return c_xy,np.array([j_act],dtype=np.int32),np.float32(0),np.empty(0,dtype=np.int32)
+        return c_xy,np.array([j_act],dtype=np.int64),np.float32(0),np.empty(0,dtype=np.int64)
 
-@nb.jit([nb.types.Tuple((nb.float32,nb.int32[:],nb.float32,nb.int32[:]))(nb.float32[:,:],nb.int32,nb.int32,nb.float32)],nopython=True)
-def one_x_opt_np(M1,i_act:nb.int32,j_act:nb.int32,Lambda:nb.float32): 
+#@nb.njit()
+def merge_list(L):
+    n=len(L) 
+    merged_array=L[0]
+    for i in range(1,n):
+        merged_array=np.concatenate((merged_array,L[i]))
+    return merged_array
+  
+    
+
+#@nb.jit([nb.types.Tuple((nb.float32,nb.int64[:],nb.float32,nb.int64[:]))(nb.float32[:,:],nb.int64,nb.int64,nb.float32)],nopython=True)
+def one_x_opt_np(M1,i_act:nb.int64,j_act:nb.int64,Lambda:nb.float32): 
     '''
 
     Parameters
@@ -808,15 +899,15 @@ def one_x_opt_np(M1,i_act:nb.int32,j_act:nb.int32,Lambda:nb.float32):
 
     '''       
     if j_act<0:
-        return Lambda,np.array([-1],dtype=np.int32),Lambda,np.array([-1],dtype=np.int32)
+        return Lambda,np.array([-1],dtype=np.int64),Lambda,np.array([-1],dtype=np.int64)
     c_xy=M1[i_act,j_act]
     if c_xy>=Lambda:
-        return Lambda,np.array([-1],dtype=np.int32),Lambda,np.array([-1],dtype=np.int32)
+        return Lambda,np.array([-1],dtype=np.int64),Lambda,np.array([-1],dtype=np.int64)
     else:
-        return c_xy,np.array([j_act],dtype=np.int32),np.float32(0),np.empty(0,dtype=np.int32)
+        return c_xy,np.array([j_act],dtype=np.int64),np.float32(0),np.empty(0,dtype=np.int64)
     
         
-@torch.jit.script  
+#@torch.jit.script  
 def one_x_opt_T(M1: torch.Tensor,i_act:int,j_act:torch.Tensor,Lambda: torch.Tensor)->Tuple[torch.Tensor,torch.Tensor,torch.Tensor,torch.Tensor]:
     '''
 
@@ -859,12 +950,12 @@ def one_x_opt_T(M1: torch.Tensor,i_act:int,j_act:torch.Tensor,Lambda: torch.Tens
     '''      
     device=M1.device.type
     if j_act<0:
-        return Lambda,torch.tensor([-1],device=device,dtype=torch.int32),Lambda,torch.tensor([-1],device=device,dtype=torch.int32)
+        return Lambda,torch.tensor([-1],device=device,dtype=torch.int64),Lambda,torch.tensor([-1],device=device,dtype=torch.int64)
     c_xy=M1[i_act,j_act]
     if c_xy>=Lambda:
-        return Lambda,torch.tensor([-1],device=device,dtype=torch.int32),Lambda,torch.tensor([-1],device=device,dtype=torch.int32)
+        return Lambda,torch.tensor([-1],device=device,dtype=torch.int64),Lambda,torch.tensor([-1],device=device,dtype=torch.int64)
     else:
-        return c_xy,j_act.reshape(1),torch.tensor(0,device=device,dtype=torch.float32),torch.empty(0,device=device,dtype=torch.int32)
+        return c_xy,j_act.reshape(1),torch.tensor(0,device=device,dtype=torch.float32),torch.empty(0,device=device,dtype=torch.int64)
 
 
     
@@ -929,7 +1020,7 @@ def rotation_matrix_3d(theta,order='in'):
 
     
 
-@nb.jit([nb.float32[:](nb.float32[:,:],nb.int32[:],nb.int32[:])],nopython=True)
+@nb.jit([nb.float32[:](nb.float32[:,:],nb.int64[:],nb.int64[:])],nopython=True)
 def matrix_take(X,L1,L2):
     return np.array([X[L1[i],L2[i]] for i in range(L1.shape[0])])
 
