@@ -46,7 +46,6 @@ def random_projections(d,n_projections,device='cpu',dtype=torch.float,Type=None)
 
 #@nb.njit([nb.types.Tuple((nb.float32[:],nb.int64[:,:]))(nb.float32[:,:],nb.float32[:,:],nb.float32)],parallel=True,fastmath=True)
 @nb.njit([nb.types.Tuple((nb.float32[:],nb.int64[:,:]))(nb.float32[:,:],nb.float32[:,:],nb.float32[:])],parallel=True,fastmath=True)
-
 def allplans_s(X_sliced,Y_sliced,Lambda_list):
     N,n=X_sliced.shape
     plans=np.zeros((N,n),dtype=np.int64)
@@ -55,7 +54,7 @@ def allplans_s(X_sliced,Y_sliced,Lambda_list):
         X_theta=X_sliced[i]
         Y_theta=Y_sliced[i]
         Lambda=Lambda_list[i]
-        M=cost_matrix(X_theta,Y_theta)
+#       M=cost_matrix(X_theta,Y_theta)
         cost,L=opt_1d_v2_apro(X_theta,Y_theta,Lambda)
         plans[i]=L
         costs[i]=cost
@@ -72,7 +71,7 @@ def allplans_Lambda(X_sliced,Y_sliced,Lambda_list):
             Lambda=Lambda_list[i]
             X_theta=X_sliced[j]
             Y_theta=Y_sliced[j]
-            M=cost_matrix(X_theta,Y_theta)
+#            M=cost_matrix(X_theta,Y_theta)
             cost,L=opt_1d_v2_apro(X_theta,Y_theta,Lambda)
             plans[i*N+j]=L
             costs[i*N+j]=cost
@@ -155,18 +154,16 @@ class sopt():
         self.Y_sliced=torch.matmul(self.projections[i],self.Y.T).unsqueeze(0)
 
     def get_plans(self):
-        self.get_directions()
-        self.get_all_projections()
         X_sliced_s,indices_X=self.X_sliced.detach().sort()
         Y_sliced_s,indices_Y=self.Y_sliced.detach().sort()
-        #Lambda=np.float32(self.Lambda)
         X_sliced_np=X_sliced_s.cpu().numpy()
         Y_sliced_np=Y_sliced_s.cpu().numpy()
+#        Lambda_list_np=Lambda_list.numpy()
         self.costs,plans=allplans_s(X_sliced_np,Y_sliced_np,self.Lambda_list.numpy())
         plans=torch.from_numpy(plans).to(device=self.device,dtype=torch.int64)
         self.plans=recover_indice_M(indices_X,indices_Y,plans)
         self.costs=torch.from_numpy(self.costs)
-        self.X_frequency=torch.sum(self.plans>=0,0)
+#       self.X_frequency=torch.sum(self.plans>=0,0)
     
     def max_plan(self):
         self.get_directions()
