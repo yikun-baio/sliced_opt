@@ -136,13 +136,13 @@ for (label,per_s) in [('0','-5p')]:
     
         
         if mass_diff>N*0.009:
-            A.Lambda_list-=Delta 
+            A.Lambda_list[0]=A.Lambda_list[0]-Delta 
         if mass_diff<-N*0.003:
-            A.Lambda_list+=Delta
-            Delta=A.Lambda*1/8
+            A.Lambda_list[0]=A.Lambda_list[0]+Delta
+            Delta=A.Lambda_list*1/8
         if A.Lambda_list[0]<=Delta:
-            A.Lambda_list=Delta
-            Delta=A.Lambda/10 
+            A.Lambda_list[0]=Delta
+            Delta=A.Lambda_list[0]/8 
             
     
         
@@ -157,7 +157,7 @@ for (label,per_s) in [('0','-5p')]:
         if epoch<=200 or epoch%20==0 or epoch==n_iteration-1:
             print('N is',N)
             print('training Epoch {}/{}'.format(epoch, n_iteration))
-            print('lambda',A.Lambda)
+            print('lambda',A.Lambda_list[0])
             print('mass_diff',mass_diff)
             print('scalar',scalar)
             print('rotation',rotation)
