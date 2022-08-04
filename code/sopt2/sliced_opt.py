@@ -202,16 +202,18 @@ class sopt():
 
         
 
-    def refined_cost(self,Xs,Ys,plans,Lambda_list,penulty=True):
+    def refined_cost(self,Xs,Ys,plans,penulty=True):
         N=Xs.shape[0]
         self.Lx=[torch.arange(self.n,device=self.device)[plans[i]>=0] for i in range(N)]
+        self.mass_list=[torch.sum(plans[i]>=0) for i in range(N)]
+        self.mass_list=torch.tensor(self.mass_list,dtype=torch.float32)
         self.Ly=[plans[i][plans[i]>=0] for i in range(N)]
         self.X_take=torch.cat([Xs[i][self.Lx[i]] for i in range(N)])
         self.Y_take=torch.cat([Ys[i][self.Ly[i]] for i in range(N)])        
         cost_trans=torch.sum(cost_function_T(self.X_take, self.Y_take))
-        self.mass=[torch.sum(plans[i][plans[i]>=0]) for i in range(N)]
-        self.mass=torch.cat(self.mass)
-        penulty_value=torch.dot(self.Lambda_list,self.n-self.mass)
+ #       self.mass=[torch.sum(plans[i][plans[i]>=0]) for i in range(N)]
+ #       self.mass=torch.cat(self.mass)
+        penulty_value=torch.dot(self.Lambda_list,self.n-self.mass_list)
         if penulty==True:
             return (cost_trans+penulty_value)/N    
         elif penulty==False:

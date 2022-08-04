@@ -31,7 +31,7 @@ from sopt2.lib_ot import *
 
 
 
-Lambda=np.float32(10.0)
+Lambda= np.float32(10.0)
 
 start_n=100
 end_n=1000
