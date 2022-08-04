@@ -122,6 +122,25 @@ def X_correspondence(X,Y,projections,Lambda_list):
 #             Delta=Delta/10
 #    print(mass_diff)
     return frequency,Lambda
+
+@nb.njit((nb.float32[:,:],nb.float32[:,:],nb.float32[:,:]))
+def X_correspondence_pot(X,Y,projections):
+    N,d=projections.shape
+    n=X.shape[0]
+    for i in range(N):
+        theta=projections[i]
+        X_theta=mat_vec_mul(X.T,theta)
+        Y_theta=mat_vec_mul(Y.T,theta)
+        X_indice=X_theta.argsort()
+        Y_indice=Y_theta.argsort()
+        X_s=X_theta[X_indice]
+        Y_s=Y_theta[Y_indice]
+        cost,L=pot_1d(X_s,Y_s)
+        L=recover_indice(X_indice,Y_indice,L)
+        X_take=X_theta
+        Y_take=Y_theta[L]
+        X+=transpose(Y_take-X_take)*theta
+
     
     
     
@@ -201,33 +220,13 @@ class sopt():
 
 
         
+        
 class sopt_correspondence(sopt):
     def __init__(self,X,Y,Lambda_list,N_projections=20,Type=None):
         sopt.__init__(self,X,Y,Lambda_list,N_projections,Type)
         self.Xc=self.X.clone()
-#        self.Lambda_list=torch.full((self.n_projections,),Lambda)
-        #self.n_lambda=Lambda_list.shape[0]
+        #X_correspondence(self.X.numpy(),self.Y.numpy(),self.projections.numpy())
         
-    # def get_plans_lambda(self):
-    #     self.get_directions()
-    #     self.get_all_projections()
-    #     X_sliced_s,indices_X=self.X_sliced.detach().sort()
-    #     Y_sliced_s,indices_Y=self.Y_sliced.detach().sort()
-    #     X_sliced_np=X_sliced_s.cpu().numpy()
-    #     Y_sliced_np=Y_sliced_s.cpu().numpy()
-    #     Lambda_list_np=self.Lambda_list.numpy()
-    #     self.costs,plans=allplans_Lambda(X_sliced_np,Y_sliced_np,Lambda_list_np)
-    #     #costs=costs.reshape(-1)
-    #    #plans=plans.reshape(self.n_lambda*self.n_projections,self.n)
-    #     plans=torch.from_numpy(plans).to(device=self.device,dtype=torch.int64)
-    #     self.plans=[]
-    #     for i in range(self.n_lambda):
-    #         plan=recover_indice_M(indices_X,indices_Y,plans[i*self.n_projections:i*self.n_projections+self.n_projections])
-    #         self.plans.append(plan)
-    #     self.plans=torch.cat(self.plans)
-    #     self.costs=torch.from_numpy(self.costs)
-    #     self.X_frequency=torch.sum(self.plans>=0,0)
-
 
     def correspond(self,mass=-1,b=np.float32(0)):
         
@@ -247,11 +246,6 @@ class sopt_correspondence(sopt):
 
         transp_Xs = []
 
-        # transp = self.coupling_ / nx.sum(
-        #             self.coupling_, axis=1)[:, None]
-        #         transp[~ nx.isfinite(transp)] = 0
-        #         transp_Xs_ = nx.dot(transp, self.xt_)
-
         for bi in batch_ind:
             # get the nearest neighbor in the source domain
             D0 = cost_matrix_T(Xs[bi], self.Xc)
@@ -266,7 +260,10 @@ class sopt_correspondence(sopt):
     
         
         
-        
+class spot(sopt_correspondence):
+    def correspond(self):    
+        if self.X.shape[0]>0:
+            X_correspondence_pot(self.X.numpy(),self.Y.numpy(),self.projections.numpy())      
     
 
 
@@ -284,48 +281,48 @@ class sopt_correspondence(sopt):
 
         
 
-class max_sopt(sopt):
+# class max_sopt(sopt):
     
-    def max_cost(self):
-        max_index=self.costs.argmax()
-        max_plan=self.plans[max_index].reshape([1,self.n])
-        X_max=self.X_sliced[max_index].reshape([1,self.n])
-        Y_max=self.Y_sliced[max_index].reshape([1,self.m])
-        max_cost=self.refined_cost(X_max, Y_max, max_plan)
-        max_mass=torch.sum(max_plan>=0)        
-        return max_cost,max_mass
+#     def max_cost(self):
+#         max_index=self.costs.argmax()
+#         max_plan=self.plans[max_index].reshape([1,self.n])
+#         X_max=self.X_sliced[max_index].reshape([1,self.n])
+#         Y_max=self.Y_sliced[max_index].reshape([1,self.m])
+#         max_cost=self.refined_cost(X_max, Y_max, max_plan)
+#         max_mass=torch.sum(max_plan>=0)        
+#         return max_cost,max_mass
     
 
-# class sopt_majority(sopt):
-#     def __init__(self,X,Y,Lambda,n_projections=2,Type=None,n_destroy=0):
-#         sopt_for.__init__(self,X,Y,Lambda,n_projections,Type)
-#         #self.n_preserve=N
-#         self.new_plan(n_destroy)
+# # class sopt_majority(sopt):
+# #     def __init__(self,X,Y,Lambda,n_projections=2,Type=None,n_destroy=0):
+# #         sopt_for.__init__(self,X,Y,Lambda,n_projections,Type)
+# #         #self.n_preserve=N
+# #         self.new_plan(n_destroy)
     
-#     def new_plan(self,n_destroy):
+# #     def new_plan(self,n_destroy):
+# #         self.new_plans=self.plans.clone()
+# #         X_frequency=torch.sum(self.plans>=0,0)
+# #         lowest_frequency=X_frequency.sort().indices[0:n_destroy]
+# #         self.new_plans[:,lowest_frequency]=-1
+# #     def sliced_cost(self):
+# #         cost=self.refined_cost(self.X_sliced,self.Y_sliced,self.new_plans)
+# #         mass=torch.sum(self.plans>=0)/self.n_projections
+# #         return cost,mass
+
+# class sopt_majority_cut(sopt):
+#     def __init__(self,X,Y,Lambda,n_projections=2,Type=None,cut=0):
+#         sopt_for.__init__(self,X,Y,Lambda,n_projections,Type)
+#         self.new_plan(cut)
+    
+#     def new_plan(self,cut):
 #         self.new_plans=self.plans.clone()
 #         X_frequency=torch.sum(self.plans>=0,0)
-#         lowest_frequency=X_frequency.sort().indices[0:n_destroy]
-#         self.new_plans[:,lowest_frequency]=-1
+        
+#         self.new_plans[:,X_frequency<=cut]=-1
 #     def sliced_cost(self):
 #         cost=self.refined_cost(self.X_sliced,self.Y_sliced,self.new_plans)
 #         mass=torch.sum(self.plans>=0)/self.n_projections
 #         return cost,mass
-
-class sopt_majority_cut(sopt):
-    def __init__(self,X,Y,Lambda,n_projections=2,Type=None,cut=0):
-        sopt_for.__init__(self,X,Y,Lambda,n_projections,Type)
-        self.new_plan(cut)
-    
-    def new_plan(self,cut):
-        self.new_plans=self.plans.clone()
-        X_frequency=torch.sum(self.plans>=0,0)
-        
-        self.new_plans[:,X_frequency<=cut]=-1
-    def sliced_cost(self):
-        cost=self.refined_cost(self.X_sliced,self.Y_sliced,self.new_plans)
-        mass=torch.sum(self.plans>=0)/self.n_projections
-        return cost,mass
     
     
         
@@ -346,69 +343,69 @@ class sopt_majority_cut(sopt):
     
 
 
-def sopt_orig(X,Y,Lambda=40,n_projections=50,Type=None):
-    '''
-    input: 
-    X: X is n*d dimension torch tensor
-    Y: Y is m*d dimension torch tensor
+# def sopt_orig(X,Y,Lambda=40,n_projections=50,Type=None):
+#     '''
+#     input: 
+#     X: X is n*d dimension torch tensor
+#     Y: Y is m*d dimension torch tensor
 
-    output: 
-    cost_sum: 0-dimension tensor
-    n_point_sum: int tensor
-    '''
-    d=X.shape[1]
-    device=X.device.type
-    dtype=X.dtype
-    projections=random_projections(d,n_projections,device,dtype,Type)
-    X_sliced=torch.matmul(projections,X.T)
-    Y_sliced=torch.matmul(projections,Y.T)
-    cost_sum=0
-    n_point_sum=0
-    for i in range(0,n_projections):
-        X_theta=X_sliced[i,:]
-        Y_theta=Y_sliced[i,:]
-        X_theta1=X_theta.sort().values
-        Y_theta1=Y_theta.sort().values
-        cost,L=opt_1d_T(X_theta1, Y_theta1, Lambda)
-        cost_sum+=cost
-        n_point_sum+=torch.sum(L>=0)
+#     output: 
+#     cost_sum: 0-dimension tensor
+#     n_point_sum: int tensor
+#     '''
+#     d=X.shape[1]
+#     device=X.device.type
+#     dtype=X.dtype
+#     projections=random_projections(d,n_projections,device,dtype,Type)
+#     X_sliced=torch.matmul(projections,X.T)
+#     Y_sliced=torch.matmul(projections,Y.T)
+#     cost_sum=0
+#     n_point_sum=0
+#     for i in range(0,n_projections):
+#         X_theta=X_sliced[i,:]
+#         Y_theta=Y_sliced[i,:]
+#         X_theta1=X_theta.sort().values
+#         Y_theta1=Y_theta.sort().values
+#         cost,L=opt_1d_T(X_theta1, Y_theta1, Lambda)
+#         cost_sum+=cost
+#         n_point_sum+=torch.sum(L>=0)
 
         
-    cost_sum=cost_sum/n_projections
-    n_point_sum=n_point_sum/n_projections
-    return cost_sum,n_point_sum
+#     cost_sum=cost_sum/n_projections
+#     n_point_sum=n_point_sum/n_projections
+#     return cost_sum,n_point_sum
 
 
 
-def max_sopt_orig(X,Y,Lambda=40,n_projections=50,Type=None):
-    '''
-    input: 
-    X: X is n*d dimension torch tensor
-    Y: Y is m*d dimension torch tensor
+# def max_sopt_orig(X,Y,Lambda=40,n_projections=50,Type=None):
+#     '''
+#     input: 
+#     X: X is n*d dimension torch tensor
+#     Y: Y is m*d dimension torch tensor
 
-    output: 
-    cost_sum: 0-dimension tensor
-    n_point_sum: int tensor
-    '''
-    device=X.device.type
-    dtype=X.dtype
-    d=X.shape[1]
-    projections=random_projections(d,n_projections,device,dtype,Type)
-    X_sliced=torch.matmul(projections,X.T)
-    Y_sliced=torch.matmul(projections,Y.T)
-    cost_opt=-1
-    for i in range(0,n_projections):
-        X_theta=X_sliced[i,:]
-        Y_theta=Y_sliced[i,:]
-        X_theta=X_theta.sort().values
-        Y_theta=Y_theta.sort().values
-        cost,L=opt_1d_T(X_theta, Y_theta, Lambda)
-        if cost_opt<cost:
-            cost_opt=cost
-            L_opt=L
-    mass_opt=torch.sum(L_opt>=0)
+#     output: 
+#     cost_sum: 0-dimension tensor
+#     n_point_sum: int tensor
+#     '''
+#     device=X.device.type
+#     dtype=X.dtype
+#     d=X.shape[1]
+#     projections=random_projections(d,n_projections,device,dtype,Type)
+#     X_sliced=torch.matmul(projections,X.T)
+#     Y_sliced=torch.matmul(projections,Y.T)
+#     cost_opt=-1
+#     for i in range(0,n_projections):
+#         X_theta=X_sliced[i,:]
+#         Y_theta=Y_sliced[i,:]
+#         X_theta=X_theta.sort().values
+#         Y_theta=Y_theta.sort().values
+#         cost,L=opt_1d_T(X_theta, Y_theta, Lambda)
+#         if cost_opt<cost:
+#             cost_opt=cost
+#             L_opt=L
+#     mass_opt=torch.sum(L_opt>=0)
 
-    return cost_opt,mass_opt
+#     return cost_opt,mass_opt
 
 
     
