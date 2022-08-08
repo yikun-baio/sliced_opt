@@ -161,7 +161,7 @@ def closest_y(x,Y):
     min_cost=cost_list[min_index]
     return min_index,min_cost
 
-@nb.njit()
+@nb.njit(fastmath=True)
 def closest_y_M(M):
     '''
     Parameters
@@ -186,7 +186,7 @@ def closest_y_M(M):
 
 
 
-@nb.njit()   
+@nb.njit([(nb.int64[:],nb.int64)])  
 def index_adjust(L,j_start=0):
     '''
 
@@ -210,7 +210,7 @@ def index_adjust(L,j_start=0):
     '''
     positive_indices=(L>=0).nonzero()
     L[positive_indices]=L[positive_indices]+j_start
-    return None
+
          
 
 @torch.jit.script   
@@ -586,7 +586,7 @@ def refined_cost_T(X,Y,L,Lambda,penulty: bool =False):
         cost=torch.sum(cost_function_T(X_take, Y_take))+Lambda*num_destruction
     return cost
 
-@nb.jit(nopython=True)
+@nb.njit()
 def refined_cost(X,Y,L,Lambda,penulty=True):
     '''
 
@@ -622,7 +622,8 @@ def refined_cost(X,Y,L,Lambda,penulty=True):
         cost=np.sum(cost_function(X_take, Y_take))
     return cost
 
-def list_to_plan(L,m):
+@nb.njit([nb.float32[:,:](nb.int64[:],nb.int64)],fastmath=True)
+def plan_to_matrix(L,m):
     '''
     Parameters
     ----------
@@ -639,10 +640,11 @@ def list_to_plan(L,m):
 
     '''
     n=L.shape[0]
-    device=L.device.type
-    plan=torch.zeros(n,m,device=device)
-    for i in range (n):
-        if L[i]>=0:
+    plan=np.zeros((n,m),dtype=np.float32)
+    Ly=L[L>=0]
+    Lx=arange(0,n)
+    Lx=Lx[L>=0]
+    for i in Lx:
             plan[i,L[i]]=1.0
     return plan
     

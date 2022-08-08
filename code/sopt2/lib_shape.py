@@ -163,6 +163,7 @@ def order_vector(v,X):
     elif N1==N2:
         print('error, the data is symmetric')
         return 0
+
     
     
 def recover_rotation(X,Y):
@@ -177,6 +178,54 @@ def recover_rotation(X,Y):
     rotation=U@diag@VT
     scaling=torch.sum(torch.abs(S.T))/torch.trace(Y_c.T@Y_c)
     return rotation,scaling
+
+@nb.njit([nb.float32[:](nb.float32[:,:])],parallel=True,fastmath=True)
+def vec_mean(X):
+    n,d=X.shape
+    mean=np.zeros(d,dtype=np.float32)
+    for i in range(d):
+        mean[i]=X[:,i].mean()
+    return mean
+        
+
+@nb.njit([nb.types.Tuple((nb.float32[:,:],nb.float32))(nb.float32[:,:],nb.float32[:,:])])
+def recover_rotation_nb(X,Y):
+    n,d=X.shape
+    X_c=X-vec_mean(X)
+    Y_c=Y-vec_mean(Y)
+    YX=Y_c.T.dot(X_c)
+    U,S,VT=np.linalg.svd(YX)
+    R=U.dot(VT)
+    diag=np.eye(d,dtype=np.float32)
+    diag[d-1,d-1]=np.linalg.det(R.T)
+    rotation=U.dot(diag).dot(VT)
+    scaling=np.sum(np.abs(S.T))/np.trace(Y_c.T.dot(Y_c))
+    return rotation,scaling
+
+@nb.njit([nb.types.Tuple((nb.float32[:,:],nb.float32[:]))(nb.float32[:,:],nb.float32[:,:])],fastmath=True)
+def recover_rotation_du_nb(X,Y):
+    n,d=X.shape
+    X_c=X-vec_mean(X)
+    Y_c=Y-vec_mean(Y)
+    YX=Y_c.T.dot(X_c)
+    U,S,VT=np.linalg.svd(YX)
+    R=U.dot(VT)
+    diag=np.eye(d,dtype=np.float32)
+    diag[d-1,d-1]=np.linalg.det(R)
+    rotation=U.dot(diag).dot(VT)
+    E_list=np.eye(d,dtype=np.float32)
+    scaling=np.zeros(d,dtype=np.float32)
+    for i in range(d):
+        Ei=np.diag(E_list[i])
+        num=0
+        denum=0
+        for j in range(d):
+            num+=X_c[j].T.dot(rotation.T).dot(Ei).dot(Y_c[j])
+            denum+=Y_c[j].T.dot(Ei).dot(Y_c[j])
+        scaling[i]=num/denum
+    return rotation,scaling
+
+
 
 def recover_rotation_du(X,Y):
     n,d=X.shape

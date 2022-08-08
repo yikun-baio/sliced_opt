@@ -30,13 +30,14 @@ def opt_lp(X,Y,Lambda):
     m=Y.shape[0]
     exp_point=np.float32(np.inf)
     X1=np.append(X,exp_point)
+    Y1=np.append(Y,exp_point)
     mu1=np.ones(n+1)
     nu1=np.ones(m+1)
     mu1[-1]=m
     nu1[-1]=n
-    cost_M=cost_matrix(X1[0:-1],Y)
+    cost_M=cost_matrix(X1[0:-1],Y1[0:-1])
     cost_M1=np.zeros((n+1,m+1),dtype=np.float32)
-    cost_M1[0:n,0:m]=cost_M-Lambda/2
+    cost_M1[0:n,0:m]=cost_M-Lambda
     plan1=ot.lp.emd(mu1,nu1,cost_M1)
     plan=plan1[0:n,0:m]
     cost=np.sum(cost_M*plan)

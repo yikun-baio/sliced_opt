@@ -130,7 +130,7 @@ for (label,per_s) in [('0','-5p')]:
         
 
         #N=(N1-N0)*np.exp(-epoch/n_iteration*b)+N0
-        #N=(N1-N0)*1/(1+b*(epoch/n_iteration))+N0
+        N=(N1-N0)*1/(1+b*(epoch/n_iteration))+N0
     
         mass_diff=mass.item()-N
     

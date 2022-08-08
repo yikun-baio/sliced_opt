@@ -22,6 +22,7 @@ parent_path=work_path[0:loc1+5]
 sys.path.append(parent_path)
 os.chdir(parent_path)
 from sopt2.library import *
+from sopt2.lib_ot import *
 
 
 def opt_1d_v1(X: np.array,Y: np.array,Lambda: np.float32) -> 'np.float,np.array':
@@ -415,7 +416,14 @@ def opt_1d_v2(X,Y,Lambda):
             L_pre=L.copy()
             j_start=j_last+1
             i_start=k+1
-#            i_start,j_start=startindex(L_pre)
+            # print('case 0')
+            # print('i_start is',i_start)
+            # print('j_start is',j_start)
+
+            # i_start1,j_start1=startindex(L_pre)
+            # print('i_start1 is',i_start1)
+            # print('j_start1 is',j_start1)
+
         elif min_case==1:
             L=np.append(L,jk) #],dtype=np.int64)))
         elif min_case==2:
@@ -429,8 +437,13 @@ def opt_1d_v2(X,Y,Lambda):
                 i_start=i_start+L_sub_pre.shape[0]
                 if L_sub_pre.shape[0]>=2:
                     j_start=L_sub_pre[-2]+1
-                
-#                i_start,j_start=startindex(L_pre)
+                # print('case 3')
+                # print('i_start is',i_start)
+                # print('j_start is',j_start)
+
+                # i_start1,j_start1=startindex(L_pre)
+                # print('i_start1 is',i_start1)
+                # print('j_start1 is',j_start1)
             # empty the variable for sub problem
             L_sub=np.empty(0,dtype=np.int64)
             L_sub_pre=np.empty(0,dtype=np.int64)
@@ -440,7 +453,6 @@ def opt_1d_v2(X,Y,Lambda):
     return cost,L
 
 @nb.njit(nb.types.Tuple((nb.float32,nb.int64[:]))(nb.float32[:],nb.float32[:],nb.float32))
-#@nb.njit()
 def opt_1d_v2_apro(X,Y,Lambda):
     M=cost_matrix(X,Y)
     n,m=M.shape
@@ -530,7 +542,9 @@ def opt_1d_v2_apro(X,Y,Lambda):
             L_pre=L.copy()
             j_start=j_last+1
             i_start=k+1
-#            i_start,j_start=startindex(L_pre)
+           
+
+
         elif min_case==1:
             L=np.append(L,jk) #],dtype=np.int64)))
         elif min_case==2:
@@ -544,7 +558,7 @@ def opt_1d_v2_apro(X,Y,Lambda):
                 i_start=i_start+L_sub_pre.shape[0]
                 if L_sub_pre.shape[0]>=2:
                     j_start=L_sub_pre[-2]+1
-                
+
 #                i_start,j_start=startindex(L_pre)
             # empty the variable for sub problem
             L_sub=np.empty(0,dtype=np.int64)
@@ -702,7 +716,7 @@ def opt_1d_v3(X,Y,Lambda):
         indices_Y=Y_list[i]
         Xs=X[indices_X]
         Ys=Y[indices_Y]
-        cost,L=opt_1d_v2(Xs,Ys,Lambda)
+        cost,L=opt_1d_v2_apro(Xs,Ys,Lambda)
         
         if indices_Y.shape[0]>0:
             index_adjust(L,indices_Y[0])       
@@ -1210,13 +1224,23 @@ def pot_1d(X,Y,Lambda=0):
 # m=n+500
 # #Lambda=4
 # Lambda=np.float32(2)
-# for i in range(100):
-#     X=torch.rand(n,dtype=torch.float32)*4-1.5
-#     Y=torch.rand(m,dtype=torch.float32)*2+1.5
-#     X=X.sort().values
-#     Y=Y.sort().values
-#     X1=X.numpy()
-#     Y1=Y.numpy()
+# n=5
+# m=6
+# Lambda=np.float32(2)
+# for i in range(1):
+# #    X=torch.rand(n,dtype=torch.float32)-1.5
+# #    Y=torch.rand(m,dtype=torch.float32)*2+1.5
+# #    X=X.sort().values
+# #    Y=Y.sort().values
+#     X=np.float32(np.random.uniform(-5,5,n))
+#     Y=np.float32(np.random.uniform(-8,8,m))+5
+#     X.sort()
+#     Y.sort()
+
+#     cost1,L1=opt_lp(X,Y,Lambda)
+#     cost2,L2=opt_1d_v2(X,Y,Lambda)
+    
+    
 #     X_list,Y_list,free_Y=opt_decomposition(X1,Y1,Lambda)
 #     cost1,L1=opt_1d_np(X1,Y1,Lambda)
 #     cost2,L2=opt_1d_v2(X1,Y1,Lambda)

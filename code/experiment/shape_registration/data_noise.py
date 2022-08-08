@@ -42,10 +42,13 @@ save_root=data_path
 data=torch.load(data_path+item+'.pt')
 dtype=torch.float32
 
-label='1'
+label='0'
 Y0=data['Y0'+label]
 X0=data['X0']
 
+rotation_op=data['param']['rotation_op']
+scalar_op=data['param']['scalar']
+beta_op=data['param']['beta_op']
 # add noise
 per=0.7/9
 per_s='-7p'
