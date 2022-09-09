@@ -2,6 +2,9 @@ from result_generated import *
 import argparse
 import os
 
+#index_list= 
+
+
 def main(args):
     param_list = open_paras(args['para_path'], args['model_name'])
     X, Y = get_type(args['data_version'])
@@ -13,7 +16,7 @@ args = {}
     
 models = ['sopt_param', 'spot_param', 'icp_du_param', 'icp_umeyama_param']
 ver = ['9k-5p', '9k-7p', '10k-5p', '10k-7p']
-datas = ['mumble_sitting']
+datas = ['dragon']
 
 for data in datas : 
     for model in models : 

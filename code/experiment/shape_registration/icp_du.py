@@ -98,8 +98,6 @@ beta=(torch.mean(X1,0)-torch.mean(scalar*Y1@rotation,0))*(9.5/9)
 
 paramlist=[]
 #n_projections=1
-Lambda=np.float32(200)
-Delta=Lambda*0.1
 X1_hat=Y1T@rotation*scalar+beta   
 
 

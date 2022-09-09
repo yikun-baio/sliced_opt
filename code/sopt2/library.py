@@ -54,6 +54,7 @@ def cost_function_T(x,y):
     return torch.square(x-y)
 
 @nb.njit(nb.float32[:,:](nb.float32[:]),fastmath=True)
+#@nb.njit(fastmath=True)
 def transpose(X):
     n=X.shape[0]
     XT=np.zeros((n,1),dtype=np.float32)
@@ -62,7 +63,8 @@ def transpose(X):
     return XT
 
 #@nb.jit(nopython=True)
-@nb.njit(nb.float32[:,:](nb.float32[:],nb.float32[:]))
+@nb.njit(nb.float32[:,:](nb.float32[:],nb.float32[:]),fastmath=True)
+#@nb.njit(fastmath=True)
 def cost_matrix(X,Y):
     '''
     input: 
@@ -73,8 +75,6 @@ def cost_matrix(X,Y):
     
     '''
     XT=transpose(X)
-
-
     M=cost_function(XT,Y)
     return M
 
@@ -84,6 +84,7 @@ def cost_matrix(X,Y):
 
 #@nb.jit(nopython=True)
 @nb.njit(nb.float32[:,:](nb.float32[:,:],nb.float32[:,:]),fastmath=True)
+#@nb.njit(fastmath=True)
 def cost_matrix_d(X,Y):
     '''
     input: 
@@ -103,6 +104,7 @@ def cost_matrix_d(X,Y):
 
 
 @nb.njit(nb.float32[:](nb.float32[:,:],nb.float32[:]),fastmath=True)
+#@nb.njit(fastmath=True)
 def mat_vec_mul(XT,theta):
     d,n=XT.shape 
     result=np.zeros(n,dtype=np.float32)
@@ -139,8 +141,8 @@ def cost_matrix_T(X,Y):
 
 #types.Tuple
 
-#@nb.jit([float32(float32,float32)],forceobj=True) 
-@nb.jit(nopython=True)
+@nb.njit([nb.types.Tuple((nb.int64,nb.float32))(nb.float32,nb.float32[:])],fastmath=True) 
+#@nb.njit(fastmath=True)
 def closest_y(x,Y):
     '''
     Parameters
@@ -161,7 +163,8 @@ def closest_y(x,Y):
     min_cost=cost_list[min_index]
     return min_index,min_cost
 
-@nb.njit(fastmath=True)
+#@nb.njit(fastmath=True)
+@nb.njit(nb.int64[:](nb.float32[:,:]),fastmath=True)
 def closest_y_M(M):
     '''
     Parameters
@@ -181,12 +184,12 @@ def closest_y_M(M):
     argmin_Y=np.zeros(n,dtype=np.int64)
     for i in range(n):
         argmin_Y[i]=M[i,:].argmin()
-        
     return argmin_Y
 
 
 
 @nb.njit([(nb.int64[:],nb.int64)])  
+#@nb.njit()
 def index_adjust(L,j_start=0):
     '''
 
@@ -240,7 +243,8 @@ def index_adjust_T(L: torch.Tensor,j_start: int =0):
     L[positive_indices]=L[positive_indices]+j_start
     return None
 
-@nb.jit(nb.types.Tuple((nb.int64,nb.int64))(nb.int64[:]),nopython=True)  
+@nb.njit(nb.types.Tuple((nb.int64,nb.int64))(nb.int64[:]))  
+#@nb.njit()  
 def startindex(L_pre):
     '''
     Parameters
@@ -281,11 +285,11 @@ def startindex(L_pre):
         if j>=0:
             j_start=j+1
             return i_start,j_start
-
     return i_start,0
 
 
 @nb.jit(nb.types.Tuple((nb.int64,nb.int64))(nb.int64[:]),nopython=True)
+#@nb.njit()
 def startindex_np(L_pre):
     '''
     Parameters
@@ -324,7 +328,8 @@ def startindex_np(L_pre):
     j_start=max(0,L_pre.max()+1)
     return i_start,j_start
 
-@nb.jit([nb.int64[:](nb.int64,nb.int64)],nopython=True)
+@nb.njit([nb.int64[:](nb.int64,nb.int64)],fastmath=True)
+#@nb.njit(fastmath=True)
 def arange(start,end):
     n=end-start
     L=np.zeros(n,dtype=np.int64)
@@ -382,7 +387,8 @@ def startindex_T(L_pre):
 
 
 
-@nb.jit([nb.types.Tuple((nb.int64,nb.int64))(nb.int64[:])],nopython=True)
+@nb.njit([nb.types.Tuple((nb.int64,nb.int64))(nb.int64[:])])
+#@nb.njit()
 def unassign_y(L1):
     '''
     Parameters
@@ -422,6 +428,45 @@ def unassign_y(L1):
     else:       
         return 0,-1
 
+
+
+@nb.njit([nb.types.Tuple((nb.int64,nb.int64))(nb.int64[:])])
+def unassign_y1(L1):
+    '''
+    Parameters
+    ----------
+    L1 : n*1 list , whose entry is 0,1,2,...... 
+            transporportation plan. L[i]=j denote we assign x_i to y_j, L[i]=-1, denote we destroy x_i. 
+            if we ignore -1, L1 must be in increasing order 
+            make sure L1 do not have -1 and is not empty, otherwise there is mistake in the main loop.  
+
+
+    Returns
+    -------
+    i_act: integer>=0 
+    j_act: integer>=0 or -1    
+    j_act=max{j: j not in L1, j<L1[end]} If L1[end]=-1, there is a bug in the main loop. 
+    i_act=min{i: L[i]>j_act}.
+    
+    Eg. input: L1=[1,3,5]
+    return: 2,4
+    input: L1=[2,3,4]
+    return: 0,1
+    input: L1=[0,1,2,3]
+    return: 0,-1
+    
+    '''
+    
+    j_last=L1[-1]
+    n=L1.shape[0]
+    L_range=arange(j_last-n+1,j_last+1)
+    L_dif=np.where(L_range-L1>0)[0]
+    if L_dif.shape[0]==0:
+        return 0, L1[0]-1
+    else:
+        i_act=L_dif[-1]+1
+        j_act=L_range[i_act-1]
+    return i_act,j_act
 
 
 @torch.jit.script   
@@ -492,7 +537,8 @@ def recover_indice_T(indice_X,indice_Y,L):
     return mapping_final
 
 #@torch.jit.script   
-@nb.njit(nb.int64[:](nb.int64[:],nb.int64[:],nb.int64[:]))
+#@nb.njit(nb.int64[:](nb.int64[:],nb.int64[:],nb.int64[:]))
+@nb.njit()
 def recover_indice(indice_X,indice_Y,L):
     '''
     input:
@@ -622,7 +668,8 @@ def refined_cost(X,Y,L,Lambda,penulty=True):
         cost=np.sum(cost_function(X_take, Y_take))
     return cost
 
-@nb.njit([nb.float32[:,:](nb.int64[:],nb.int64)],fastmath=True)
+#@nb.njit([nb.float32[:,:](nb.int64[:],nb.int64)],fastmath=True)
+@nb.njit(fastmath=True)
 def plan_to_matrix(L,m):
     '''
     Parameters
@@ -647,10 +694,38 @@ def plan_to_matrix(L,m):
     for i in Lx:
             plan[i,L[i]]=1.0
     return plan
+
+#@nb.njit([nb.int64[:](nb.float32[:,:])],fastmath=True)
+@nb.njit(fastmath=True)
+def matrix_to_plan(L_lp):
+    '''
+    Parameters
+    ----------
+    L : n*1 tensor, whose entries is 0,1,2,.... or -1
     
+    m : integer >=0 
+    
+    Returns
+    -------
+    plan : n*m matrix
+    plan[i,j]=1 if L[i]=j and j>=0
+    otherwise, plan[i,j]=0
+ 
+
+    '''
+    n,m=L_lp.shape
+    L=np.full(n,-1,dtype=np.int64)
+    for i in range(n):
+        indexes=np.where(L_lp[i,:]>=0.5)[0]
+        if indexes.shape[0]==1:
+            L[i]=indexes[0]
+        elif indexes.shape[0]>=2:
+            print('error')
+    return L
 
 
-@nb.jit([nb.types.Tuple((nb.float32,nb.int64[:],nb.float32,nb.int64[:]))(nb.int64,nb.float32)],nopython=True)
+@nb.njit([nb.types.Tuple((nb.float32,nb.int64[:],nb.float32,nb.int64[:]))(nb.int64,nb.float32)])
+#@nb.njit()
 def empty_Y_opt(n,Lambda):
     '''
 
@@ -763,7 +838,8 @@ def empty_Y_opt_T(n: 'int',Lambda: 'torch.Tensor'):
     return cost,L,cost_pre,L_pre
 
 @nb.jit([nb.types.Tuple((nb.float32,nb.int64[:],nb.float32,nb.int64[:]))(nb.float32[:,:],nb.int64,nb.int64,nb.float32)],nopython=True)
-def one_x_opt(M1,i_act:nb.int64,j_act:nb.int64,Lambda:nb.float32): 
+#@nb.njit()
+def one_x_opt(M1,i_act,j_act,Lambda): 
     '''
 
     Parameters
@@ -810,7 +886,7 @@ def one_x_opt(M1,i_act:nb.int64,j_act:nb.int64,Lambda:nb.float32):
     else:
         return c_xy,np.array([j_act],dtype=np.int64),np.float32(0),np.empty(0,dtype=np.int64)
 
-@nb.njit()
+@nb.njit(fastmath=True)
 def merge_list(L):
     n=len(L) 
     merged_array=L[0]
@@ -820,7 +896,8 @@ def merge_list(L):
   
     
 
-@nb.jit([nb.types.Tuple((nb.float32,nb.int64[:],nb.float32,nb.int64[:]))(nb.float32[:,:],nb.int64,nb.int64,nb.float32)],nopython=True)
+@nb.njit([nb.types.Tuple((nb.float32,nb.int64[:],nb.float32,nb.int64[:]))(nb.float32[:,:],nb.int64,nb.int64,nb.float32)])
+#@nb.njit()
 def one_x_opt_np(M1,i_act:nb.int64,j_act:nb.int64,Lambda:nb.float32): 
     '''
 
@@ -926,14 +1003,18 @@ def one_x_opt_T(M1: torch.Tensor,i_act:int,j_act:torch.Tensor,Lambda: torch.Tens
 
     
 
-@nb.jit([nb.float32[:](nb.float32[:,:],nb.int64[:],nb.int64[:])],nopython=True)
+@nb.njit([nb.float32[:](nb.float32[:,:],nb.int64[:],nb.int64[:])],fastmath=True)
+#@nb.njit(fastmath=True)
 def matrix_take(X,L1,L2):
     return np.array([X[L1[i],L2[i]] for i in range(L1.shape[0])])
 
 
 
 
-    
+@nb.njit([nb.float32(nb.float32, nb.float32)])
+def f(x, y):
+    return (x * y)/2
+
     
     
     

@@ -36,7 +36,6 @@ parent_path=work_path[0:loc1+5]
 sys.path.append(parent_path)
 os.chdir(parent_path)
 
-import os
 from pathlib import Path
 
 import numpy as np
@@ -62,75 +61,59 @@ nb1 = 1000
 nb2 = 2000
 idx1 = rng.randint(X1.shape[0], size=(nb1,))
 idx2 = rng.randint(X2.shape[0], size=(nb2,))
+start_time=time.time()
 Xs = X1[idx1, :]
 Xt = X2[idx2, :]
+
+start_time=time.time()
+
+
 XsT=torch.from_numpy(Xs).to(dtype=torch.float)
 XtT=torch.from_numpy(Xt).to(dtype=torch.float)
-L=[]
+
 n_projections=1000
-#Lambda=np.float32(10)
-Lambda_list=torch.full((n_projections,),10.0)
+Lambda=10.0
+Lambda_list=torch.full((n_projections,),Lambda)
 A=sopt_correspondence(XsT.clone(),XtT.clone(),Lambda_list,n_projections)
-A.max_plan()
-theta_m=A.projections[A.i_max]
-Lambda=torch.tensor([0.1,0.1,0.1])
 A.n_projections=600
 A.get_directions()
-A.Lambda_list=torch.abs(torch.matmul(Lambda,A.projections.T))
-for Lambda in [0.01,0.05,0.1,0.3,0.5,0.8,1.0,2.0,5.0]:
-    Lambda_v=theta_m*Lambda
-    A.X=XsT.clone()
-    A.Y=XtT.clone()
-    A.Lambda_list=torch.abs(torch.matmul(Lambda_v,A.projections.T))
-
-    A.X=XsT.clone()
-    A.Y=XtT.clone()
-    #A.Lambda=Lambda
-    # A.max_plan()
-    # N=A.X.shape[0]
-    # A.X=A.X[A.Lx_max]
-    # A.n_projections=400
-    # mass=A.Lx_max.shape[0]
-#     print('We will move {} points'.format(N))  
-    
-# #    A.Lambda=np.float32(5)
-    A.correspond()
-# #    Xc=A.Xc.clone()
-# #    Xc[A.Lx_max]=A.X
-# #    A.X=Xc
-    transp_Xs=A.transform(torch.from_numpy(X1).to(dtype=torch.float32))
-#     result={}
-#     result['N']=N
-# #    result['mass']=mass
-#     result['transp_Xs']=transp_Xs
-#     L.append(result)
-    I1t = minmax(mat2im(transp_Xs, I1.shape))
-    plt.figure(figsize=(10,10))
-
-    plt.axis('off')
-#    plt.title('Image Source')
-    plt.imshow(I1t)
-    plt.savefig('experiment/color_adaption/results/'+exp_num+'/sopt'+str(Lambda)+'.jpg')
-    plt.close()
-
-torch.save(L,'experiment/color_adaption/results/'+exp_num+'/sopt'+'.pt')
-
-
 A.X=XsT.clone()
 A.Y=XtT.clone()
-A.Lambda_list=torch.full((A.n_projections,),np.float32(5))
 A.correspond()
 transp_Xs=A.transform(torch.from_numpy(X1).to(dtype=torch.float32))
-
+end_time=time.time()
+wall_time=end_time-start_time
 I1t = minmax(mat2im(transp_Xs, I1.shape))
 plt.figure(figsize=(10,10))
 
 plt.axis('off')
 #    plt.title('Image Source')
 plt.imshow(I1t)
-plt.savefig('experiment/color_adaption/results/'+exp_num+'/spot.jpg')
+plt.savefig('experiment/color_adaption/results/'+exp_num+'/sopt'+str(Lambda)+'.png',format='png',dpi=2000)
 plt.close()
-torch.save(transp_Xs,'experiment/color_adaption/results/'+exp_num+'/spot'+'.pt')
+
+result={}
+result['transp_Xs']=transp_Xs
+result['time']=wall_time
+torch.save(result,'experiment/color_adaption/results/'+exp_num+'/sopt'+str(Lambda)+'.pt')
+
+
+
+# A.X=XsT.clone()
+# A.Y=XtT.clone()
+# A.Lambda_list=torch.full((A.n_projections,),np.float32(5))
+# A.correspond()
+# transp_Xs=A.transform(torch.from_numpy(X1).to(dtype=torch.float32))
+
+# I1t = minmax(mat2im(transp_Xs, I1.shape))
+# plt.figure(figsize=(10,10))
+
+# plt.axis('off')
+# #    plt.title('Image Source')
+# plt.imshow(I1t)
+# plt.savefig('experiment/color_adaption/results/'+exp_num+'/spot.jpg')
+# plt.close()
+# torch.save(transp_Xs,'experiment/color_adaption/results/'+exp_num+'/spot'+'.pt')
 #plt.show()
 # # EMDTransport
 # ot_emd = ot.da.EMDTransport()

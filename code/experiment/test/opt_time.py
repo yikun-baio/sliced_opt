@@ -35,26 +35,29 @@ import time
 #Lambda=60
 Lambda_list=np.float32(np.array([20.0,100.0]))
 time_pot_list=[]
-time_v2_list=[[],[],[]]
-time_v2_a_list=[[],[],[]]
-time_lp_list=[]
+time_v2_list=[[],[]]
+time_v2_a_list=[[],[]]
+time_lp_list=[[],[]]
 #time5_list=[]
 
-start_n=2000
+start_n=1500
 end_n=10000
 device='cpu'
 step=500
-k=1
+k=10
+
+
+
 
 for n in range (start_n,end_n,step):
     m=n+1000
     time_pot=0
-    time_v2=np.zeros(3)
-    time_v2_a=np.zeros(3)
-    time_lp=0
-
+    time_v2=np.zeros(2)
+    time_v2_a=np.zeros(2)
+    time_lp=np.zeros(2)
     mu=np.ones(n)
     nu=np.ones(n)
+
     for i in range (k):
         X=np.float32(np.random.uniform(-20,20,n))
         Y=np.float32(np.random.uniform(-40,40,m))
@@ -66,18 +69,20 @@ for n in range (start_n,end_n,step):
         cost1,L1=pot_1d(X1,Y1)
         end_time = time.time()
         time_pot+=end_time-start_time
-        
+
         for j in range(len(Lambda_list)):
             Lambda=Lambda_list[j]
             X1=X.copy()
             Y1=Y.copy()
+            
             start_time = time.time()
+
             X1.sort()
             Y1.sort()       
             opt_1d_v2(X1,Y1,Lambda)
             end_time = time.time()
             time_v2[j]+=end_time-start_time
-            #=np.sum(L2>=0)
+            
             X1=X.copy()
             Y1=Y.copy()
             start_time = time.time()
@@ -90,18 +95,18 @@ for n in range (start_n,end_n,step):
             time_v2_a[j]+=end_time-start_time
     
     
-#        Y1=Y[0:n]
-        start_time = time.time()
-        opt_lp(X,Y,Lambda)
-        end_time = time.time()
-        time_lp+=end_time-start_time
+    #        Y1=Y[0:n]
+            start_time = time.time()
+            opt_lp(X,Y,Lambda)
+            end_time = time.time()
+            time_lp[j]+=end_time-start_time
     
     
     time_pot_list.append(time_pot/k)
-    for j in range(3):
+    for j in range(2):
         time_v2_list[j].append(time_v2[j]/k)
         time_v2_a_list[j].append(time_v2_a[j]/k)
-    time_lp_list.append(time_lp/k)
+        time_lp_list[j].append(time_lp[j]/k)
 
 time_list={}
 time_list['pot']=time_pot_list
@@ -111,23 +116,29 @@ time_list['lp']=time_lp_list
 
 torch.save(time_list,'experiment/test/results/time_list_numba.pt')
 
-n_list=range(start_n,end_n,step)
+time_list=torch.load('experiment/test/results/time_list_numba.pt')
+time_pot_list=time_list['pot']
+time_v2_list=time_list['v2']
+time_v2_a_list=time_list['v2_a']
+time_lp_list=time_list['lp']
+
+n_list=range(start_n,end_n,step)[1:]
 fig = plt.figure()
 ax = plt.subplot(111)
 
-plt.semilogy(n_list,time_pot_list,label='partial OT')
+plt.semilogy(n_list,time_pot_list[1:],label='partial OT')
 for j in range(2):
-    plt.semilogy(n_list,time_v2_list[j],label='ours v2,$\lambda=$'+str(Lambda_list[j]))
-    plt.semilogy(n_list,time_v2_a_list[j],label='ours v2_apro,$\lambda=$'+str(Lambda_list[j]))
-plt.semilogy(n_list,time_lp_list,label='lp: python ot, C')
+    plt.semilogy(n_list,time_v2_list[j][1:],label='ours,$\lambda=$'+str(Lambda_list[j]))
+    plt.semilogy(n_list,time_v2_a_list[j][1:],label='ours_appro,$\lambda=$'+str(Lambda_list[j]))
+    plt.semilogy(n_list,time_lp_list[j][1:],label='lp: python ot, C, $\lambda=$'+str(Lambda_list[j]))
 box = ax.get_position()
 ax.set_position([box.x0, box.y0 + box.height * 0.1,
                  box.width, box.height * 0.9])
-plt.legend(loc='upper center',bbox_to_anchor=(0.5, 1.25),
+plt.legend(loc='upper center',bbox_to_anchor=(0.5, 1.30),
           fancybox=True, shadow=True, ncol=3)
 plt.xlabel('n: size of X')
 plt.ylabel("wall time")
-plt.savefig('experiment/test/results/time_numba.jpg',dpi=fig.dpi,bbox_inches='tight')
+plt.savefig('experiment/test/results/time_numba.png',format='png',dpi=2000,bbox_inches='tight')
 #plt.title('wall-clock time with accelaration')
 plt.show()
 #plt.semilogy(range(start_n,end_n),time4_list,label='Sinkhon in POT package')

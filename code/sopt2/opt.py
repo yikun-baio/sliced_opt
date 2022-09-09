@@ -25,97 +25,99 @@ from sopt2.library import *
 from sopt2.lib_ot import *
 
 
-def opt_1d_v1(X: np.array,Y: np.array,Lambda: np.float32) -> 'np.float,np.array':
-    '''
-    Parameters
-    ------
-    X: array_list shape, shape(n,) or (n,1), X should be shorted, float
-    Y: array_list shape, shape(n,) or (n,1), Y should be shorted, float
-    Lambda: float number >=0
-    Returns:
-    -----
-    cost: float, cost of opt problem
-    L: n*1 list, entry could be 0,1,2.... or -1
-    where L[i]=j denote x_i->y_j and L[i]=-1 denotes we destroy x_i
-    L must be in increasing order,
-    if L=[0,1,1,2,-1], or L=[1,2,5,3], there is a bug. 
-    optimal transportation plan
+# def opt_1d_v1(X: np.array,Y: np.array,Lambda: np.float32) -> 'np.float,np.array':
+#     '''
+#     Parameters
+#     ------
+#     X: array_list shape, shape(n,) or (n,1), X should be shorted, float
+#     Y: array_list shape, shape(n,) or (n,1), Y should be shorted, float
+#     Lambda: float number >=0
+#     Returns:
+#     -----
+#     cost: float, cost of opt problem
+#     L: n*1 list, entry could be 0,1,2.... or -1
+#     where L[i]=j denote x_i->y_j and L[i]=-1 denotes we destroy x_i
+#     L must be in increasing order,
+#     if L=[0,1,1,2,-1], or L=[1,2,5,3], there is a bug. 
+#     optimal transportation plan
     
-    '''
-    def cost_plan_select():
-        nonlocal L
-        nonlocal cost
-        cost_book={}    
-        #select the best cost
-        for case in case_set:
-            if case=='0': # cost for destroy mass 
-                cost_book[case]=cost+(Lambda)  
-            elif case=='1n': # incremental cost without conflict
-                cost_book[case]=cost+cost_xk_yjk
-            elif case=='1c' and j_last+1<=m-1: # there exists right point
-                cost_xk_yjlast1=cost_function(xk,Y[j_last+1])
-                cost_book[case]=cost+cost_xk_yjlast1
-            elif case=='2c': # cost for recursive problem
-            #print('conflict')
-                cost_xk_yjlast=cost_function(xk,Y[j_last])
-                if cost_xk_yjlast<(Lambda):            
-                    X1=X[0:k]
-                    Y1=Y[0:j_last]
-                    cost_sub,L_sub=opt_1d_v1(X1,Y1,Lambda)
-                    cost_book[case]=cost_sub+cost_xk_yjlast
-        # Update L 
+#     '''
+#     def cost_plan_select():
+#         nonlocal L
+#         nonlocal cost
+#         cost_book={}    
+#         #select the best cost
+#         for case in case_set:
+#             if case=='0': # cost for destroy mass 
+#                 cost_book[case]=cost+(Lambda)  
+#             elif case=='1n': # incremental cost without conflict
+#                 cost_book[case]=cost+cost_xk_yjk
+#             elif case=='1c' and j_last+1<=m-1: # there exists right point
+#                 cost_xk_yjlast1=cost_function(xk,Y[j_last+1])
+#                 cost_book[case]=cost+cost_xk_yjlast1
+#             elif case=='2c': # cost for recursive problem
+#             #print('conflict')
+#                 cost_xk_yjlast=cost_function(xk,Y[j_last])
+#                 if cost_xk_yjlast<(Lambda):            
+#                     X1=X[0:k]
+#                     Y1=Y[0:j_last]
+#                     cost_sub,L_sub=opt_1d_v1(X1,Y1,Lambda)
+#                     cost_book[case]=cost_sub+cost_xk_yjlast
+#         # Update L 
  
-        min_case=min(cost_book,key=cost_book.get)
-        cost=cost_book[min_case]
-        #print(cost_book)
+#         min_case=min(cost_book,key=cost_book.get)
+#         cost=cost_book[min_case]
+#         #print(cost_book)
         
-        if min_case=='1n':
-            L.append(jk)
-        elif min_case=='1c':
-            L.append(j_last+1)
-        elif min_case=='0':
-            L.append(-1)
-        elif min_case=='2c':
-            L=L_sub+[j_last]
+#         if min_case=='1n':
+#             L.append(jk)
+#         elif min_case=='1c':
+#             L.append(j_last+1)
+#         elif min_case=='0':
+#             L.append(-1)
+#         elif min_case=='2c':
+#             L=L_sub+[j_last]
    
              
-    n=len(X)
-    m=len(Y)
-    L=[]
-    cost=0  
-    if m==0:
-        cost,L,xx,yy=empty_Y_opt(n,Lambda)
-        return cost,L.tolist()
-    for k in range (n):
-        xk=X[k]
-        case_set={'0','1n','1c','2c'} 
-        # 0 is for cost with destrouction, 1n is for cost without conflict, 1n,2n is the cost with conflict
-        jk,cost_xk_yjk=closest_y(xk,Y)
+#     n=len(X)
+#     m=len(Y)
+#     L=[]
+#     cost=0  
+#     if m==0:
+#         cost,L,xx,yy=empty_Y_opt(n,Lambda)
+#         return cost,L.tolist()
+#     for k in range (n):
+#         xk=X[k]
+#         case_set={'0','1n','1c','2c'} 
+#         # 0 is for cost with destrouction, 1n is for cost without conflict, 1n,2n is the cost with conflict
+#         jk,cost_xk_yjk=closest_y(xk,Y)
         
 
-        if cost_xk_yjk>=(Lambda): # closest distance is 2Lambda, then we destroy the point
-            case_set=case_set-{'1n','1c','2c'}
-            cost_plan_select()
-            continue
+#         if cost_xk_yjk>=(Lambda): # closest distance is 2Lambda, then we destroy the point
+#             case_set=case_set-{'1n','1c','2c'}
+#             cost_plan_select()
+#             continue
         
-        if len(L)==0:# No conflict
-            case_set=case_set-{'1c','2c'}
-            cost_plan_select()
-            continue
-        j_last=max(L) # index of last aligned y
-        if jk>j_last:# No conflict
-            case_set=case_set-{'1c','2c'}
-        elif jk<=j_last:# conflict
-            case_set=case_set-{'1n'}
-        cost_plan_select()
-    return cost,L
+#         if len(L)==0:# No conflict
+#             case_set=case_set-{'1c','2c'}
+#             cost_plan_select()
+#             continue
+#         j_last=max(L) # index of last aligned y
+#         if jk>j_last:# No conflict
+#             case_set=case_set-{'1c','2c'}
+#         elif jk<=j_last:# conflict
+#             case_set=case_set-{'1n'}
+#         cost_plan_select()
+#     return cost,L
 
-@nb.njit([(nb.float32[:],nb.float32[:],nb.int64)],parallel=True,fastmath=True)
-def get_cost_d1(cost_d1,cost_list,s):
-    for i in nb.prange(s+1):
-        cost_d1[i]=np.sum(cost_list[i:i+s])
+#@nb.njit((nb.float32[:],nb.float32[:],nb.int64,nb.int64),parallel=True,fastmath=True)
+@nb.njit(parallel=True,fastmath=True)
+def get_cost_d1(cost_d1,cost_list,i_start,s):
+    for i in nb.prange(i_start,s+1):
+        cost_d1[i-i_start]=np.sum(cost_list[i:i+s])
     
-@nb.njit(nb.types.Tuple((nb.float32,nb.int64[:],nb.float32,nb.int64[:]))(nb.float32[:,:],nb.int64[:],nb.float32))
+@nb.njit(nb.types.Tuple((nb.float32,nb.int64[:],nb.float32,nb.int64[:]))(nb.float32[:,:],nb.int64[:],nb.float32),fastmath=True,cache=True)
+#@nb.jit(nopython=True,fastmath=True)
 def opt_sub(M1,L1,Lambda):
     '''
     Parameters
@@ -139,16 +141,16 @@ def opt_sub(M1,L1,Lambda):
     '''
     n1,m1=M1.shape
     L_sub_pre=np.empty(0,dtype=np.int64)
-    cost_sub_pre=np.float32(0)
-    cost_sub=np.float32(0)
+    cost_sub_pre=0.0
+    cost_sub=0.0
     L_sub=np.empty(0,dtype=np.int64)
     
     if m1==0: # initial case, empty Y
         cost_sub,L_sub,cost_sub_pre,L_sub_pre=empty_Y_opt(n1,Lambda)
         return cost_sub,L_sub,cost_sub_pre,L_sub_pre
-    
-    
-    i_act,j_act=unassign_y(L1) # i_act is the index for L_sub, not the original_index
+
+
+    i_act,j_act=unassign_y1(L1) # i_act is the index for L_sub, not the original_index
     L1=L1[0:n1-1]
     
     if L1.shape[0]==0:
@@ -157,7 +159,7 @@ def opt_sub(M1,L1,Lambda):
 
     L1_inact=L1[0:i_act]
     L1x_inact=arange(0,i_act)
-    cost_inact=np.float32(0)
+    cost_inact=0.0
     cost_inact=np.sum(matrix_take(M1,L1x_inact,L1_inact))
     
     if i_act==n1-1:
@@ -180,28 +182,30 @@ def opt_sub(M1,L1,Lambda):
     s=cost_L2.shape[0]        
     cost_list=np.concatenate((cost_L1,cost_L2))
     i=0
-
-#    cost_d1=np.zeros(s+1,dtype=np.float32)   
-#     for i in range(s,-1,-1):
-#         cost_d1[i]=np.sum(cost_list[i:i+s])
-#         if i-1>=0 and cost_list[i-1]>=Lambda:
-#             cost_d1=cost_d1[i:]  
-#             break
-# #    get_cost_d1(cost_d1,cost_list,s)
-#    index_d1_opt=cost_d1.argmin()+i
+    
     i_list=np.where(cost_L1>=Lambda)[0]
     if i_list.shape[0]>=1:
         i_start=i_list[-1]+1
     else:
         i_start=0
+
     cost_d1=np.zeros(s+1-i_start,dtype=np.float32)
+
+    
     for i in range(i_start,s+1):
         cost_d1[i-i_start]=np.sum(cost_list[i:i+s])
+
+    # we find the right most argmin 
+#    cost_d1_re=cost_d1[::-1]
+#    index=cost_d1_re.shape[0]-cost_d1_re.argmin()-1
+#    index_d1_opt=index+i_start
+
+    #print(cost_d1)
     index_d1_opt=cost_d1.argmin()+i_start
     cost_d1_opt=cost_d1.min()+Lambda
     #find the optimal d0 plan
-    cost_d0=np.float32(np.inf)
-    if j_act>=0: #and i==0:
+    cost_d0=np.inf
+    if j_act>=0 and i_start==0:
         cost_d0=cost_d1[0]+M1[i_act,j_act]
         
     if cost_d1_opt<=cost_d0:    
@@ -220,7 +224,8 @@ def opt_sub(M1,L1,Lambda):
     return cost_sub,L_sub,cost_sub_pre,L_sub_pre
         
 
-@nb.njit(nb.types.Tuple((nb.float32,nb.int64[:],nb.float32,nb.int64[:]))(nb.float32[:,:],nb.int64[:],nb.float32))
+@nb.njit(nb.types.Tuple((nb.float32,nb.int64[:],nb.float32,nb.int64[:]))(nb.float32[:,:],nb.int64[:],nb.float32),cache=True)
+#@nb.njit()
 def opt_sub_apro(M1,L1,Lambda):
     '''
     Parameters
@@ -252,7 +257,6 @@ def opt_sub_apro(M1,L1,Lambda):
     if m1==0: # initial case, empty Y
         cost_sub,L_sub,cost_sub_pre,L_sub_pre=empty_Y_opt(n1,Lambda)
         return cost_sub,L_sub,cost_sub_pre,L_sub_pre
-    
     
     i_act,j_act=unassign_y(L1) # i_act is the index for L_sub, not the original_index
     L1=L1[0:n1-1]
@@ -325,7 +329,7 @@ def opt_sub_apro(M1,L1,Lambda):
     return cost_sub,L_sub,cost_sub_pre,L_sub_pre
 
 
-@nb.njit(nb.types.Tuple((nb.float32,nb.int64[:]))(nb.float32[:],nb.float32[:],nb.float32))
+@nb.njit(nb.types.Tuple((nb.float32,nb.int64[:]))(nb.float32[:],nb.float32[:],nb.float32),cache=True)
 #@nb.njit()
 def opt_1d_v2(X,Y,Lambda):
     M=cost_matrix(X,Y)
@@ -365,7 +369,6 @@ def opt_1d_v2(X,Y,Lambda):
     # start loop 
     # 0 denote the case destroy point, 1 denote the case assign to y_jk, 2 denote the case assign to y_jlast+1, 3 denot the case assign to y_jlast 
     cost_book_orig=np.full(4,np.inf,dtype=np.float32)
-
     for k in range(1,n):
         cost_book=cost_book_orig.copy()
         if j_start==m: # There is no y, so we destroy point
@@ -393,8 +396,6 @@ def opt_1d_v2(X,Y,Lambda):
             cost_xk_yjlast=M[k,j_last]                  
             if cost_xk_yjlast<Lambda and j_start<=m and i_start<k:
                 M1=M[i_start:k,j_start:j_last]
-                #X1=X[i_start:k]
-                #Y1=Y[j_start:j_last]
                 L1=L[i_start:k].copy()
 
         #     # we need the last assign index since we need to retrieve the closest unassigend j                    
@@ -405,6 +406,10 @@ def opt_1d_v2(X,Y,Lambda):
                 index_adjust(L_sub_pre,j_start)
 
         # find the optimal cost over all 
+        #cost_book1=cost_book[np.array([3,0,1,2])]
+        #min_case1=cost_book1.argmin()
+        #cost=cost_book1.min()
+        #min_case=np.array([3,0,1,2])[min_case1]
         min_case=cost_book.argmin()
         cost=cost_book.min()
         
@@ -416,13 +421,7 @@ def opt_1d_v2(X,Y,Lambda):
             L_pre=L.copy()
             j_start=j_last+1
             i_start=k+1
-            # print('case 0')
-            # print('i_start is',i_start)
-            # print('j_start is',j_start)
 
-            # i_start1,j_start1=startindex(L_pre)
-            # print('i_start1 is',i_start1)
-            # print('j_start1 is',j_start1)
 
         elif min_case==1:
             L=np.append(L,jk) #],dtype=np.int64)))
@@ -437,19 +436,12 @@ def opt_1d_v2(X,Y,Lambda):
                 i_start=i_start+L_sub_pre.shape[0]
                 if L_sub_pre.shape[0]>=2:
                     j_start=L_sub_pre[-2]+1
-                # print('case 3')
-                # print('i_start is',i_start)
-                # print('j_start is',j_start)
-
-                # i_start1,j_start1=startindex(L_pre)
-                # print('i_start1 is',i_start1)
-                # print('j_start1 is',j_start1)
+            
             # empty the variable for sub problem
             L_sub=np.empty(0,dtype=np.int64)
             L_sub_pre=np.empty(0,dtype=np.int64)
             cost_sub=np.float32(0)
             cost_sub_pre=np.float32(0)
-            
     return cost,L
 
 @nb.njit(nb.types.Tuple((nb.float32,nb.int64[:]))(nb.float32[:],nb.float32[:],nb.float32))
@@ -531,8 +523,10 @@ def opt_1d_v2_apro(X,Y,Lambda):
                 index_adjust(L_sub_pre,j_start)
 
         # find the optimal cost over all 
-        min_case=cost_book.argmin()
-        cost=cost_book.min()
+        cost_book1=cost_book[np.array([3,0,1,2])]
+        min_case1=cost_book1.argmin()
+        cost=cost_book1.min()
+        min_case=np.array([3,0,1,2])[min_case1]
         
         # update problem, if we destroy points, update pre_problem
         if min_case==0:
@@ -568,7 +562,7 @@ def opt_1d_v2_apro(X,Y,Lambda):
             
     return cost,L
 
-@nb.njit()
+#@nb.njit()
 #@nb.njit(nb.types.Tuple((List,List,nb.int64[:]))(nb.float32[:],nb.float32[:],nb.float32))
 def opt_decomposition(X,Y,Lambda):
     M=cost_matrix(X,Y)
@@ -701,7 +695,7 @@ def opt_decomposition(X,Y,Lambda):
             free_Y[-1]=free_y
     return X_list,Y_list,free_Y
 
-@nb.njit(nb.types.Tuple((nb.float32,nb.int64[:]))(nb.float32[:],nb.float32[:],nb.float32),parallel=True,fastmath=True)
+#@nb.njit(nb.types.Tuple((nb.float32,nb.int64[:]))(nb.float32[:],nb.float32[:],nb.float32),parallel=True,fastmath=True)
 def opt_1d_v3(X,Y,Lambda):
     X_list,Y_list,free_Y=opt_decomposition(X,Y,Lambda)
     K=len(X_list)
@@ -1155,7 +1149,7 @@ def pot_1d(X,Y,Lambda=0):
     n=len(X)
     m=len(Y)
     L=np.empty(0,dtype=np.int64) # save the optimal plan
-    cost=0.0 # save the optimal cost
+    cost=np.float32(0) # save the optimal cost
     #M=cost_matrix(X,Y)
     #min_Y=M.argmin(dim=1)
     #n,m=M.shape

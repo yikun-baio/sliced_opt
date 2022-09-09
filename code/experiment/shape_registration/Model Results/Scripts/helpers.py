@@ -33,18 +33,22 @@ def convert_ply(X1_data, Y1_data):
 
 def generate_o3d(ply1, ply2, path, name, dataset="lol", ext = ".jpg"):
     vis = o3d.visualization.Visualizer()
-    vis.create_window(width = 1080, height= 1080, top = 100, left=50)  
+    vis.create_window(width = 1080, height= 1080, top = 100, left=100)  
     # ply1x = ply1.get_rotation_matrix_from_xyz((4/20 * np.pi,0,0))
     # ply2x = ply2.get_rotation_matrix_from_xyz((4/20 * np.pi, 0,0))
     # ply1.rotate(ply1x, center=(0,0,0))
     # ply2.rotate(ply2x, center=(0,0,0))
+    ply1x = ply1.get_rotation_matrix_from_xyz((4/20 * np.pi,0,0))
+    ply2x = ply2.get_rotation_matrix_from_xyz((4/20 * np.pi, 0,0))
+    ply1.rotate(ply1x, center=(0,0,0))
+    ply2.rotate(ply2x, center=(0,0,0))
     
     vis.add_geometry(ply1, reset_bounding_box = True)
     vis.add_geometry(ply2, reset_bounding_box = False)
-    vis.get_render_option().point_size = 2.25  
+    vis.get_render_option().point_size = 5  
     vis.get_view_control().translate(30, 0, 0, 0)
     vis.get_render_option().background_color = [211/255, 211/255, 211/255]
-    o3d.visualization.ViewControl.set_zoom(vis.get_view_control(), 0.37)
+    o3d.visualization.ViewControl.set_zoom(vis.get_view_control(), 0.2)
     vis.capture_screen_image(path + name + ext, do_render= True)
     vis.destroy_window()
     # vis.run()
@@ -59,10 +63,11 @@ def generate_o3d(ply1, ply2, path, name, dataset="lol", ext = ".jpg"):
 
 
 # Dragon11
+    # set ziin
     # ply1x = ply1.get_rotation_matrix_from_xyz((4/20 * np.pi,0,0))
-    # # ply2x = ply2.get_rotation_matrix_from_xyz((2/20 * np.pi, 0,0))
+    # ply2x = ply2.get_rotation_matrix_from_xyz((2/20 * np.pi, 0,0))
     # ply1.rotate(ply1x, center=(0,0,0))
-    # # ply2.rotate(ply2x, center=(0,0,0))
+    # ply2.rotate(ply2x, center=(0,0,0))
 
 
 # Witch castle

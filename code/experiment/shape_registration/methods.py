@@ -95,27 +95,6 @@ def sopt_main(X,Y,n_iterations,N0):
         if Lambda<lower_bound:
             Lambda=lower_bound
         
-        # fig = plt.figure(figsize=(10,10))
-        # ncolors = len(plt.rcParams['axes.prop_cycle'])
-        # ax = fig.add_subplot(111, projection='3d')
-        # ax.scatter(X[:,0],X[:,1],X[:,2],s=2,label='target',color='blue') # plot the point (2,3,4) on the figure
-        # ax.scatter(X_hat[:,0],X_hat[:,1],X_hat[:,2],s=2,label='source',color='red') # plot the point (2,3,4) on the figure
-        # plt.axis('off')
-        # ax.set_facecolor("grey")
-        # ax.grid(False)
-        # ax.set_xticks([])
-        # ax.set_yticks([])
-        # ax.set_zticks([])
-        # ax.set_xlim3d(-45,45)
-        # ax.set_ylim3d(-30,30)
-        # ax.set_zlim3d(0,60)
-        # ax.view_init(10,5,'y')
-        # plt.legend(loc='upper right',scatterpoints=100)
-        
-        # ax.view_init(15,15,'y')
-#        plt.savefig('experiment/shape_registration/result'+exp_num+n_point+per_s+'/sopt/'+'init'+'.jpg')
-        # plt.show()
-        # plt.close()
 
     return rotation_list,scalar_list,beta_list    
 
@@ -226,3 +205,100 @@ def icp_umeyama(X,Y,n_iterations):
 
     return rotation_list,scalar_list,beta_list  
 
+
+item_list=['/stanford_bunny',]
+exp_num=item
+
+label_L=['0','1','2','3']
+L=['/10k','/9k','/8k','/7k']
+time_list={}
+for (label,per_s) in [('0','-7p'),('1','-5p')]:
+    n_point=L[int(label)]    
+    data_path=parent_path+'/experiment/shape_registration/data/test2/saved'
+    save_path='experiment/shape_registration/result'+exp_num+n_point
+    data=torch.load(data_path+item+'.pt')
+    
+    time_dict={}
+    
+    X0=data['X0'].to(torch.float32)
+    Y0=data['Y0'+label].to(torch.float32)
+    X1=data['X1'+per_s].to(torch.float32)
+    Y1=data['Y1'+label+per_s].to(torch.float32)
+    
+    X=X1.numpy().copy()
+    Y=Y1.numpy().copy()
+    N0=Y0.shape[0]
+    start_time=time.time()
+    n_iterations=4000
+    sopt_main(X,Y,n_iterations,N0)
+    end_time=time.time()
+    wall_time=end_time-start_time
+
+    result={}
+    result['wall_time']=wall_time
+    result['n_iterations']=n_iterations
+    result['per_time']=wall_time/n_iterations
+    time_dict['sopt']=result
+    
+
+    
+    X=X1.numpy().copy()
+    Y=Y1.numpy().copy()
+    n_projections=100
+    n_iterations=200
+    start_time=time.time()
+    spot_bonneel(X,Y,n_projections,n_iterations)
+    end_time=time.time()
+    wall_time=end_time-start_time
+    result={}
+    result['wall_time']=wall_time
+    result['n_iterations']=n_iterations
+    result['per_time']=wall_time/n_iterations
+    time_dict['spot']=result
+    
+
+    
+
+    
+    X=X1.numpy().copy()
+    Y=Y1.numpy().copy()
+    n_iterations=400
+    
+    start_time=time.time()
+    icp_du(X,Y,n_iterations)
+    end_time=time.time()
+    wall_time=end_time-start_time
+    result={}
+    result['wall_time']=wall_time
+    result['n_iterations']=n_iterations
+    result['per_time']=wall_time/n_iterations
+    time_dict['icp-du']=result  
+    
+    X=X1.numpy().copy()
+    Y=Y1.numpy().copy()
+    n_iterations=400
+    
+    start_time=time.time()
+    icp_umeyama(X,Y,n_iterations)
+    end_time=time.time()
+    wall_time=end_time-start_time
+    result={}
+    result['wall_time']=wall_time
+    result['n_iterations']=n_iterations
+    result['per_time']=wall_time/n_iterations
+    time_dict['icp-umeyama']=result 
+    
+
+
+    time_list[n_point+'-'+per_s]=time_dict
+    
+
+
+torch.save(time_list,'experiment/shape_registration/result/'+str(item)+'-time_list.pt')
+
+
+
+    
+    
+    
+    

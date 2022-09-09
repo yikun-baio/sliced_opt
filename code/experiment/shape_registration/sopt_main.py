@@ -38,7 +38,7 @@ from sopt2.lib_shape import *
 from sopt2.sliced_opt import *   
 label_L=['0','1','2','3']
 L=['/10k','/9k','/8k','/7k']
-for (label,per_s) in [('0','-5p')]:
+for (label,per_s) in [('0','-7p')]:
     n_point=L[int(label)]
     
     data_path=parent_path+'/experiment/shape_registration/data/test2/saved'
@@ -61,7 +61,6 @@ for (label,per_s) in [('0','-5p')]:
     X1T=X1.to(device).clone()
     Y1T=Y1.to(device).clone()
     
-    print('original figure')
     fig = plt.figure(figsize=(10,10))
     ncolors = len(plt.rcParams['axes.prop_cycle'])
     ax = fig.add_subplot(111, projection='3d')
@@ -154,39 +153,39 @@ for (label,per_s) in [('0','-5p')]:
         paramlist.append(param)
     
         
-        if epoch<=200 or epoch%20==0 or epoch==n_iteration-1:
-            print('N is',N)
-            print('training Epoch {}/{}'.format(epoch, n_iteration))
-            print('lambda',A.Lambda_list[0])
-            print('mass_diff',mass_diff)
-            print('scalar',scalar)
-            print('rotation',rotation)
-            print('beta',beta)
+        # if epoch<=200 or epoch%20==0 or epoch==n_iteration-1:
+        #     print('N is',N)
+        #     print('training Epoch {}/{}'.format(epoch, n_iteration))
+        #     print('lambda',A.Lambda_list[0])
+        #     print('mass_diff',mass_diff)
+        #     print('scalar',scalar)
+        #     print('rotation',rotation)
+        #     print('beta',beta)
         
-            X1_hat_c=A.X.clone().detach().cpu()
+        #     X1_hat_c=A.X.clone().detach().cpu()
             
-            fig = plt.figure(figsize=(10,10))
-            ncolors = len(plt.rcParams['axes.prop_cycle'])
-            ax = fig.add_subplot(111, projection='3d')
-            ax.scatter(X1[:,0],X1[:,1],X1[:,2],s=2,label='target',color='blue') # plot the point (2,3,4) on the figure
-            ax.scatter(X1_hat_c[:,0],X1_hat_c[:,1],X1_hat_c[:,2],s=2,label='source',color='red') # plot the point (2,3,4) on the figure
-            plt.axis('off')
-            ax.set_facecolor("grey")
-            ax.grid(False)
-            ax.set_xticks([])
-            ax.set_yticks([])
-            ax.set_zticks([])
-            ax.set_xlim3d(-0.08,0.12)
-            ax.set_ylim3d(0.06,0.2)
-            ax.set_zlim3d(-0.02,0.14)
+        #     fig = plt.figure(figsize=(10,10))
+        #     ncolors = len(plt.rcParams['axes.prop_cycle'])
+        #     ax = fig.add_subplot(111, projection='3d')
+        #     ax.scatter(X1[:,0],X1[:,1],X1[:,2],s=2,label='target',color='blue') # plot the point (2,3,4) on the figure
+        #     ax.scatter(X1_hat_c[:,0],X1_hat_c[:,1],X1_hat_c[:,2],s=2,label='source',color='red') # plot the point (2,3,4) on the figure
+        #     plt.axis('off')
+        #     ax.set_facecolor("grey")
+        #     ax.grid(False)
+        #     ax.set_xticks([])
+        #     ax.set_yticks([])
+        #     ax.set_zticks([])
+        #     ax.set_xlim3d(-0.08,0.12)
+        #     ax.set_ylim3d(0.06,0.2)
+        #     ax.set_zlim3d(-0.02,0.14)
     
-            ax.view_init(10,5,'y')
+        #     ax.view_init(10,5,'y')
             
-            plt.legend(loc='upper right',scatterpoints=100)
-            plt.savefig('experiment/shape_registration/result/'+exp_num+n_point+per_s+'/sopt/'+str(epoch)+'.jpg')
-            plt.show()
-            plt.close()
-            print('-' * 10)
+        #     plt.legend(loc='upper right',scatterpoints=100)
+        #     plt.savefig('experiment/shape_registration/result/'+exp_num+n_point+per_s+'/sopt/'+str(epoch)+'.jpg')
+        #     plt.show()
+        #     plt.close()
+        #     print('-' * 10)
         
         # pcd_X1_hat= o3d.geometry.PointCloud()
         # pcd_X1_hat.points = o3d.utility.Vector3dVector(X1_hat_c.numpy())
@@ -226,6 +225,6 @@ for (label,per_s) in [('0','-5p')]:
         #print('loss is ',loss.item())
     
     end_time=time.time()
-    wall_time=end_time-start_time()
-    torch.save(wall_time,'experiment/shape_registration/result/'+exp_num+n_point+per_s+'/sopt_time.pt')
-    torch.save(paramlist,'experiment/shape_registration/result/'+exp_num+n_point+per_s+'/sopt_param.pt')
+    wall_time=end_time-start_time
+#    torch.save(wall_time,'experiment/shape_registration/result/'+exp_num+n_point+per_s+'/sopt_time.pt')
+#    torch.save(paramlist,'experiment/shape_registration/result/'+exp_num+n_point+per_s+'/sopt_param.pt')
