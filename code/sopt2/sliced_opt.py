@@ -95,6 +95,7 @@ def X_correspondence(X,Y,projections,Lambda_list):
     n=X.shape[0]
     Lx_org=arange(0,n)
     for i in range(N):
+#        print(i)
         theta=projections[i]
         X_theta=mat_vec_mul(X.T,theta)
         Y_theta=mat_vec_mul(Y.T,theta)
@@ -255,27 +256,26 @@ class sopt_correspondence(sopt):
 
 
     def transform(self,Xs,batch_size=128):    
-        D0 = cost_matrix_T(Xs, self.Xc)
-        idx = torch.argmin(D0, axis=1)
-        transp_Xs=Xs+self.X[idx, :]  - self.Xc[idx, :]
+        #D0 = cost_matrix_T(Xs, self.Xc)
+        #idx = torch.argmin(D0, axis=1)
+        #transp_Xs=Xs+self.X[idx, :]  - self.Xc[idx, :]
         #     #print(transp_Xs)
 
         # # perform out of sample mapping
-        # indices = torch.arange(Xs.shape[0])
-        # batch_ind = [indices[i:i + batch_size] for i in range(0, len(indices), batch_size)]
+        indices = torch.arange(Xs.shape[0])
+        batch_ind = [indices[i:i + batch_size] for i in range(0, len(indices), batch_size)]
 
-        # transp_Xs = []
+        transp_Xs = []
 
-        # for bi in batch_ind:
-        #     # get the nearest neighbor in the source domain
-        #     D0 = cost_matrix_T(Xs[bi], self.Xc)
-        #     idx = torch.argmin(D0, axis=1)
-            
-        #     # define the transported points
-        #     transp_Xs_ =Xs[bi]+self.X[idx, :]  - self.Xc[idx, :]
-        #     #print(transp_Xs)
-        #     transp_Xs.append(transp_Xs_)
-        # transp_Xs = torch.cat(transp_Xs, axis=0)
+        for bi in batch_ind:
+            # get the nearest neighbor in the source domain
+            D0 = cost_matrix_T(Xs[bi], self.Xc)
+            idx = torch.argmin(D0, axis=1)
+            # define the transported points
+            transp_Xs_ =Xs[bi]+self.X[idx, :]  - self.Xc[idx, :]
+            #print(transp_Xs)
+            transp_Xs.append(transp_Xs_)
+        transp_Xs = torch.cat(transp_Xs, axis=0)
         return transp_Xs
     
         

@@ -16,6 +16,7 @@ import torch.optim as optim
 from skimage.segmentation import slic
 import os
 import sys
+import time
 work_path=os.path.dirname(__file__)
 # load the data 
 loc1=work_path.find('/code')
@@ -56,14 +57,20 @@ M1,N1,C=I1.shape
 M2,N2,C=I2.shape
 X1=I1.reshape(-1,C)
 X2=I2.reshape(-1,C)
-rng = np.random.RandomState(42)
-nb1 = 1000
-nb2 = 2000
-idx1 = rng.randint(X1.shape[0], size=(nb1,))
-idx2 = rng.randint(X2.shape[0], size=(nb2,))
-start_time=time.time()
-Xs = X1[idx1, :]
-Xt = X2[idx2, :]
+# rng = np.random.RandomState(42)
+# nb1 = 5000
+# nb2 = 10000
+# idx1 = rng.randint(X1.shape[0], size=(nb1,))
+# idx2 = rng.randint(X2.shape[0], size=(nb2,))
+# 
+# Xs = X1[idx1, :]
+# Xt = X2[idx2, :]
+N1=5000
+N2=10000
+kmean_X1=torch.load(data_path+'/kmeans_X1_'+str(N1)+'.pt')
+kmean_X2=torch.load(data_path+'/kmeans_X2_'+str(N2)+'.pt')
+Xs = kmean_X1.cluster_centers_
+Xt = kmean_X2.cluster_centers_
 
 start_time=time.time()
 
@@ -83,6 +90,7 @@ A.correspond()
 transp_Xs=A.transform(torch.from_numpy(X1).to(dtype=torch.float32))
 end_time=time.time()
 wall_time=end_time-start_time
+torch.save(wall_time,'experiment/color_adaption/results/'+exp_num+'/sopt_'+str(Lambda)+'_time.pt')
 I1t = minmax(mat2im(transp_Xs, I1.shape))
 plt.figure(figsize=(10,10))
 
@@ -92,10 +100,8 @@ plt.imshow(I1t)
 plt.savefig('experiment/color_adaption/results/'+exp_num+'/sopt'+str(Lambda)+'.png',format='png',dpi=2000)
 plt.close()
 
-result={}
-result['transp_Xs']=transp_Xs
-result['time']=wall_time
-torch.save(result,'experiment/color_adaption/results/'+exp_num+'/sopt'+str(Lambda)+'.pt')
+
+torch.save(transp_Xs,'experiment/color_adaption/results/'+exp_num+'/sopt'+str(Lambda)+'.pt')
 
 
 

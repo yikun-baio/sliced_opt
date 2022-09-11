@@ -430,43 +430,43 @@ def unassign_y(L1):
 
 
 
-@nb.njit([nb.types.Tuple((nb.int64,nb.int64))(nb.int64[:])])
-def unassign_y1(L1):
-    '''
-    Parameters
-    ----------
-    L1 : n*1 list , whose entry is 0,1,2,...... 
-            transporportation plan. L[i]=j denote we assign x_i to y_j, L[i]=-1, denote we destroy x_i. 
-            if we ignore -1, L1 must be in increasing order 
-            make sure L1 do not have -1 and is not empty, otherwise there is mistake in the main loop.  
+#@nb.njit([nb.types.Tuple((nb.int64,nb.int64))(nb.int64[:])])
+# def unassign_y1(L1):
+#     '''
+#     Parameters
+#     ----------
+#     L1 : n*1 list , whose entry is 0,1,2,...... 
+#             transporportation plan. L[i]=j denote we assign x_i to y_j, L[i]=-1, denote we destroy x_i. 
+#             if we ignore -1, L1 must be in increasing order 
+#             make sure L1 do not have -1 and is not empty, otherwise there is mistake in the main loop.  
 
 
-    Returns
-    -------
-    i_act: integer>=0 
-    j_act: integer>=0 or -1    
-    j_act=max{j: j not in L1, j<L1[end]} If L1[end]=-1, there is a bug in the main loop. 
-    i_act=min{i: L[i]>j_act}.
+#     Returns
+#     -------
+#     i_act: integer>=0 
+#     j_act: integer>=0 or -1    
+#     j_act=max{j: j not in L1, j<L1[end]} If L1[end]=-1, there is a bug in the main loop. 
+#     i_act=min{i: L[i]>j_act}.
     
-    Eg. input: L1=[1,3,5]
-    return: 2,4
-    input: L1=[2,3,4]
-    return: 0,1
-    input: L1=[0,1,2,3]
-    return: 0,-1
+#     Eg. input: L1=[1,3,5]
+#     return: 2,4
+#     input: L1=[2,3,4]
+#     return: 0,1
+#     input: L1=[0,1,2,3]
+#     return: 0,-1
     
-    '''
+#     '''
     
-    j_last=L1[-1]
-    n=L1.shape[0]
-    L_range=arange(j_last-n+1,j_last+1)
-    L_dif=np.where(L_range-L1>0)[0]
-    if L_dif.shape[0]==0:
-        return 0, L1[0]-1
-    else:
-        i_act=L_dif[-1]+1
-        j_act=L_range[i_act-1]
-    return i_act,j_act
+#     j_last=L1[-1]
+#     n=L1.shape[0]
+#     L_range=arange(j_last-n+1,j_last+1)
+#     L_dif=np.where(L_range-L1>0)[0]
+#     if L_dif.shape[0]==0:
+#         return 0, L1[0]-1
+#     else:
+#         i_act=L_dif[-1]+1
+#         j_act=L_range[i_act-1]
+#     return i_act,j_act
 
 
 @torch.jit.script   
