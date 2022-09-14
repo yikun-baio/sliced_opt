@@ -88,16 +88,17 @@ for n in range (start_n,end_n,step):
             start_time = time.time()
 #            M=cost_matrix(X1,Y1)
             X1.sort()
-            Y1.sort()       
+            Y1.sort()
             opt_1d_v2_apro(X1,Y1,Lambda)
 #        L3=ot.partial.entropic_partial_wasserstein(mu,nu,M,len(L_y))
             end_time = time.time()
             time_v2_a[j]+=end_time-start_time
     
-    
+            
     #        Y1=Y[0:n]
+            numItermax=100000*n/1000
             start_time = time.time()
-            opt_lp(X,Y,Lambda)
+            opt_lp(X,Y,Lambda,numItermax)
             end_time = time.time()
             time_lp[j]+=end_time-start_time
     

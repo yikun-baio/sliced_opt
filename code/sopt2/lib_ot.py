@@ -25,7 +25,7 @@ os.chdir(parent_path)
 from sopt2.library import *
 
 #@nb.njit(nb.types.Tuple((nb.float32,nb.int64[:]))(nb.float32[:],nb.float32[:],nb.float32))
-def opt_lp(X,Y,Lambda):
+def opt_lp(X,Y,Lambda,numItermax=100000):
     n=X.shape[0]
     m=Y.shape[0]
     exp_point=np.float32(np.inf)
@@ -38,7 +38,7 @@ def opt_lp(X,Y,Lambda):
     cost_M=cost_matrix(X1[0:-1],Y1[0:-1])
     cost_M1=np.zeros((n+1,m+1),dtype=np.float32)
     cost_M1[0:n,0:m]=cost_M-Lambda
-    plan1=ot.lp.emd(mu1,nu1,cost_M1)
+    plan1=ot.lp.emd(mu1,nu1,cost_M1,numItermax=numItermax)
     plan=plan1[0:n,0:m]
     cost=np.sum(cost_M*plan)
     return cost,plan
