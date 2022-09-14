@@ -87,38 +87,39 @@ kmean_X1=torch.load(data_path+'/kmeans_X1_'+str(N1)+'.pt')
 kmean_X2=torch.load(data_path+'/kmeans_X2_'+str(N2)+'.pt')
 Xs = kmean_X1.cluster_centers_
 Xt = kmean_X2.cluster_centers_
-XsT=torch.from_numpy(Xs).to(dtype=torch.float)
-XtT=torch.from_numpy(Xt).to(dtype=torch.float)
+# XsT=torch.from_numpy(Xs).to(dtype=torch.float)
+# XtT=torch.from_numpy(Xt).to(dtype=torch.float)
 
 start_time=time.time()
-# EMDTransport
-ot_emd = ot.da.EMDTransport()
+# # EMDTransport
+ot_emd = ot.da.EMDTransport(max_iter=500000)
+
 ot_emd.fit(Xs=Xs, Xt=Xt)
 
-# SinkhornTransport
-#ot_sinkhorn = ot.da.SinkhornTransport(reg_e=1e-1)
-#ot_sinkhorn.fit(Xs=Xs, Xt=Xt)
-# prediction between images (using out of sample prediction as in [6])
+# # SinkhornTransport
+# #ot_sinkhorn = ot.da.SinkhornTransport(reg_e=1e-1)
+# #ot_sinkhorn.fit(Xs=Xs, Xt=Xt)
+# # prediction between images (using out of sample prediction as in [6])
 transp_Xs_emd = ot_emd.transform(Xs=X1)
 #transp_Xt_emd = ot_emd.inverse_transform(Xt=X2)
-end_time=time.time()
-wall_time=end_time-start_time
-#transp_Xs_sinkhorn = ot_sinkhorn.transform(Xs=X1)
-#transp_Xt_sinkhorn = ot_sinkhorn.inverse_transform(Xt=X2)
+# end_time=time.time()
+# wall_time=end_time-start_time
+# #transp_Xs_sinkhorn = ot_sinkhorn.transform(Xs=X1)
+# #transp_Xt_sinkhorn = ot_sinkhorn.inverse_transform(Xt=X2)
 
-I1t = minmax(mat2im(transp_Xs_emd, I1.shape))
-#I2t = minmax(mat2im(transp_Xt_emd, I2.shape))
+# I1t = minmax(mat2im(transp_Xs_emd, I1.shape))
+# #I2t = minmax(mat2im(transp_Xt_emd, I2.shape))
 
-#I1te = minmax(mat2im(transp_Xs_sinkhorn, I1.shape))
-#I2te = minmax(mat2im(transp_Xt_sinkhorn, I2.shape))
+# #I1te = minmax(mat2im(transp_Xs_sinkhorn, I1.shape))
+# #I2te = minmax(mat2im(transp_Xt_sinkhorn, I2.shape))
 
-plt.figure()
-plt.axis('off')
-plt.imshow(I1t)
-plt.savefig('experiment/color_adaption/results/'+exp_num+'/ot.png',format="png",dpi=2000)
-plt.close()
-torch.save(transp_Xs_emd,'experiment/color_adaption/results/'+exp_num+'/ot'+'.pt')
-torch.save(wall_time,'experiment/color_adaption/results/'+exp_num+'/ot_time'+'.pt')
+# plt.figure()
+# plt.axis('off')
+# plt.imshow(I1t)
+# plt.savefig('experiment/color_adaption/results/'+exp_num+'/ot.png',format="png",dpi=2000)
+# plt.close()
+# torch.save(transp_Xs_emd,'experiment/color_adaption/results/'+exp_num+'/ot'+'.pt')
+# torch.save(wall_time,'experiment/color_adaption/results/'+exp_num+'/ot_time'+'.pt')
 
 #plt.figure(figsize=(10,10))
 #plt.axis('off')

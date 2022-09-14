@@ -114,6 +114,12 @@ time_list['sinkhorn']=time_sinkhorn_list
 
 torch.save(time_list,'experiment/test/results/time_list_no.pt')
 
+
+start_n=200
+end_n=1000
+device='cpu'
+step=100
+k=5
 time_list=torch.load('experiment/test/results/time_list_no.pt')
 time_pot_list=time_list['pot']
 time_v2_list=time_list['v2']
@@ -139,7 +145,7 @@ plt.legend(loc='upper center',bbox_to_anchor=(0.5, 1.285),
 plt.xlabel('n: size of X')
 plt.ylabel("wall time")
 #plt.title('wall-clock time without accelaration')
-plt.savefig('experiment/test/results/time_no.png',format='png',dpi=2000,bbox_inches='tight')
+plt.savefig('experiment/test/results/time_no.png',format='png',dpi=800,bbox_inches='tight')
 plt.show()
 #plt.semilogy(range(start_n,end_n),time4_list,label='Sinkhon in POT package')
 

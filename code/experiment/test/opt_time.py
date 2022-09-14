@@ -122,6 +122,12 @@ time_v2_list=time_list['v2']
 time_v2_a_list=time_list['v2_a']
 time_lp_list=time_list['lp']
 
+
+start_n=1500
+end_n=10000
+device='cpu'
+step=500
+k=10
 n_list=range(start_n,end_n,step)[1:]
 fig = plt.figure()
 ax = plt.subplot(111)
@@ -138,7 +144,7 @@ plt.legend(loc='upper center',bbox_to_anchor=(0.5, 1.30),
           fancybox=True, shadow=True, ncol=3)
 plt.xlabel('n: size of X')
 plt.ylabel("wall time")
-plt.savefig('experiment/test/results/time_numba.png',format='png',dpi=2000,bbox_inches='tight')
+plt.savefig('experiment/test/results/time_numba.png',format='png',dpi=800,bbox_inches='tight')
 #plt.title('wall-clock time with accelaration')
 plt.show()
 #plt.semilogy(range(start_n,end_n),time4_list,label='Sinkhon in POT package')

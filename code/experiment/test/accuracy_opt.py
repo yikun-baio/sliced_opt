@@ -36,87 +36,83 @@ Lambda_list=np.array([10.0,50.0,100.0])
 start_n=50
 end_n=1100
 step=10
+n_list=np.array(range(start_n,end_n,step))
+N=n_list.shape[0]
+k=10
 
 for Lambda in Lambda_list:
-    cost_v2_list=[]
-    cost_v2_a_list=[]
-    cost_pr_list=[]
-    cost_lp_list=[]
-    cost_sinkhorn_list=[]
-    for n in range (start_n,end_n,step):
+    cost_v2_list=np.zeros((N,k))
+    cost_v2a_list=np.zeros((N,k))
+    cost_lp_list=np.zeros((N,k))
+    cost_pr_list=np.zeros((N,k))
+    for i in range (N):
+        n=n_list[i]
         m=n+20
-        np.random.seed(n)
-        X=np.random.uniform(-20,20,n)
-        np.random.seed(m)
-        Y=np.random.uniform(-40,40,m)
-        n=X.shape[0]
-        m=Y.shape[0]
-        X.sort()
-        Y.sort()
-        mu=np.ones(n)
-        nu=np.ones(m)    
-        M=cost_matrix(X,Y)
-        cost_v2_a,L_v2_a=opt_1d_v2_apro(X,Y,Lambda)
-        L_v2_a=plan_to_matrix(L_v2_a,m)
-        cost_v2_a=np.sum(M*L_v2_a)+Lambda*np.sum(n-np.sum(L_v2_a))+1/2*Lambda*(m-n)
-        
-        cost_v2,L_v2=opt_1d_v2(X,Y,Lambda)
-        L_v2=plan_to_matrix(L_v2,m)
-        cost_v2=np.sum(M*L_v2)+Lambda*np.sum(n-np.sum(L_v2))+1/2*Lambda*(m-n)
-        
-    #   cost_v2-=Lambda*np.sum(n-np.sum(L_v2>=0))
-        cost_lp,L_lp=opt_lp(X,Y,Lambda)
-        mass_lp=np.sum(L_lp)
-        cost_lp=np.sum(M*L_lp)+Lambda*(n-mass_lp)+1/2*Lambda*(m-n)
+        for j in range(k):
+            X=np.random.uniform(-20,20,n)
+           # np.random.seed(m)
+            Y=np.random.uniform(-40,40,m)
+            X.sort()
+            Y.sort()
+            mu=np.ones(n)
+            nu=np.ones(m)    
+            M=cost_matrix(X,Y)
+            cost_v2a,L_v2a=opt_1d_v2_apro(X,Y,Lambda)
+            L_v2a=plan_to_matrix(L_v2a,m)
+            cost_v2a=np.sum(M*L_v2a)+Lambda*np.sum(n-np.sum(L_v2a))
+            cost_v2a_list[i,j]=cost_v2a
+            
+            cost_v2,L_v2=opt_1d_v2(X,Y,Lambda)
+            L_v2=plan_to_matrix(L_v2,m)
+            cost_v2=np.sum(M*L_v2)+Lambda*np.sum(n-np.sum(L_v2))
+            cost_v2_list[i,j]=cost_v2
+
+        #   cost_v2-=Lambda*np.sum(n-np.sum(L_v2>=0))
+            cost_lp,L_lp=opt_lp(X,Y,Lambda)
+            mass_lp=np.sum(L_lp)
+            cost_lp=np.sum(M*L_lp)+Lambda*(n-mass_lp)
+            cost_lp_list[i,j]=cost_lp
     
-    
-    #    L3=ot.partial.partial_wasserstein
-        L_pr=ot.partial.partial_wasserstein(mu,nu,M,mass_lp,500)
-        cost_pr=np.sum(M*L_pr)+Lambda*(n-mass_lp)+1/2*Lambda*(m-n)
-        if abs(cost_v2-cost_lp)>0.001:
-            print('Lambda',Lambda)
-            print('error')
-            print(cost_v2)
-            print(cost_lp)
-            break
-    
-    
+        #   L3=ot.partial.partial_wasserstein
+            L_pr=ot.partial.partial_wasserstein(mu,nu,M,mass_lp,500)
+            cost_pr=np.sum(M*L_pr)+Lambda*(n-mass_lp)
+            cost_pr_list[i,j]=cost_pr
 
         
-        cost_v2_list.append(cost_v2)
-        cost_v2_a_list.append(cost_v2_a)
-        cost_pr_list.append(cost_pr)
-        cost_lp_list.append(cost_lp)
-    #    cost_sinkhorn_list.append(cost_sinkhorn)
-         
-    cost_v2_list=np.array(cost_v2_list)
-    cost_v2_a_list=np.array(cost_v2_a_list)
-    cost_pr_list=np.array(cost_pr_list)
-    cost_lp_list=np.array(cost_lp_list)
-    n_list=np.array(range(start_n,end_n,step))
-    fig = plt.figure()
-    ax = plt.subplot(111)
-    plt.plot(n_list,cost_v2_list/n_list,linewidth=3,label='ours')
-    plt.plot(n_list,cost_v2_a_list/n_list,label='ours-apro')
-    plt.plot(n_list,cost_pr_list/n_list,linewidth=2,label='Lp (primal): python OT')
-    plt.plot(n_list,cost_lp_list/n_list,label='Lp: python OT')
-    #lt.plot(range(start_n,end_n,step),cost_lp_list,label='Sinkhorn: python OT')
-    plt.xlabel("n: size of X")
-    plt.ylabel("normalized OPT distance")
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0 + box.height * 0.1,
-                      box.width, box.height * 0.9])
-    plt.legend(loc='upper center',bbox_to_anchor=(0.5, 1.2),
-              fancybox=True, shadow=True, ncol=3)
-#    plt.savefig("myImage.png", format="png", dpi=resolution_value)
-    plt.savefig('experiment/test/results/accuracy'+str(Lambda)+'.png',format="png",dpi=2000,bbox_inches='tight')
-    plt.show()
+    error_v2_lp=abs(cost_v2_list-cost_lp_list)/n_list.reshape(N,1)
+    error_v2_lp_mean=error_v2_lp.mean(1)
+    error_v2_lp_std=error_v2_lp.std(1)
+    error_v2a_lp=abs(cost_v2a_list-cost_lp_list)/n_list.reshape(N,1)
+    error_v2a_lp_mean=error_v2a_lp.mean(1)
+    error_v2a_lp_std=error_v2a_lp.std(1)
+    
+#     fig = plt.figure()
+#     ax = plt.subplot(111)
+#     plt.plot(n_list,cost_v2_list/n_list,linewidth=3,label='ours')
+#     plt.plot(n_list,cost_v2_a_list/n_list,label='ours-apro')
+#     plt.plot(n_list,cost_pr_list/n_list,linewidth=2,label='Lp (primal): python OT')
+#     plt.plot(n_list,cost_lp_list/n_list,label='Lp: python OT')
+#     #lt.plot(range(start_n,end_n,step),cost_lp_list,label='Sinkhorn: python OT')
+#     plt.xlabel("n: size of X")
+#     plt.ylabel("normalized OPT distance")
+#     box = ax.get_position()
+#     ax.set_position([box.x0, box.y0 + box.height * 0.1,
+#                       box.width, box.height * 0.9])
+#     plt.legend(loc='upper center',bbox_to_anchor=(0.5, 1.2),
+#               fancybox=True, shadow=True, ncol=3)
+# #    plt.savefig("myImage.png", format="png", dpi=resolution_value)
+#     plt.savefig('experiment/test/results/accuracy'+str(Lambda)+'.png',format="png",dpi=2000,bbox_inches='tight')
+#     plt.show()
     
     
     fig = plt.figure()
     ax = plt.subplot(111)
-    plt.plot(n_list,abs(cost_v2_list-cost_lp_list)/n_list,'-',label='error |outs-lp|')
-    plt.plot(n_list,abs(cost_v2_a_list-cost_lp_list)/n_list,label='error |ours_a-lp|')
+    plt.plot(n_list,error_v2_lp_mean,'-',c='blue',label='error |outs-lp|')
+    plt.fill_between(n_list,error_v2_lp_mean-1*error_v2_lp_std,error_v2_lp_mean+1*error_v2_lp_std,alpha=0.3)
+    
+    plt.plot(n_list,error_v2a_lp_mean,'-',label='error |outs-lp|',c='C1')
+    plt.fill_between(n_list,error_v2a_lp_mean-1*error_v2a_lp_std,error_v2a_lp_mean+1*error_v2a_lp_std,alpha=0.3)
+    
     plt.xlabel("n: size of X")
     plt.ylabel("error")
     box = ax.get_position()
@@ -124,12 +120,12 @@ for Lambda in Lambda_list:
                       box.width, box.height * 0.9])
     plt.legend(loc='upper center',bbox_to_anchor=(0.5, 1.13),
               fancybox=True, shadow=True, ncol=3)
-    plt.savefig('experiment/test/results/accuracy_error'+str(Lambda)+'.png',format="png",dpi=2000,bbox_inches='tight')
+    plt.savefig('experiment/test/results/accuracy_error'+str(Lambda)+'.png',format="png",dpi=800,bbox_inches='tight')
     plt.show()
     
     cost_list={}
     cost_list['cost_v2_list']=cost_v2_list
-    cost_list['cost_v2_a_list']=cost_v2_a_list 
+    cost_list['cost_v2a_list']=cost_v2a_list 
     cost_list['cost_pr_list']=cost_pr_list
     cost_list['cost_lp_list']=cost_lp_list
     

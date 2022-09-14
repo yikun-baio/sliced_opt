@@ -100,7 +100,7 @@ def sopt_main(X,Y,n_iterations,N0):
 
 # method of spot_boneel method
 @nb.njit([nb.types.Tuple((nb.float32[:,:,:],nb.float32[:],nb.float32[:,:]))(nb.float32[:,:],nb.float32[:,:],nb.int64,nb.int64)])
-def spot_bonneel(X,Y,n_projections,n_iterations):
+def spot_bonneel(X,Y,n_projections=20,n_iterations=200):
     n,d=X.shape
     N1=Y.shape[0]
     # initlize 
@@ -244,7 +244,7 @@ for (label,per_s) in [('0','-7p'),('1','-5p')]:
     
     X=X1.numpy().copy()
     Y=Y1.numpy().copy()
-    n_projections=100
+    n_projections=20
     n_iterations=200
     start_time=time.time()
     spot_bonneel(X,Y,n_projections,n_iterations)
