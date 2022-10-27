@@ -11,11 +11,11 @@ import math
 import torch
 import os
 
-import numba as nb 
+#import numba as nb 
 #from numba.types import Tuple
 from typing import Tuple
 import sys
-from numba.typed import List
+
 work_path=os.path.dirname(__file__)
 loc1=work_path.find('/code')
 parent_path=work_path[0:loc1+5]
@@ -151,7 +151,7 @@ def opt_sub(M1,L1,Lambda):
         return cost_sub,L_sub, cost_sub_pre,L_sub_pre
 
     L1_inact=L1[0:i_act]
-    L1x_inact=arange(0,i_act)
+    L1x_inact=np.arange(0,i_act)
     cost_inact=np.float32(0)
     cost_inact=np.sum(matrix_take(M1,L1x_inact,L1_inact))
     
@@ -167,7 +167,7 @@ def opt_sub(M1,L1,Lambda):
 
     # find the optimal d1 plan    
     L1_act=L1[i_act:]
-    L1x_act=arange(i_act,n1)
+    L1x_act=np.arange(i_act,n1)
     n_L1=n1-i_act
     
     cost_L1=matrix_take(M1,L1x_act[1:n_L1],L1_act) # cost list with 1 left shift
@@ -257,7 +257,7 @@ def opt_sub_apro(M1,L1,Lambda):
         return cost_sub,L_sub, cost_sub_pre,L_sub_pre
 
     L1_inact=L1[0:i_act]
-    L1x_inact=arange(0,i_act)
+    L1x_inact=np.arange(0,i_act)
     cost_inact=np.float32(0)
     cost_inact=np.sum(matrix_take(M1,L1x_inact,L1_inact))
     
@@ -272,7 +272,7 @@ def opt_sub_apro(M1,L1,Lambda):
   
     # find the optimal d1 plan    
     L1_act=L1[i_act:]
-    L1x_act=arange(i_act,n1)
+    L1x_act=np.arange(i_act,n1)
     n_L1=n1-i_act  
     cost_L1=matrix_take(M1,L1x_act[1:n_L1],L1_act) # cost list with 1 left shift
     cost_L2=matrix_take(M1,L1x_act[0:n_L1-1],L1_act) # cost list of original plan
@@ -709,7 +709,7 @@ def opt_1d_v3(X,Y,Lambda):
     return cost,L
 
 #@nb.jit([nb.types.Tuple((nb.float32,nb.int64[:],nb.float32,nb.int64[:]))(nb.float32[:,:],nb.int64[:],nb.float32)],nopython=True)
-def opt_sub_np(M1:nb.float32[:,:],L1:nb.int64[:],Lambda:nb.float32):    
+def opt_sub_np(M1,L1,Lambda):    
     '''
     Parameters
     ------
@@ -747,7 +747,7 @@ def opt_sub_np(M1:nb.float32[:,:],L1:nb.int64[:],Lambda:nb.float32):
         return cost_sub,L_sub, cost_sub_pre,L_sub_pre
 
     L1_inact=L1[0:i_act]
-    L1x_inact=arange(0,i_act)  
+    L1x_inact=np.arange(0,i_act)  
     
     cost_inact=np.sum(matrix_take(M1,L1x_inact,L1_inact))
 
@@ -762,7 +762,7 @@ def opt_sub_np(M1:nb.float32[:,:],L1:nb.int64[:],Lambda:nb.float32):
 
     # find the optimal d1 plan    
     L1_act=L1[i_act:]
-    L1x_act=arange(i_act,n1)
+    L1x_act=np.arange(i_act,n1)
    
 
 

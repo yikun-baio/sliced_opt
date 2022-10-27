@@ -33,27 +33,28 @@ import ot
 import matplotlib.pyplot as plt
 import time
 
-
+from sopt.lib_ot import *
 #Lambda=60
 Lambda_list=np.float32(np.array([20.0,100.0]))
 time_pot_list=[]
 time_v2_list=[[],[]]
 time_v2_a_list=[[],[]]
 time_sinkhorn_list=[[],[]]
-#time5_list=[]
+time_new_list=[[],[]]
 
 start_n=200
-end_n=1000
+end_n=2000
 device='cpu'
 step=100
 k=5
 for n in range (start_n,end_n,step):
+    print('n',n)
     m=n+1000
     time_pot=0
     time_v2=np.zeros(2)
     time_v2_a=np.zeros(2)
     time_sinkhorn=np.zeros(2)
-
+    time_new=np.zeros(2)
     mu=np.ones(n)
     nu=np.ones(m)
     for i in range (k):
@@ -95,9 +96,20 @@ for n in range (start_n,end_n,step):
     #        Y1=Y[0:n]
             start_time = time.time()
             M=cost_matrix(X1,Y1)
-            ot.partial.entropic_partial_wasserstein(mu,nu,M,mass)
+#            ot.partial.entropic_partial_wasserstein(mu,nu,M,mass)
             end_time = time.time()
             time_sinkhorn[j]+=end_time-start_time
+            
+            
+            start_time = time.time()
+            X1.sort()
+            Y1.sort()       
+            M=cost_matrix(X1,Y1)
+            phi,psi,piRow,piCol=solve1DPOTDijkstra(M,Lambda/2,verbose=False,plots=False)
+            L_new=getPiFromRow(n,m,piRow)
+            end_time = time.time()
+            time_new[j]+=end_time-start_time
+            
     
     
     time_pot_list.append(time_pot/k)
@@ -105,26 +117,28 @@ for n in range (start_n,end_n,step):
         time_v2_list[j].append(time_v2[j]/k)
         time_v2_a_list[j].append(time_v2_a[j]/k)
         time_sinkhorn_list[j].append(time_sinkhorn[j]/k)
+        time_new_list[j].append(time_new[j]/k)
 
 time_list={}
 time_list['pot']=time_pot_list
 time_list['v2']=time_v2_list
 time_list['v2_a']=time_v2_a_list
 time_list['sinkhorn']=time_sinkhorn_list 
+time_list['new']=time_sinkhorn_list 
 
 torch.save(time_list,'experiment/test/results/time_list_no.pt')
 
 
-start_n=200
-end_n=1000
-device='cpu'
-step=100
-k=5
-time_list=torch.load('experiment/test/results/time_list_no.pt')
-time_pot_list=time_list['pot']
-time_v2_list=time_list['v2']
-time_v2_a_list=time_list['v2_a']
-time_sinkhorn_list=time_list['sinkhorn']
+# start_n=200
+# end_n=1000
+# device='cpu'
+# step=100
+# k=5
+# time_list=torch.load('experiment/test/results/time_list_no.pt')
+# time_pot_list=time_list['pot']
+# time_v2_list=time_list['v2']
+# time_v2_a_list=time_list['v2_a']
+# time_sinkhorn_list=time_list['sinkhorn']
 
 n_list=range(start_n,end_n,step)
 fig = plt.figure()
@@ -132,9 +146,11 @@ ax = plt.subplot(111)
 
 plt.semilogy(n_list,time_pot_list,label='partial OT')
 for j in range(2):
-    plt.semilogy(n_list,time_v2_list[j],label='ours-$\lambda=$'+str(Lambda_list[j]))
-    plt.semilogy(n_list,time_v2_a_list[j],label='ours_apro-$\lambda=$'+str(Lambda_list[j]))
-    plt.semilogy(n_list,time_sinkhorn_list[j],label='sinkhorn-$\lambda=$'+str(Lambda_list[j]))
+    plt.semilogy(n_list,time_v2_list[j],label='ours-$\lambda=$'+str(int(Lambda_list[j])))
+    plt.semilogy(n_list,time_v2_a_list[j],label='ours_a-$\lambda=$'+str(int(Lambda_list[j])))
+#    plt.semilogy(n_list[:-2],time_sinkhorn_list[j],label='sinkhorn-$\lambda=$'+str(int(Lambda_list[j])))
+    plt.semilogy(n_list,time_new_list[j],'b',label='new-$\lambda=$'+str(int(Lambda_list[j])))
+    
     
 #plt.semilogy(n_list,time_sinkhorn_list,label='Sinkhorn: python ot')
 box = ax.get_position()
@@ -145,7 +161,7 @@ plt.legend(loc='upper center',bbox_to_anchor=(0.5, 1.285),
 plt.xlabel('n: size of X')
 plt.ylabel("wall time")
 #plt.title('wall-clock time without accelaration')
-plt.savefig('experiment/test/results/time_no.png',format='png',dpi=800,bbox_inches='tight')
+#plt.savefig('experiment/test/results/time_no.png',format='png',dpi=800,bbox_inches='tight')
 plt.show()
 #plt.semilogy(range(start_n,end_n),time4_list,label='Sinkhon in POT package')
 

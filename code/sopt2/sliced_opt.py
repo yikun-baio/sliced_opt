@@ -37,9 +37,10 @@ def random_projections(d,n_projections,device='cpu',dtype=torch.float,Type=None)
         projections=projections.T
     elif Type=='orth':
  #       np.random.seed(0)
-        r=int(n_projections/d)
+        r=int(n_projections/d)+1
         projections=np.concatenate([ortho_group.rvs(d) for i in range(r)],axis=1)
         projections=torch.from_numpy(projections).to(device=device).to(dtype=dtype).T
+        projections=projections[0:n_projections]
     else:
         print('Type must be None or orth')
     return projections
@@ -82,7 +83,7 @@ def allplans_s(X_sliced,Y_sliced,Lambda_list):
         Y_theta=Y_sliced[i]
         Lambda=Lambda_list[i]
 #       M=cost_matrix(X_theta,Y_theta)
-        cost,L=opt_1d_v2_apro(X_theta,Y_theta,Lambda)
+        cost,L=opt_1d_v2_a(X_theta,Y_theta,Lambda)
         plans[i]=L
         costs[i]=cost
     return costs,plans
@@ -95,7 +96,7 @@ def X_correspondence(X,Y,projections,Lambda_list):
     n=X.shape[0]
     Lx_org=arange(0,n)
     for i in range(N):
-#        print(i)
+
         theta=projections[i]
         X_theta=mat_vec_mul(X.T,theta)
         Y_theta=mat_vec_mul(Y.T,theta)
@@ -104,7 +105,10 @@ def X_correspondence(X,Y,projections,Lambda_list):
         X_s=X_theta[X_indice]
         Y_s=Y_theta[Y_indice]
         Lambda=Lambda_list[i]
-        cost,L=opt_1d_v2_apro(X_s,Y_s,Lambda)
+        # print('Lambda',Lambda)
+        # M=cost_matrix(X_s,Y_s)
+        # print('max distance',M.max())
+        cost,L=opt_1d_v2(X_s,Y_s,Lambda)
         L=recover_indice(X_indice,Y_indice,L)
         #move X
         Lx=Lx_org.copy()

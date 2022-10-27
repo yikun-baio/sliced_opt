@@ -25,16 +25,17 @@ lab_path=parent_path
 os.chdir(lab_path)
 sys.path.append(parent_path)
 
-from sopt3.opt import *
-from sopt3.library import *
-from sopt3.lib_ot import *
+from sopt.library import *
+from sopt.opt import *
+#
+from sopt.lib_ot import *
 
 
 
-Lambda_list=np.array([10.0,50.0,100.0])
+Lambda_list=np.array([50.0])
 
 start_n=50
-end_n=1100
+end_n=500
 step=10
 n_list=np.array(range(start_n,end_n,step))
 N=n_list.shape[0]
@@ -45,19 +46,20 @@ for Lambda in Lambda_list:
     cost_v2a_list=np.zeros((N,k))
     cost_lp_list=np.zeros((N,k))
     cost_pr_list=np.zeros((N,k))
+    cost_new_list=np.zeros((N,k))
     for i in range (N):
         n=n_list[i]
-        m=n+20
+        m=n+0
         for j in range(k):
             X=np.random.uniform(-20,20,n)
-           # np.random.seed(m)
+            # np.random.seed(m)
             Y=np.random.uniform(-40,40,m)
             X.sort()
             Y.sort()
             mu=np.ones(n)
             nu=np.ones(m)    
             M=cost_matrix(X,Y)
-            cost_v2a,L_v2a=opt_1d_v2_apro(X,Y,Lambda)
+            cost_v2a,L_v2a=opt_1d_v2_a(X,Y,Lambda)
             L_v2a=plan_to_matrix(L_v2a,m)
             cost_v2a=np.sum(M*L_v2a)+Lambda*np.sum(n-np.sum(L_v2a))
             cost_v2a_list[i,j]=cost_v2a
@@ -77,14 +79,33 @@ for Lambda in Lambda_list:
             L_pr=ot.partial.partial_wasserstein(mu,nu,M,mass_lp,500)
             cost_pr=np.sum(M*L_pr)+Lambda*(n-mass_lp)
             cost_pr_list[i,j]=cost_pr
+            
+
+            phi,psi,piRow,piCol=solve1DPOT(M,Lambda/2,verbose=False,plots=False)
+
+            L_new=getPiFromRow(n,m,piRow)
+            mass_new=np.sum(L_new)
+            cost_new=np.sum(M*L_new)+Lambda*(n-mass_new)
+            
+            cost_new_list[i,j]=cost_new
+            if abs(cost_new-cost_lp)>1e-4:
+                print('error')
+                X0=X.copy()
+                Y0=Y.copy()
+                break
+    #     else:
+    #         continue 
+    # else:
+    #     continue
+    
 
         
-    error_v2_lp=abs(cost_v2_list-cost_lp_list)/n_list.reshape(N,1)
+    error_v2_lp=abs(cost_new_list-cost_lp_list)/n_list.reshape(N,1)
     error_v2_lp_mean=error_v2_lp.mean(1)
     error_v2_lp_std=error_v2_lp.std(1)
-    error_v2a_lp=abs(cost_v2a_list-cost_lp_list)/n_list.reshape(N,1)
-    error_v2a_lp_mean=error_v2a_lp.mean(1)
-    error_v2a_lp_std=error_v2a_lp.std(1)
+    # error_v2a_lp=abs(cost_v2a_list-cost_lp_list)/n_list.reshape(N,1)
+    # error_v2a_lp_mean=error_v2a_lp.mean(1)
+    # error_v2a_lp_std=error_v2a_lp.std(1)*(k-1)/k
     
 #     fig = plt.figure()
 #     ax = plt.subplot(111)
@@ -105,13 +126,13 @@ for Lambda in Lambda_list:
 #     plt.show()
     
     
-    fig = plt.figure()
+    fig = plt.figure(1)
     ax = plt.subplot(111)
-    plt.plot(n_list,error_v2_lp_mean,'-',c='blue',label='error |outs-lp|')
+    plt.plot(n_list,error_v2_lp_mean,'-',c='blue',label='error |new-lp|')
     plt.fill_between(n_list,error_v2_lp_mean-1*error_v2_lp_std,error_v2_lp_mean+1*error_v2_lp_std,alpha=0.3)
     
-    plt.plot(n_list,error_v2a_lp_mean,'-',label='error |outs-lp|',c='C1')
-    plt.fill_between(n_list,error_v2a_lp_mean-1*error_v2a_lp_std,error_v2a_lp_mean+1*error_v2a_lp_std,alpha=0.3)
+#    plt.plot(n_list,error_v2a_lp_mean,'-',label='error |outs_a-lp|',c='C1')
+#    plt.fill_between(n_list,error_v2a_lp_mean-1*error_v2a_lp_std,error_v2a_lp_mean+1*error_v2a_lp_std,alpha=0.3)
     
     plt.xlabel("n: size of X")
     plt.ylabel("error")
@@ -120,16 +141,16 @@ for Lambda in Lambda_list:
                       box.width, box.height * 0.9])
     plt.legend(loc='upper center',bbox_to_anchor=(0.5, 1.13),
               fancybox=True, shadow=True, ncol=3)
-    plt.savefig('experiment/test/results/accuracy_error'+str(Lambda)+'.png',format="png",dpi=800,bbox_inches='tight')
+#    plt.savefig('experiment/test/results/accuracy_error'+str(Lambda)+'.png',format="png",dpi=800,bbox_inches='tight')
     plt.show()
     
-    cost_list={}
-    cost_list['cost_v2_list']=cost_v2_list
-    cost_list['cost_v2a_list']=cost_v2a_list 
-    cost_list['cost_pr_list']=cost_pr_list
-    cost_list['cost_lp_list']=cost_lp_list
+#     cost_list={}
+#    cost_list['cost_v2_list']=cost_v2_list
+#    cost_list['cost_v2a_list']=cost_v2a_list 
+#    cost_list['cost_pr_list']=cost_pr_list
+#    cost_list['cost_lp_list']=cost_lp_list
     
-    torch.save(cost_list,'experiment/test/results/accuracy_list'+str(Lambda)+'.pt')
+#    torch.save(cost_list,'experiment/test/results/accuracy_list'+str(Lambda)+'.pt')
 
 
 # for Lambda in Lambda_list:

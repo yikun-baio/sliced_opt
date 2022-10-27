@@ -9,9 +9,9 @@ import numpy as np
 import torch
 import os
 
-import numba as nb
+#import numba as nb
 from typing import Tuple #,List
-from numba.typed import List
+#from numba.typed import List
 
 
 #@nb.njit()
@@ -363,7 +363,7 @@ def startindex_np(L_pre):
     j_start=max(0,L_pre.max()+1)
     return i_start,j_start
 
-@nb.jit([nb.int64[:](nb.int64,nb.int64)],nopython=True)
+#@nb.jit([nb.int64[:](nb.int64,nb.int64)],nopython=True)
 def arange(start,end):
     n=end-start
     L=np.zeros(n,dtype=np.int64)
@@ -800,7 +800,7 @@ def empty_Y_opt_T(n: 'int',Lambda: 'torch.Tensor'):
     return cost,L,cost_pre,L_pre
 
 #@nb.jit([nb.types.Tuple((nb.float32,nb.int64[:],nb.float32,nb.int64[:]))(nb.float32[:,:],nb.int64,nb.int64,nb.float32)],nopython=True)
-def one_x_opt(M1,i_act:nb.int64,j_act:nb.int64,Lambda:nb.float32): 
+def one_x_opt(M1,i_act,j_act,Lambda): 
     '''
 
     Parameters
@@ -858,7 +858,7 @@ def merge_list(L):
     
 
 #@nb.jit([nb.types.Tuple((nb.float32,nb.int64[:],nb.float32,nb.int64[:]))(nb.float32[:,:],nb.int64,nb.int64,nb.float32)],nopython=True)
-def one_x_opt_np(M1,i_act:nb.int64,j_act:nb.int64,Lambda:nb.float32): 
+def one_x_opt_np(M1,i_act,j_act,Lambda): 
     '''
 
     Parameters
@@ -1020,7 +1020,7 @@ def rotation_matrix_3d(theta,order='in'):
 
     
 
-@nb.jit([nb.float32[:](nb.float32[:,:],nb.int64[:],nb.int64[:])],nopython=True)
+#@nb.jit([nb.float32[:](nb.float32[:,:],nb.int64[:],nb.int64[:])],nopython=True)
 def matrix_take(X,L1,L2):
     return np.array([X[L1[i],L2[i]] for i in range(L1.shape[0])])
 

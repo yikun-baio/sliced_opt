@@ -55,7 +55,7 @@ def ot_transfer(X1,X2,Xs,Xt):
 #    XsT=torch.from_numpy(Xs).to(dtype=torch.float)
 #    XtT=torch.from_numpy(Xt).to(dtype=torch.float)
     # EMDTransport
-    ot_emd = ot.da.EMDTransport(max_iter=500000)
+    ot_emd = ot.da.EMDTransport(max_iter=1000000)
     
     ot_emd.fit(Xs=Xs, Xt=Xt)
     # # prediction between images (using out of sample prediction as in [6])
@@ -66,15 +66,15 @@ def ot_transfer(X1,X2,Xs,Xt):
 
 def eot_transfer(X1,X2,Xs,Xt):
     # SinkhornTransport
-    ot_sinkhorn = ot.da.SinkhornTransport(reg_e=1e-1,max_iter=500000)
+    ot_sinkhorn = ot.da.SinkhornTransport(reg_e=1e-1,max_iter=1000000)
     ot_sinkhorn.fit(Xs=Xs, Xt=Xt)
     transp_Xs = ot_sinkhorn.transform(Xs=X1)
     return transp_Xs
     
 
 def spot_transfer(X1,X2,Xs,Xt,n_projections=300):
-    XsT=torch.from_numpy(Xs).to(dtype=torch.float)
-    XtT=torch.from_numpy(Xt).to(dtype=torch.float)
+    XsT=torch.from_numpy(Xs).to(dtype=torch.float32)
+    XtT=torch.from_numpy(Xt).to(dtype=torch.float32)
     A=spot(XsT.clone(),XtT.clone(),n_projections)
     A.get_directions()
     A.correspond()
@@ -90,13 +90,13 @@ def sopt_transfer(X1,X2,Xs,Xt,Lambda_list,n_projections):
     transp_Xs=A.transform(torch.from_numpy(X1).to(dtype=torch.float32))
     return transp_Xs
 
-exp_num_list=[0,1,2,3]
-number_list=[(1,1),(1,2),(2,1),(2,2)]
-exp_num =2
-
+exp_num_list=[0,1,2,3,4]
+number_list=[(1,1),(3,2),(2,1),(2,3),(3,1)]
+exp_num =1
+print('exp_num is',exp_num)
 s_n,t_n=number_list[exp_num]
 
-data_path='experiment/color_adaption/data/'+str(exp_num)
+data_path='experiment/color_adaption/data/all'
 save_path='experiment/color_adaption/results/'+str(exp_num)
 I1=imread(data_path+'/source'+str(s_n)+'.jpg').astype(np.float64) / 256
 I2=imread(data_path+'/target'+str(t_n)+'.jpg').astype(np.float64) / 256
@@ -110,17 +110,21 @@ N1=5000
 N2=10000
 try:
     kmean_X1=torch.load(data_path+'/kmeans_S'+str(s_n)+'_'+str(N1)+'.pt')
+    Xs = kmean_X1.cluster_centers_
+    print('source k-mean')
 except:
     rng = np.random.RandomState(42)
     idx1 = rng.randint(X1.shape[0], size=(N1,))
-    
-kmean_X2=torch.load(data_path+'/kmeans_T'+str(t_n)+'_'+str(N2)+'.pt')
-# Xs = kmean_X1.cluster_centers_
-Xt = kmean_X2.cluster_centers_
+    Xs = X1[idx1, :]
+try:       
+    kmean_X2=torch.load(data_path+'/kmeans_T'+str(t_n)+'_'+str(N2)+'.pt')
+    Xt = kmean_X2.cluster_centers_
+    print('target k-mean')
+except:
+    rng = np.random.RandomState(40)
+    idx2 = rng.randint(X2.shape[0], size=(N2,))
+    Xt=X2[idx2,:]
 
-# idx2 = rng.randint(X2.shape[0], size=(nb2,))
-
-Xs = X1[idx1, :]
 
 # method_list=['ot','eot','spot','sopt1.0','sopt0.1']
 plot_image(I1,'source',save_path)
@@ -137,55 +141,35 @@ try:
 except: 
     time_list={}
                                                                                  
-start_time=time.time()
-transp_Xs=eot_transfer(X1,X2,Xs,Xt)
-end_time=time.time()
+# start_time=time.time()
+# transp_Xs=eot_transfer(X1,X2,Xs,Xt)
+# end_time=time.time()
 
-wall_time=end_time-start_time
-time_list['eot']=wall_time
+# wall_time=end_time-start_time
+# time_list['eot']=wall_time
 
-recover_image(transp_Xs,I1.shape,'/eot',save_path)
-torch.save(transp_Xs,save_path+'/eot.pt')
-torch.save(wall_time,save_path+'/eot_time.pt')
+# recover_image(transp_Xs,I1.shape,'/eot',save_path)
+# torch.save(transp_Xs,save_path+'/eot.pt')
+# torch.save(wall_time,save_path+'/eot_time.pt')
 
 
-start_time=time.time()
-transp_Xs=ot_transfer(X1,X2,Xs,Xt)
-end_time=time.time()
-wall_time=end_time-start_time 
-time_list['ot']=wall_time
-recover_image(transp_Xs,I1.shape,'/ot',save_path)
-torch.save(transp_Xs,save_path+'/ot.pt')
-torch.save(wall_time,save_path+'/ot_time.pt')
 
-print('spot')
-n_projections=300
-start_time=time.time()
-transp_Xs=spot_transfer(X1,X2,Xs,Xt,n_projections)
-end_time=time.time()
-wall_time=end_time-start_time
-time_list['spot']=wall_time 
-torch.save(transp_Xs,save_path+'/spot.pt')
-torch.save(wall_time,save_path+'/spot_time.pt')
-recover_image(transp_Xs,I1.shape,'spot',save_path)
+
+# print('spot')
+# n_projections=400
+# start_time=time.time()
+# transp_Xs=spot_transfer(X1,X2,Xs,Xt,n_projections)
+# end_time=time.time()
+# wall_time=end_time-start_time
+# time_list['spot']=wall_time 
+# torch.save(transp_Xs,save_path+'/spot.pt')
+# torch.save(wall_time,save_path+'/spot_time.pt')
+# recover_image(transp_Xs,I1.shape,'spot',save_path)
 
 print('sopt')
 
-n_projections=300
-Lambda=np.float32(1)
-Lambda_list=torch.full((n_projections,),Lambda)
-start_time=time.time()
-transp_Xs=sopt_transfer(X1,X2,Xs,Xt,Lambda_list,n_projections)
-end_time=time.time()
-wall_time=end_time-start_time 
-time_list['sopt'+str(Lambda)]=wall_time 
-torch.save(transp_Xs,save_path+'/sopt'+str(Lambda)+'.pt')
-torch.save(wall_time,save_path+'/sopt'+str(Lambda)+'_time.pt')
-recover_image(transp_Xs,I1.shape,'/sopt'+str(Lambda),save_path)
-
-
-n_projections=300
-Lambda=np.float32(0.001)
+n_projections=400
+Lambda=np.float32(5.0)
 Lambda_list=torch.full((n_projections,),Lambda)
 start_time=time.time()
 transp_Xs=sopt_transfer(X1,X2,Xs,Xt,Lambda_list,n_projections)
@@ -196,3 +180,27 @@ torch.save(transp_Xs,save_path+'/sopt'+str(Lambda)+'.pt')
 torch.save(wall_time,save_path+'/sopt'+str(Lambda)+'_time.pt')
 recover_image(transp_Xs,I1.shape,'/sopt'+str(Lambda),save_path)
 torch.save(time_list,save_path+'/time_list.pt')
+
+
+# n_projections=400
+# Lambda=np.float32(0.8)
+# Lambda_list=torch.full((n_projections,),Lambda)
+# start_time=time.time()
+# transp_Xs=sopt_transfer(X1,X2,Xs,Xt,Lambda_list,n_projections)
+# end_time=time.time()
+# wall_time=end_time-start_time 
+# time_list['sopt'+str(Lambda)]=wall_time 
+# torch.save(transp_Xs,save_path+'/sopt'+str(Lambda)+'.pt')
+# torch.save(wall_time,save_path+'/sopt'+str(Lambda)+'_time.pt')
+# recover_image(transp_Xs,I1.shape,'/sopt'+str(Lambda),save_path)
+# torch.save(time_list,save_path+'/time_list.pt')
+
+
+# start_time=time.time()
+# transp_Xs=ot_transfer(X1,X2,Xs,Xt)
+# end_time=time.time()
+# wall_time=end_time-start_time 
+# time_list['ot']=wall_time
+# recover_image(transp_Xs,I1.shape,'/ot',save_path)
+# torch.save(transp_Xs,save_path+'/ot.pt')
+# torch.save(wall_time,save_path+'/ot_time.pt')

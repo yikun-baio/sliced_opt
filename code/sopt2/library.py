@@ -103,14 +103,14 @@ def cost_matrix_d(X,Y):
     return M
 
 
-@nb.njit(nb.float32[:](nb.float32[:,:],nb.float32[:]),fastmath=True)
+#@nb.njit(nb.float32[:](nb.float32[:,:],nb.float32[:]),fastmath=True)
 #@nb.njit(fastmath=True)
-def mat_vec_mul(XT,theta):
-    d,n=XT.shape 
-    result=np.zeros(n,dtype=np.float32)
-    for i in range(n):
-        result[i]=np.dot(XT[:,i],theta)
-    return result
+# def mat_vec_mul(XT,theta):
+#     d,n=XT.shape 
+#     result=np.zeros(n,dtype=np.float32)
+#     for i in range(n):
+#         result[i]=np.dot(XT[:,i],theta)
+#     return result
     
 
 #@nb.jit([float32[:,:](float32[:],float32[:])],forceobj=True)
@@ -134,7 +134,7 @@ def cost_matrix_T(X,Y):
         M=torch.zeros([n,m],device=device)
         for i in range(d):
             M+=cost_function_T(X[:,i:i+1],Y[:,i:i+1].T)      
-#        M=torch.sum(torch.stack([cost_function_T(X[:,d:d+1],Y[:,d:d+1].T) for d in range(dim)]),0)
+
     return M
 
 

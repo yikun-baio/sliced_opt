@@ -103,14 +103,7 @@ def cost_matrix_d(X,Y):
     return M
 
 
-@nb.njit(nb.float64[:](nb.float64[:,:],nb.float64[:]),fastmath=True)
-#@nb.njit(fastmath=True)
-def mat_vec_mul(XT,theta):
-    d,n=XT.shape 
-    result=np.zeros(n,dtype=np.float64)
-    for i in range(n):
-        result[i]=np.dot(XT[:,i],theta)
-    return result
+
     
 
 #@nb.jit([float64[:,:](float64[:],float64[:])],forceobj=True)

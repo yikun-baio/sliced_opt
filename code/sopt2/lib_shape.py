@@ -179,7 +179,7 @@ def recover_rotation(X,Y):
     scaling=torch.sum(torch.abs(S.T))/torch.trace(Y_c.T@Y_c)
     return rotation,scaling
 
-@nb.njit([nb.float32[:](nb.float32[:,:])],parallel=True,fastmath=True)
+#@nb.njit([nb.float32[:](nb.float32[:,:])],parallel=True,fastmath=True)
 def vec_mean(X):
     n,d=X.shape
     mean=np.zeros(d,dtype=np.float32)
@@ -188,7 +188,7 @@ def vec_mean(X):
     return mean
         
 
-@nb.njit([nb.types.Tuple((nb.float32[:,:],nb.float32))(nb.float32[:,:],nb.float32[:,:])])
+#@nb.njit([nb.types.Tuple((nb.float32[:,:],nb.float32))(nb.float32[:,:],nb.float32[:,:])])
 def recover_rotation_nb(X,Y):
     n,d=X.shape
     X_c=X-vec_mean(X)
@@ -202,7 +202,7 @@ def recover_rotation_nb(X,Y):
     scaling=np.sum(np.abs(S.T))/np.trace(Y_c.T.dot(Y_c))
     return rotation,scaling
 
-@nb.njit([nb.types.Tuple((nb.float32[:,:],nb.float32[:]))(nb.float32[:,:],nb.float32[:,:])],fastmath=True)
+#@nb.njit([nb.types.Tuple((nb.float32[:,:],nb.float32[:]))(nb.float32[:,:],nb.float32[:,:])],fastmath=True)
 def recover_rotation_du_nb(X,Y):
     n,d=X.shape
     X_c=X-vec_mean(X)

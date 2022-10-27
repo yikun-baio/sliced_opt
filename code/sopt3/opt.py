@@ -22,99 +22,9 @@ parent_path=work_path[0:loc1+5]
 sys.path.append(parent_path)
 os.chdir(parent_path)
 from sopt3.library import *
-from sopt3.lib_ot import *
 
 
-# def opt_1d_v1(X: np.array,Y: np.array,Lambda: np.float64) -> 'np.float,np.array':
-#     '''
-#     Parameters
-#     ------
-#     X: array_list shape, shape(n,) or (n,1), X should be shorted, float
-#     Y: array_list shape, shape(n,) or (n,1), Y should be shorted, float
-#     Lambda: float number >=0
-#     Returns:
-#     -----
-#     cost: float, cost of opt problem
-#     L: n*1 list, entry could be 0,1,2.... or -1
-#     where L[i]=j denote x_i->y_j and L[i]=-1 denotes we destroy x_i
-#     L must be in increasing order,
-#     if L=[0,1,1,2,-1], or L=[1,2,5,3], there is a bug. 
-#     optimal transportation plan
-    
-#     '''
-#     def cost_plan_select():
-#         nonlocal L
-#         nonlocal cost
-#         cost_book={}    
-#         #select the best cost
-#         for case in case_set:
-#             if case=='0': # cost for destroy mass 
-#                 cost_book[case]=cost+(Lambda)  
-#             elif case=='1n': # incremental cost without conflict
-#                 cost_book[case]=cost+cost_xk_yjk
-#             elif case=='1c' and j_last+1<=m-1: # there exists right point
-#                 cost_xk_yjlast1=cost_function(xk,Y[j_last+1])
-#                 cost_book[case]=cost+cost_xk_yjlast1
-#             elif case=='2c': # cost for recursive problem
-#             #print('conflict')
-#                 cost_xk_yjlast=cost_function(xk,Y[j_last])
-#                 if cost_xk_yjlast<(Lambda):            
-#                     X1=X[0:k]
-#                     Y1=Y[0:j_last]
-#                     cost_sub,L_sub=opt_1d_v1(X1,Y1,Lambda)
-#                     cost_book[case]=cost_sub+cost_xk_yjlast
-#         # Update L 
- 
-#         min_case=min(cost_book,key=cost_book.get)
-#         cost=cost_book[min_case]
-#         #print(cost_book)
-        
-#         if min_case=='1n':
-#             L.append(jk)
-#         elif min_case=='1c':
-#             L.append(j_last+1)
-#         elif min_case=='0':
-#             L.append(-1)
-#         elif min_case=='2c':
-#             L=L_sub+[j_last]
-   
-             
-#     n=len(X)
-#     m=len(Y)
-#     L=[]
-#     cost=0  
-#     if m==0:
-#         cost,L,xx,yy=empty_Y_opt(n,Lambda)
-#         return cost,L.tolist()
-#     for k in range (n):
-#         xk=X[k]
-#         case_set={'0','1n','1c','2c'} 
-#         # 0 is for cost with destrouction, 1n is for cost without conflict, 1n,2n is the cost with conflict
-#         jk,cost_xk_yjk=closest_y(xk,Y)
-        
 
-#         if cost_xk_yjk>=(Lambda): # closest distance is 2Lambda, then we destroy the point
-#             case_set=case_set-{'1n','1c','2c'}
-#             cost_plan_select()
-#             continue
-        
-#         if len(L)==0:# No conflict
-#             case_set=case_set-{'1c','2c'}
-#             cost_plan_select()
-#             continue
-#         j_last=max(L) # index of last aligned y
-#         if jk>j_last:# No conflict
-#             case_set=case_set-{'1c','2c'}
-#         elif jk<=j_last:# conflict
-#             case_set=case_set-{'1n'}
-#         cost_plan_select()
-#     return cost,L
-
-#@nb.njit((nb.float64[:],nb.float64[:],nb.int64,nb.int64),parallel=True,fastmath=True)
-@nb.njit(parallel=True,fastmath=True)
-def get_cost_d1(cost_d1,cost_list,l_start,s):
-    for i in nb.prange(l_start,s+1):
-        cost_d1[i-l_start]=np.sum(cost_list[i:i+s])
     
 @nb.njit(nb.types.Tuple((nb.float64,nb.int64[:],nb.float64,nb.int64[:]))(nb.float64[:,:],nb.int64[:],nb.float64),fastmath=True,cache=True)
 #@nb.jit(nopython=True,fastmath=True)
@@ -150,7 +60,7 @@ def opt_sub(M1,L1,Lambda):
         return cost_sub,L_sub,cost_sub_pre,L_sub_pre
 
 
-    i_act,j_act=unassign_y1(L1) # i_act is the index for L_sub, not the original_index
+    i_act,j_act=unassign_y(L1) # i_act is the index for L_sub, not the original_index
     L1=L1[0:n1-1]
     
     if L1.shape[0]==0:
@@ -182,17 +92,18 @@ def opt_sub(M1,L1,Lambda):
     s=cost_L2.shape[0]        
     cost_list=np.concatenate((cost_L1,cost_L2))
     i=0
-
-    l_list=np.where(cost_L1>=Lambda)[0]
-    if l_list.shape[0]>=1:
-        l_start=l_list[-1]+1
-    else:
-        l_start=0
-    cost_d1=np.zeros(s+1-l_start,dtype=np.float64)
-#    get_cost_d1(cost_d1,cost_list,l_start,s)
     
-    for i in range(l_start,s+1):
-        cost_d1[i-l_start]=np.sum(cost_list[i:i+s])
+    i_list=np.where(cost_L1>=Lambda)[0]
+    if i_list.shape[0]>=1:
+        i_start=i_list[-1]+1
+    else:
+        i_start=0
+
+    cost_d1=np.zeros(s+1-i_start,dtype=np.float64)
+
+    
+    for i in range(i_start,s+1):
+        cost_d1[i-i_start]=np.sum(cost_list[i:i+s])
 
     # we find the right most argmin 
 #    cost_d1_re=cost_d1[::-1]
@@ -200,11 +111,11 @@ def opt_sub(M1,L1,Lambda):
 #    index_d1_opt=index+i_start
 
     #print(cost_d1)
-    index_d1_opt=cost_d1.argmin()+l_start
+    index_d1_opt=cost_d1.argmin()+i_start
     cost_d1_opt=cost_d1.min()+Lambda
     #find the optimal d0 plan
     cost_d0=np.inf
-    if j_act>=0 and l_start==0:
+    if j_act>=0 and i_start==0:
         cost_d0=cost_d1[0]+M1[i_act,j_act]
         
     if cost_d1_opt<=cost_d0:    
@@ -225,7 +136,7 @@ def opt_sub(M1,L1,Lambda):
 
 @nb.njit(nb.types.Tuple((nb.float64,nb.int64[:],nb.float64,nb.int64[:]))(nb.float64[:,:],nb.int64[:],nb.float64),cache=True)
 #@nb.njit()
-def opt_sub_apro(M1,L1,Lambda):
+def opt_sub_a(M1,L1,Lambda):
     '''
     Parameters
     ------
@@ -286,26 +197,29 @@ def opt_sub_apro(M1,L1,Lambda):
     cost_L2=matrix_take(M1,L1x_act[0:n_L1-1],L1_act) # cost list of original plan
     s=cost_L2.shape[0]
     cost_L=np.concatenate((cost_L1,cost_L2))
-    cost_d11=np.sum(cost_L2)+Lambda    
+    
+    
     i_list=np.where(cost_L1>=Lambda)[0]
     if i_list.shape[0]>=1:
         i_start=i_list[-1]+1
     else:
         i_start=0
+        
+    cost_d11=np.sum(cost_L2)+Lambda 
     cost_d12=np.sum(cost_L[i_start:i_start+s])+Lambda
-    
     i_rand=np.random.randint(i_start,s+1)
     cost_d13=np.sum(cost_L[i_rand:i_rand+s])+Lambda
-    
-    if cost_d11<=cost_d12 and cost_d11<=cost_d13:            
-        cost_d1_opt=cost_d11
+    cost_list=np.array([cost_d11,cost_d12,cost_d13])
+    min_index=cost_list.argmin()
+    cost_d1_opt=cost_list.min()
+    if min_index==0:
         index_d1_opt=s
         
-    elif cost_d12<cost_d11 and cost_d12<=cost_d13:
-        cost_d1_opt=cost_d12
+    elif min_index==1:
+#        cost_d1_opt=cost_d12
         index_d1_opt=i_start
     else:
-        cost_d1_opt=cost_d13
+#        cost_d1_opt=cost_d13
         index_d1_opt=i_rand
 
     cost_d0=np.float64(np.inf)
@@ -444,7 +358,7 @@ def opt_1d_v2(X,Y,Lambda):
     return cost,L
 
 @nb.njit(nb.types.Tuple((nb.float64,nb.int64[:]))(nb.float64[:],nb.float64[:],nb.float64))
-def opt_1d_v2_apro(X,Y,Lambda):
+def opt_1d_v2_a(X,Y,Lambda):
     M=cost_matrix(X,Y)
     n,m=M.shape
 #    Lambda=np.float64(Lambda)
@@ -516,7 +430,7 @@ def opt_1d_v2_apro(X,Y,Lambda):
 
         #     # we need the last assign index since we need to retrieve the closest unassigend j                    
                 index_adjust(L1,-j_start)
-                cost_sub,L_sub,cost_sub_pre,L_sub_pre=opt_sub_apro(M1,L1,Lambda)
+                cost_sub,L_sub,cost_sub_pre,L_sub_pre=opt_sub_a(M1,L1,Lambda)
                 cost_book[3]=cost_pre+cost_sub+cost_xk_yjlast                       
                 index_adjust(L_sub,j_start)
                 index_adjust(L_sub_pre,j_start)
@@ -561,7 +475,7 @@ def opt_1d_v2_apro(X,Y,Lambda):
             
     return cost,L
 
-@nb.njit()
+#@nb.njit()
 #@nb.njit(nb.types.Tuple((List,List,nb.int64[:]))(nb.float64[:],nb.float64[:],nb.float64))
 def opt_decomposition(X,Y,Lambda):
     M=cost_matrix(X,Y)
@@ -694,7 +608,7 @@ def opt_decomposition(X,Y,Lambda):
             free_Y[-1]=free_y
     return X_list,Y_list,free_Y
 
-@nb.njit(nb.types.Tuple((nb.float64,nb.int64[:]))(nb.float64[:],nb.float64[:],nb.float64),parallel=True,fastmath=True)
+#@nb.njit(nb.types.Tuple((nb.float64,nb.int64[:]))(nb.float64[:],nb.float64[:],nb.float64),parallel=True,fastmath=True)
 def opt_1d_v3(X,Y,Lambda):
     X_list,Y_list,free_Y=opt_decomposition(X,Y,Lambda)
     K=len(X_list)
