@@ -107,7 +107,7 @@ for n in range (start_n,end_n,step):
             Y1.sort()       
             M=cost_matrix(X1,Y1)
             phi,psi,piRow,piCol=solve1DPOTDijkstra_32(M,Lambda/2) #,verbose=False,plots=False)
-            L_new=getPiFromRow(n,m,piRow)
+#            L_new=getPiFromRow(n,m,piRow)
             end_time = time.time()
             time_new[j]+=end_time-start_time
     
@@ -141,7 +141,7 @@ time_pot_list=time_list['pot']
 time_v2_list=time_list['v2']
 time_v2_a_list=time_list['v2_a']
 time_lp_list=time_list['lp']
-time_new_list=time_new['new']
+time_new_list=time_list['new']
 
 start_n=1500
 end_n=10000
@@ -154,13 +154,14 @@ ax = plt.subplot(111)
 
 plt.semilogy(n_list,time_pot_list[1:],label='partial OT')
 for j in range(2):
-    plt.semilogy(n_list,time_v2_list[j][1:],label='ours,$\lambda=$'+str(Lambda_list[j]))
-    plt.semilogy(n_list,time_v2_a_list[j][1:],label='ours_a,$\lambda=$'+str(Lambda_list[j]))
+#    plt.semilogy(n_list,time_v2_list[j][1:],label='ours,$\lambda=$'+str(Lambda_list[j]))
+#    plt.semilogy(n_list,time_v2_a_list[j][1:],label='ours_a,$\lambda=$'+str(Lambda_list[j]))
     plt.semilogy(n_list,time_lp_list[j][1:],label='lp: python ot, C, $\lambda=$'+str(Lambda_list[j]))
+    plt.semilogy(n_list,time_new_list[j][1:],label='ours, $\lambda=$'+str(Lambda_list[j]))
 box = ax.get_position()
 ax.set_position([box.x0, box.y0 + box.height * 0.1,
                  box.width, box.height * 0.9])
-plt.legend(loc='upper center',bbox_to_anchor=(0.5, 1.285),
+plt.legend(loc='upper center',bbox_to_anchor=(0.5, 1.23),
           fancybox=True, shadow=True, ncol=3)
 plt.xlabel('n: size of X')
 plt.ylabel("wall time")

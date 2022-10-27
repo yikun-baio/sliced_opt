@@ -80,15 +80,15 @@ for n in range (start_n,end_n,step):
             end_time = time.time()
             time_v2[j]+=end_time-start_time
             mass=np.sum(L>=0)
+
             #=np.sum(L2>=0)
             X1=X.copy()
             Y1=Y.copy()
             start_time = time.time()
-#            M=cost_matrix(X1,Y1)
+            M=cost_matrix(X1,Y1)
             X1.sort()
             Y1.sort()       
             opt_1d_v2_apro(X1,Y1,Lambda)
-#        L3=ot.partial.entropic_partial_wasserstein(mu,nu,M,len(L_y))
             end_time = time.time()
             time_v2_a[j]+=end_time-start_time
             
@@ -96,7 +96,7 @@ for n in range (start_n,end_n,step):
     #        Y1=Y[0:n]
             start_time = time.time()
             M=cost_matrix(X1,Y1)
-#            ot.partial.entropic_partial_wasserstein(mu,nu,M,mass)
+            ot.partial.entropic_partial_wasserstein(mu,nu,M,mass)
             end_time = time.time()
             time_sinkhorn[j]+=end_time-start_time
             
@@ -105,7 +105,7 @@ for n in range (start_n,end_n,step):
             X1.sort()
             Y1.sort()       
             M=cost_matrix(X1,Y1)
-            phi,psi,piRow,piCol=solve1DPOTDijkstra(M,Lambda/2,verbose=False,plots=False)
+            phi,psi,piRow,piCol=solve1DPOTDijkstra_32_no(M,Lambda/2) #,verbose=False,plots=False)
             L_new=getPiFromRow(n,m,piRow)
             end_time = time.time()
             time_new[j]+=end_time-start_time
@@ -129,16 +129,17 @@ time_list['new']=time_sinkhorn_list
 torch.save(time_list,'experiment/test/results/time_list_no.pt')
 
 
-# start_n=200
-# end_n=1000
-# device='cpu'
-# step=100
-# k=5
-# time_list=torch.load('experiment/test/results/time_list_no.pt')
-# time_pot_list=time_list['pot']
-# time_v2_list=time_list['v2']
-# time_v2_a_list=time_list['v2_a']
-# time_sinkhorn_list=time_list['sinkhorn']
+start_n=200
+end_n=1000
+device='cpu'
+step=100
+k=5
+time_list=torch.load('experiment/test/results/time_list_no.pt')
+time_pot_list=time_list['pot']
+time_v2_list=time_list['v2']
+time_v2_a_list=time_list['v2_a']
+time_sinkhorn_list=time_list['sinkhorn']
+time_new=time_list['new']
 
 n_list=range(start_n,end_n,step)
 fig = plt.figure()
@@ -148,7 +149,7 @@ plt.semilogy(n_list,time_pot_list,label='partial OT')
 for j in range(2):
     plt.semilogy(n_list,time_v2_list[j],label='ours-$\lambda=$'+str(int(Lambda_list[j])))
     plt.semilogy(n_list,time_v2_a_list[j],label='ours_a-$\lambda=$'+str(int(Lambda_list[j])))
-#    plt.semilogy(n_list[:-2],time_sinkhorn_list[j],label='sinkhorn-$\lambda=$'+str(int(Lambda_list[j])))
+    plt.semilogy(n_list[:-2],time_sinkhorn_list[j],label='sinkhorn-$\lambda=$'+str(int(Lambda_list[j])))
     plt.semilogy(n_list,time_new_list[j],'b',label='new-$\lambda=$'+str(int(Lambda_list[j])))
     
     
