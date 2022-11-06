@@ -45,8 +45,7 @@ def random_projections(d,n_projections,device='cpu',dtype=torch.float,Type=None)
         print('Type must be None or orth')
     return projections
 
-@nb.njit(['float32[:,:](int64,int64,int64)','float64[:,:](int64,int64,int64)'],
-         fastmath=True)
+@nb.njit(['float64[:,:](int64,int64,int64)'],fastmath=True)
 def random_projections_nb(d,n_projections,Type=0):
     '''
     input: 
@@ -58,22 +57,22 @@ def random_projections_nb(d,n_projections,Type=0):
 
     '''
     if Type==0:
-        Gaussian_vector=np.random.normal(0,1,size=(d,n_projections)).astype(np.float32)
+        Gaussian_vector=np.random.normal(0,1,size=(d,n_projections)) #.astype(np.float64)
         projections=Gaussian_vector/np.sqrt(np.sum(np.square(Gaussian_vector),0))
         projections=projections.T
 
     elif Type==1:
         r=np.int64(n_projections/d)
-        projections=np.zeros((n_projections,d),dtype=np.float32)
+        projections=np.zeros((n_projections,d)) #,dtype=np.float64)
         for i in range(r):
-            H=np.random.randn(d,d).astype(np.float32)
+            H=np.random.randn(d,d) #.astype(np.float64)
             Q,R=np.linalg.qr(H)
             projections[i*d:(i+1)*d]=Q
     return projections
 
 
-#@nb.njit([nb.types.Tuple((nb.float32[:],nb.int64[:,:]))(nb.float32[:,:],nb.float32[:,:],nb.float32)],parallel=True,fastmath=True)
-@nb.njit(['Tuple((float32[:],int64[:,:]))(float32[:,:],float32[:,:],float32[:])','Tuple((float64[:],int64[:,:]))(float64[:,:],float64[:,:],float64[:])'],parallel=True,fastmath=True)
+#@nb.njit([nb.types.Tuple((nb.float64[:],nb.int64[:,:]))(nb.float64[:,:],nb.float64[:,:],nb.float64)],parallel=True,fastmath=True)
+@nb.njit(['Tuple((float64[:],int64[:,:]))(float64[:,:],float64[:,:],float64[:])'],parallel=True,fastmath=True)
 def allplans_s(X_sliced,Y_sliced,Lambda_list):
     N,n=X_sliced.shape
     Dtype=type(X_sliced[0,0])
@@ -90,7 +89,7 @@ def allplans_s(X_sliced,Y_sliced,Lambda_list):
 
 
 
-@nb.njit(['(float32[:,:],float32[:,:],float32[:,:],float32[:])','(float64[:,:],float64[:,:],float64[:,:],float64[:])'])
+@nb.njit(['(float64[:,:],float64[:,:],float64[:,:],float64[:])'])
 def X_correspondence(X,Y,projections,Lambda_list):
     N,d=projections.shape
     n=X.shape[0]
@@ -118,7 +117,7 @@ def X_correspondence(X,Y,projections,Lambda_list):
     
 
 
-# @nb.njit([nb.types.Tuple((nb.int64[:],nb.float32))(nb.float32[:,:],nb.float32[:,:],nb.float32[:,:],nb.float32[:])])
+# @nb.njit([nb.types.Tuple((nb.int64[:],nb.float64))(nb.float64[:,:],nb.float64[:,:],nb.float64[:,:],nb.float64[:])])
 # def X_correspondence(X,Y,Lambda_list,projections):
 #     N,d=projections.shape
 #     n=X.shape[0]
@@ -147,7 +146,7 @@ def X_correspondence(X,Y,projections,Lambda_list):
 #     return frequency,Lambda
 
 
-@nb.njit(['(float32[:,:],float32[:,:],float32[:,:])','(float64[:,:],float64[:,:],float64[:,:])'])
+@nb.njit(['(float64[:,:],float64[:,:],float64[:,:])'])
 def X_correspondence_pot(X,Y,projections):
     N,d=projections.shape
     n=X.shape[0]
@@ -163,7 +162,8 @@ def X_correspondence_pot(X,Y,projections):
         L=recover_indice(X_indice,Y_indice,L)
         X_take=X_theta
         Y_take=Y_theta[L]
-        X+=(Y_take-X_take).reshape(-1,1)*theta
+        X+=transpose(Y_take-X_take)*theta
+    return X
 
     
     
@@ -225,7 +225,7 @@ class sopt():
         N=Xs.shape[0]
         self.Lx=[torch.arange(self.n,device=self.device)[plans[i]>=0] for i in range(N)]
         self.mass_list=[torch.sum(plans[i]>=0) for i in range(N)]
-        self.mass_list=torch.tensor(self.mass_list,dtype=torch.float32)
+        self.mass_list=torch.tensor(self.mass_list,dtype=torch.float64)
         self.Ly=[plans[i][plans[i]>=0] for i in range(N)]
         self.X_take=torch.cat([Xs[i][self.Lx[i]] for i in range(N)])
         self.Y_take=torch.cat([Ys[i][self.Ly[i]] for i in range(N)])        
@@ -248,7 +248,7 @@ class sopt_correspondence(sopt):
         self.Xc=self.X.clone()
         #X_correspondence(self.X.numpy(),self.Y.numpy(),self.projections.numpy())
 
-    def correspond(self,mass=-1,b=np.float32(0)):
+    def correspond(self,mass=-1,b=np.float64(0)):
         if self.X.shape[0]>0:
             if mass<0:
                 mass=self.n

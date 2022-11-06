@@ -35,7 +35,7 @@ import time
 
 
 #Lambda=60
-Lambda_list=np.array([20.0,100.0]).astype(np.float32)
+Lambda_list=np.array([20.0,100.0]).astype(np.float64)
 time_pot_list=[]
 time_v2_list=[[],[]]
 time_v2_a_list=[[],[]]
@@ -66,8 +66,8 @@ for n in range (start_n,end_n,step):
     nu=np.ones(n)
 
     for i in range (k):
-        X=np.random.uniform(-20,20,n).astype(np.float32)
-        Y=np.random.uniform(-40,40,m).astype(np.float32)
+        X=np.random.uniform(-20,20,n).astype(np.float64)
+        Y=np.random.uniform(-40,40,m).astype(np.float64)
         X1=X.copy()
         Y1=Y.copy()
         start_time = time.time()
@@ -84,36 +84,36 @@ for n in range (start_n,end_n,step):
             
             start_time = time.time()
 
+#             X1.sort()
+#             Y1.sort()       
+#             opt_1d_v2(X1,Y1,Lambda)
+#             end_time = time.time()
+#             time_v2[j]+=end_time-start_time
+            
+#             X1=X.copy()
+#             Y1=Y.copy()
+#             start_time = time.time()
+# #            M=cost_matrix(X1,Y1)
+#             X1.sort()
+#             Y1.sort()
+#             opt_1d_v2_a(X1,Y1,Lambda)
+# #        L3=ot.partial.entropic_partial_wasserstein(mu,nu,M,len(L_y))
+#             end_time = time.time()
+#             time_v2_a[j]+=end_time-start_time
+            
+            
+            start_time = time.time()
             X1.sort()
             Y1.sort()       
-            opt_1d_v2(X1,Y1,Lambda)
-            end_time = time.time()
-            time_v2[j]+=end_time-start_time
-            
-            X1=X.copy()
-            Y1=Y.copy()
-            start_time = time.time()
 #            M=cost_matrix(X1,Y1)
-            X1.sort()
-            Y1.sort()
-            opt_1d_v2_a(X1,Y1,Lambda)
-#        L3=ot.partial.entropic_partial_wasserstein(mu,nu,M,len(L_y))
-            end_time = time.time()
-            time_v2_a[j]+=end_time-start_time
-            
-            
-            start_time = time.time()
-            X1.sort()
-            Y1.sort()       
-            M=cost_matrix(X1,Y1)
-            phi,psi,piRow,piCol=solve1DPOTDijkstra_32(M,Lambda/2) #,verbose=False,plots=False)
-#            L_new=getPiFromRow(n,m,piRow)
+            phi,psi,piRow,piCol=solve1DOPT(X1,Y1,Lambda/2) #,verbose=False,plots=False)
+            L_new=getPiFromRow(n,m,piRow)
             end_time = time.time()
             time_new[j]+=end_time-start_time
     
             
     #        Y1=Y[0:n]
-            numItermax=100000*n/1000
+            numItermax=200000*n/1000
             start_time = time.time()
             opt_lp(X,Y,Lambda,numItermax)
             end_time = time.time()

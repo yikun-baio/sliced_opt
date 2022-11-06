@@ -43,7 +43,7 @@ time_sinkhorn_list=[[],[]]
 time_new_list=[[],[]]
 
 start_n=200
-end_n=2000
+end_n=1200
 device='cpu'
 step=100
 k=5
@@ -104,8 +104,8 @@ for n in range (start_n,end_n,step):
             start_time = time.time()
             X1.sort()
             Y1.sort()       
-            M=cost_matrix(X1,Y1)
-            phi,psi,piRow,piCol=solve1DPOTDijkstra_32_no(M,Lambda/2) #,verbose=False,plots=False)
+#            M=cost_matrix(X1,Y1)
+            phi,psi,piRow,piCol=solve1DOPT_32_no(X1,Y1,Lambda/2) #,verbose=False,plots=False)
             L_new=getPiFromRow(n,m,piRow)
             end_time = time.time()
             time_new[j]+=end_time-start_time
@@ -130,7 +130,7 @@ torch.save(time_list,'experiment/test/results/time_list_no.pt')
 
 
 start_n=200
-end_n=1000
+end_n=1200
 device='cpu'
 step=100
 k=5
@@ -147,22 +147,22 @@ ax = plt.subplot(111)
 
 plt.semilogy(n_list,time_pot_list,label='partial OT')
 for j in range(2):
-    plt.semilogy(n_list,time_v2_list[j],label='ours-$\lambda=$'+str(int(Lambda_list[j])))
-    plt.semilogy(n_list,time_v2_a_list[j],label='ours_a-$\lambda=$'+str(int(Lambda_list[j])))
-    plt.semilogy(n_list[:-2],time_sinkhorn_list[j],label='sinkhorn-$\lambda=$'+str(int(Lambda_list[j])))
-    plt.semilogy(n_list,time_new_list[j],'b',label='new-$\lambda=$'+str(int(Lambda_list[j])))
+#    plt.semilogy(n_list,time_v2_list[j],label='ours-$\lambda=$'+str(int(Lambda_list[j])))
+#    plt.semilogy(n_list,time_v2_a_list[j],label='ours_a-$\lambda=$'+str(int(Lambda_list[j])))
+    plt.semilogy(n_list[:],time_sinkhorn_list[j],label='sinkhorn-$\lambda=$'+str(int(Lambda_list[j])))
+    plt.semilogy(n_list,time_new_list[j],label='ours-$\lambda=$'+str(int(Lambda_list[j])))
     
     
 #plt.semilogy(n_list,time_sinkhorn_list,label='Sinkhorn: python ot')
 box = ax.get_position()
 ax.set_position([box.x0, box.y0 + box.height * 0.1,
                  box.width, box.height * 0.9])
-plt.legend(loc='upper center',bbox_to_anchor=(0.5, 1.285),
+plt.legend(loc='upper center',bbox_to_anchor=(0.5, 1.22),
           fancybox=True, shadow=True, ncol=3)
 plt.xlabel('n: size of X')
 plt.ylabel("wall time")
 #plt.title('wall-clock time without accelaration')
-#plt.savefig('experiment/test/results/time_no.png',format='png',dpi=800,bbox_inches='tight')
+plt.savefig('experiment/test/results/time_no.png',format='png',dpi=800,bbox_inches='tight')
 plt.show()
 #plt.semilogy(range(start_n,end_n),time4_list,label='Sinkhon in POT package')
 

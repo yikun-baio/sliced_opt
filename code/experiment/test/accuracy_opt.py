@@ -32,10 +32,10 @@ from sopt.lib_ot import *
 
 
 
-Lambda_list=np.array([50.0])
+Lambda_list=np.array([10.0,50.0,100.0])
 
 start_n=50
-end_n=500
+end_n=1100
 step=10
 n_list=np.array(range(start_n,end_n,step))
 N=n_list.shape[0]
@@ -49,6 +49,7 @@ for Lambda in Lambda_list:
     cost_new_list=np.zeros((N,k))
     for i in range (N):
         n=n_list[i]
+        print(n)
         m=n+0
         for j in range(k):
             X=np.random.uniform(-20,20,n)
@@ -70,19 +71,19 @@ for Lambda in Lambda_list:
             cost_v2_list[i,j]=cost_v2
 
         #   cost_v2-=Lambda*np.sum(n-np.sum(L_v2>=0))
-            cost_lp,L_lp=opt_lp(X,Y,Lambda)
+            numItermax=max(300000*n/1000,300000)
+            cost_lp,L_lp=opt_lp(X,Y,Lambda,numItermax=numItermax)
             mass_lp=np.sum(L_lp)
             cost_lp=np.sum(M*L_lp)+Lambda*(n-mass_lp)
             cost_lp_list[i,j]=cost_lp
     
         #   L3=ot.partial.partial_wasserstein
-            L_pr=ot.partial.partial_wasserstein(mu,nu,M,mass_lp,500)
-            cost_pr=np.sum(M*L_pr)+Lambda*(n-mass_lp)
-            cost_pr_list[i,j]=cost_pr
+            # L_pr=ot.partial.partial_wasserstein(mu,nu,M,mass_lp,3500)
+            # cost_pr=np.sum(M*L_pr)+Lambda*(n-mass_lp)
+            # cost_pr_list[i,j]=cost_pr
             
 
-            phi,psi,piRow,piCol=solve1DPOT(M,Lambda/2,verbose=False,plots=False)
-
+            phi,psi,piRow,piCol=solve1DOPT(X,Y,Lambda/2)
             L_new=getPiFromRow(n,m,piRow)
             mass_new=np.sum(L_new)
             cost_new=np.sum(M*L_new)+Lambda*(n-mass_new)
@@ -92,7 +93,7 @@ for Lambda in Lambda_list:
                 print('error')
                 X0=X.copy()
                 Y0=Y.copy()
-                break
+#                break
     #     else:
     #         continue 
     # else:
@@ -139,18 +140,17 @@ for Lambda in Lambda_list:
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.1,
                       box.width, box.height * 0.9])
-    plt.legend(loc='upper center',bbox_to_anchor=(0.5, 1.13),
-              fancybox=True, shadow=True, ncol=3)
-#    plt.savefig('experiment/test/results/accuracy_error'+str(Lambda)+'.png',format="png",dpi=800,bbox_inches='tight')
+#    plt.legend(loc='upper center',bbox_to_anchor=(0.5, 1.13),              fancybox=True, shadow=True, ncol=3)
+    plt.savefig('experiment/test/results/accuracy_error'+str(Lambda)+'.png',format="png",dpi=800,bbox_inches='tight')
     plt.show()
     
-#     cost_list={}
-#    cost_list['cost_v2_list']=cost_v2_list
-#    cost_list['cost_v2a_list']=cost_v2a_list 
-#    cost_list['cost_pr_list']=cost_pr_list
-#    cost_list['cost_lp_list']=cost_lp_list
-    
-#    torch.save(cost_list,'experiment/test/results/accuracy_list'+str(Lambda)+'.pt')
+    cost_list={}
+    cost_list['cost_v2_list']=cost_v2_list
+    cost_list['cost_v2a_list']=cost_v2a_list 
+    cost_list['cost_pr_list']=cost_pr_list
+    cost_list['cost_lp_list']=cost_lp_list
+    cost_list['cost_new_list']=cost_new_list
+    torch.save(cost_list,'experiment/test/results/accuracy_list'+str(Lambda)+'.pt')
 
 
 # for Lambda in Lambda_list:

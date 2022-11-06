@@ -179,17 +179,16 @@ def recover_rotation(X,Y):
     scaling=torch.sum(torch.abs(S.T))/torch.trace(Y_c.T@Y_c)
     return rotation,scaling
 
-@nb.njit(['float32[:](float32[:,:])','float64[:](float64[:,:])'],parallel=True,fastmath=True)
+@nb.njit(['float64[:](float64[:,:])'],parallel=True,fastmath=True)
 def vec_mean(X):
     n,d=X.shape
-    Dtype=X.dtype
-    mean=np.zeros(d,dtype=Dtype)
+    mean=np.zeros(d,dtype=np.float64)
     for i in nb.prange(d):
         mean[i]=X[:,i].mean()
     return mean
         
 
-@nb.njit(['Tuple((float32[:,:],float32))(float32[:,:],float32[:,:])'])
+@nb.njit(['Tuple((float64[:,:],float64))(float64[:,:],float64[:,:])'])
 def recover_rotation_nb(X,Y):
     n,d=X.shape
     X_c=X-vec_mean(X)
@@ -197,13 +196,13 @@ def recover_rotation_nb(X,Y):
     YX=Y_c.T.dot(X_c)
     U,S,VT=np.linalg.svd(YX)
     R=U.dot(VT)
-    diag=np.eye(d,dtype=np.float32)
+    diag=np.eye(d,dtype=np.float64)
     diag[d-1,d-1]=np.linalg.det(R.T)
     rotation=U.dot(diag).dot(VT)
     scaling=np.sum(np.abs(S.T))/np.trace(Y_c.T.dot(Y_c))
     return rotation,scaling
 
-@nb.njit(['Tuple((float32[:,:],float32[:]))(float32[:,:],float32[:,:])'],fastmath=True)
+@nb.njit(['Tuple((float64[:,:],float64[:]))(float64[:,:],float64[:,:])'],fastmath=True)
 def recover_rotation_du_nb(X,Y):
     n,d=X.shape
     X_c=X-vec_mean(X)
@@ -211,11 +210,11 @@ def recover_rotation_du_nb(X,Y):
     YX=Y_c.T.dot(X_c)
     U,S,VT=np.linalg.svd(YX)
     R=U.dot(VT)
-    diag=np.eye(d,dtype=np.float32)
+    diag=np.eye(d,dtype=np.float64)
     diag[d-1,d-1]=np.linalg.det(R)
     rotation=U.dot(diag).dot(VT)
-    E_list=np.eye(d,dtype=np.float32)
-    scaling=np.zeros(d,dtype=np.float32)
+    E_list=np.eye(d,dtype=np.float64)
+    scaling=np.zeros(d,dtype=np.float64)
     for i in range(d):
         Ei=np.diag(E_list[i])
         num=0

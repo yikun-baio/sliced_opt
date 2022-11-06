@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Aug  3 14:52:30 2022
+Created on Sun Nov  6 11:21:06 2022
 
 @author: baly
 """
+
 
 
 import numpy as np
@@ -15,11 +16,7 @@ import sys
 from typing import Tuple #,List
 from numba.typed import List
 import ot
-work_path=os.path.dirname(__file__)
-loc1=work_path.find('/code')
-parent_path=work_path[0:loc1+5]
-sys.path.append(parent_path)
-os.chdir(parent_path)
+
 import numba as nb 
 
 
@@ -29,31 +26,7 @@ import scipy
 #import matplotlib.cm as cm
 
 
-from sopt.library import *
-
-#@nb.njit(nb.types.Tuple((nb.float32,nb.int64[:]))(nb.float32[:],nb.float32[:],nb.float32))
-# solve opt by linear programming 
-def opt_lp(X,Y,Lambda,numItermax=100000):
-    n=X.shape[0]
-    m=Y.shape[0]
-    exp_point=np.float32(np.inf)
-    X1=np.append(X,exp_point)
-    Y1=np.append(Y,exp_point)
-    mu1=np.ones(n+1)
-    nu1=np.ones(m+1)
-    mu1[-1]=m
-    nu1[-1]=n
-    cost_M=cost_matrix(X1[0:-1],Y1[0:-1])
-    cost_M1=np.zeros((n+1,m+1),dtype=np.float32)
-    cost_M1[0:n,0:m]=cost_M-Lambda
-    plan1=ot.lp.emd(mu1,nu1,cost_M1,numItermax=numItermax)
-    plan=plan1[0:n,0:m]
-    cost=np.sum(cost_M*plan)
-    return cost,plan
-
-    
-
-import numpy as np
+#from sopt.library import *
 
 def getCost(x,y,p=2.):
     """Squared Euclidean distance cost for two 1d arrays"""
@@ -73,8 +46,6 @@ def getPiFromCol(M,N,piCol):
         if i>-1: pi[i,j]=1
     return pi
 
-
-@nb.njit(nb.types.Tuple((nb.float64,nb.float64[:],nb.float64[:],nb.int64[:],nb.int64[:]))(nb.float64[:,:],nb.float64))
 def solve_opt(c,lam): #,verbose=False):
     M,N=c.shape
     
@@ -206,10 +177,12 @@ def solve_opt(c,lam): #,verbose=False):
     objective=np.sum(phi)+np.sum(psi)
     return objective,phi,psi,piRow,piCol
 
+data=torch.load('data.pt')
+X=data['X']
+Y=data['Y']
+Lambda=data['Lambda']
+X.sort()
+Y.sort()
+C=getCost(X,Y)
 
-
-
-
-
-
-    
+objective,phi,psi,piRow,piCol=solve_opt(C,Lambda)

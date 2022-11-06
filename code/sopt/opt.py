@@ -25,7 +25,7 @@ from sopt.library import *
 
 
     
-@nb.njit(['Tuple((float32,int64[:],float32,int64[:]))(float32[:,:],int64[:],float32)','Tuple((float64,int64[:],float64,int64[:]))(float64[:,:],int64[:],float64)'],fastmath=True,cache=True)
+@nb.njit(['Tuple((float64,int64[:],float64,int64[:]))(float64[:,:],int64[:],float64)'],fastmath=True,cache=True)
 def opt_sub(M1,L1,Lambda):
     '''
     Parameters
@@ -47,11 +47,11 @@ def opt_sub(M1,L1,Lambda):
               L_sub_pre[end]=-1 or L_sub_pre=[], otherwise, there is bug in this function. 
     
     '''
-    Dtype=type(Lambda)
+    dtype=type(Lambda)
     n1,m1=M1.shape
     L_sub_pre=np.empty(0,np.int64)
-    cost_sub_pre=Dtype(0)
-    cost_sub=Dtype(0)
+    cost_sub_pre=np.float64(0)
+    cost_sub=np.float64(0)
     L_sub=np.empty(0,np.int64)
     
     if m1==0: # initial case, empty Y
@@ -68,7 +68,7 @@ def opt_sub(M1,L1,Lambda):
 
     L1_inact=L1[0:i_act]
     L1x_inact=arange(0,i_act)
-    cost_inact=Dtype(0)
+    cost_inact=np.float64(0)
     cost_inact=np.sum(matrix_take(M1,L1x_inact,L1_inact))
     
     if i_act==n1-1:
@@ -97,7 +97,7 @@ def opt_sub(M1,L1,Lambda):
         i_start=i_list[-1]+1
     else:
         i_start=0
-    cost_d1=np.zeros(s+1-i_start,Dtype)
+    cost_d1=np.zeros(s+1-i_start,np.float64)
 
     
     for i in range(i_start,s+1):
@@ -107,7 +107,7 @@ def opt_sub(M1,L1,Lambda):
     index_d1_opt=cost_d1.argmin()+i_start
     cost_d1_opt=cost_d1.min()+Lambda
     #find the optimal d0 plan
-    cost_d0=Dtype(np.inf)
+    cost_d0=np.float64(np.inf)
     if j_act>=0 and i_start==0:
         cost_d0=cost_d1[0]+M1[i_act,j_act]
         
@@ -121,13 +121,13 @@ def opt_sub(M1,L1,Lambda):
     else:
         L_sub=np.concatenate((L1_inact,np.array([j_act],dtype=np.int64),L1_act))
         cost_sub=cost_inact+cost_d0
-        cost_sub_pre=Dtype(0)
+        cost_sub_pre=np.float64(0)
         L_sub_pre=np.empty(0,np.int64)
 #        return cost_sub,L_sub,cost_sub_pre,L_sub_pre
     return cost_sub,L_sub,cost_sub_pre,L_sub_pre
         
 
-@nb.njit(['Tuple((float32,int64[:],float32,int64[:]))(float32[:,:],int64[:],float32)','Tuple((float64,int64[:],float64,int64[:]))(float64[:,:],int64[:],float64)'],cache=True)
+@nb.njit(['Tuple((float64,int64[:],float64,int64[:]))(float64[:,:],int64[:],float64)'],cache=True)
 #@nb.njit()
 def opt_sub_a(M1,L1,Lambda):
     '''
@@ -152,10 +152,10 @@ def opt_sub_a(M1,L1,Lambda):
     '''
 
     n1,m1=M1.shape
-    Dtype=type(Lambda)
+    dtype=type(Lambda)
     L_sub_pre=np.empty(0,np.int64)
-    cost_sub_pre=Dtype(0)
-    cost_sub=Dtype(0)
+    cost_sub_pre=np.float64(0)
+    cost_sub=np.float64(0)
     L_sub=np.empty(0,np.int64)
     
     if m1==0: # initial case, empty Y
@@ -171,7 +171,7 @@ def opt_sub_a(M1,L1,Lambda):
 
     L1_inact=L1[0:i_act]
     L1x_inact=arange(0,i_act)
-    cost_inact=Dtype(0)
+    cost_inact=np.float64(0)
     cost_inact=np.sum(matrix_take(M1,L1x_inact,L1_inact))
     
     if i_act==n1-1:
@@ -214,7 +214,7 @@ def opt_sub_a(M1,L1,Lambda):
     elif min_index==2:
         index_d1_opt=i_rand
 
-    cost_d0=Dtype(np.inf)
+    cost_d0=np.float64(np.inf)
     if j_act>=0 and i_start==0:
         cost_d0=cost_d12-Lambda+M1[i_act,j_act]
         
@@ -228,15 +228,15 @@ def opt_sub_a(M1,L1,Lambda):
     else:
         L_sub=np.concatenate((L1_inact,np.array([j_act],dtype=np.int64),L1_act))
         cost_sub=cost_inact+cost_d0
-        cost_sub_pre=Dtype(0)
+        cost_sub_pre=np.float64(0)
         L_sub_pre=np.empty(0,dtype=np.int64)
 #        return cost_sub,L_sub,cost_sub_pre,L_sub_pre
     return cost_sub,L_sub,cost_sub_pre,L_sub_pre
 
 
-@nb.njit(['Tuple((float32,int64[:]))(float32[:],float32[:],float32)','Tuple((float64,int64[:]))(float64[:],float64[:],float64)'],cache=True)
+@nb.njit(['Tuple((float64,int64[:]))(float64[:],float64[:],float64)'],cache=True)
 def opt_1d_v2(X,Y,Lambda):
-    Dtype=type(Lambda)
+    dtype=type(Lambda)
     M=cost_matrix(X,Y)
     n,m=M.shape
     if m==0:
@@ -244,13 +244,13 @@ def opt_1d_v2(X,Y,Lambda):
         return cost,L
  
     L=np.empty(0,np.int64) # save the optimal plan
-    cost=Dtype(0) # save the optimal cost
+    cost=np.float64(0) # save the optimal cost
     argmin_Y=closest_y_M(M)
 
     # initial the subproblem
-    cost_pre=Dtype(0)
+    cost_pre=np.float64(0)
     L_pre=np.empty(0,np.int64)
-    cost_sub_pre=Dtype(0)
+    cost_sub_pre=np.float64(0)
     L_sub_pre=np.empty(0,np.int64)
     i_start=0
     j_start=0
@@ -272,7 +272,7 @@ def opt_1d_v2(X,Y,Lambda):
      
     # start loop 
     # 0 denote the case destroy point, 1 denote the case assign to y_jk, 2 denote the case assign to y_jlast+1, 3 denot the case assign to y_jlast 
-    cost_book_orig=np.full(4,np.inf,dtype=Dtype)
+    cost_book_orig=np.full(4,np.inf,dtype=np.float64)
     for k in range(1,n):
         cost_book=cost_book_orig.copy()
         if j_start==m: # There is no y, so we destroy point
@@ -344,27 +344,27 @@ def opt_1d_v2(X,Y,Lambda):
             # empty the variable for sub problem
             L_sub=np.empty(0,dtype=np.int64)
             L_sub_pre=np.empty(0,dtype=np.int64)
-            cost_sub=Dtype(0)
-            cost_sub_pre=Dtype(0)
+            cost_sub=np.float64(0)
+            cost_sub_pre=np.float64(0)
     return cost,L
 
-@nb.njit(['Tuple((float32,int64[:]))(float32[:],float32[:],float32)','Tuple((float32,int64[:]))(float64[:],float64[:],float64)'])
+@nb.njit(['Tuple((float64,int64[:]))(float64[:],float64[:],float64)'])
 def opt_1d_v2_a(X,Y,Lambda):
     M=cost_matrix(X,Y)
     n,m=M.shape
-    Dtype=type(Lambda)
+    dtype=type(Lambda)
     if m==0:
         cost,L,xx,yy=empty_Y_opt(n, Lambda)
         return cost,L
  
     L=np.empty(0,dtype=np.int64) # save the optimal plan
-    cost=Dtype(0) # save the optimal cost
+    cost=np.float64(0) # save the optimal cost
     argmin_Y=closest_y_M(M)
 
     # initial the subproblem
-    cost_pre=Dtype(0)
+    cost_pre=np.float64(0)
     L_pre=np.empty(0,dtype=np.int64)
-    cost_sub_pre=Dtype(0)
+    cost_sub_pre=np.float64(0)
     L_sub_pre=np.empty(0,dtype=np.int64)
     i_start=0
     j_start=0
@@ -386,7 +386,7 @@ def opt_1d_v2_a(X,Y,Lambda):
      
     # start loop 
     # 0 denote the case destroy point, 1 denote the case assign to y_jk, 2 denote the case assign to y_jlast+1, 3 denot the case assign to y_jlast 
-    cost_book_orig=np.full(4,np.inf,dtype=Dtype)
+    cost_book_orig=np.full(4,np.inf,dtype=np.float64)
 
     for k in range(1,n):
         cost_book=cost_book_orig.copy()
@@ -461,8 +461,8 @@ def opt_1d_v2_a(X,Y,Lambda):
             # empty the variable for sub problem
             L_sub=np.empty(0,dtype=np.int64)
             L_sub_pre=np.empty(0,dtype=np.int64)
-            cost_sub=Dtype(0)
-            cost_sub_pre=Dtype(0)
+            cost_sub=np.float64(0)
+            cost_sub_pre=np.float64(0)
             
     return cost,L
 
@@ -603,7 +603,7 @@ def opt_decomposition(X,Y,Lambda):
 def opt_1d_v3(X,Y,Lambda):
     X_list,Y_list,free_Y=opt_decomposition(X,Y,Lambda)
     K=len(X_list)
-    costs=np.zeros(K,dtype=Dtype)
+    costs=np.zeros(K,dtype=np.float64)
     plans=List()
 
     for i in range(K):
@@ -624,236 +624,18 @@ def opt_1d_v3(X,Y,Lambda):
     cost=np.sum(costs)
     return cost,L
 
-@nb.njit(['Tuple((float32,int64[:],float32,int64[:]))(float32[:,:],int64[:],float32)','Tuple((float64,int64[:],float64,int64[:]))(float64[:,:],int64[:],float64)'])
-def opt_sub_np(M1:nb.float32[:,:],L1:nb.int64[:],Lambda:nb.float32):    
-    '''
-    Parameters
-    ------
-    M1: n*m np matrix, float 
-    L1: transportation plan of previous iteration, whose entries should be 0,1,2,...
-        if L1 contains -1, there is a bug in the main loop. 
-    Lambda: float number >=0
-    
-    
-    Returns:
-    -----
-    cost_sub: float, cost of sub-opt problem
-    L_sub: list, optimal transportation plan, whose entry must be 0,1,... or -1.
-          L_sub can contains at most one -1, if it contains more than 1, there is a bug in this function.
-    cost_sub_pre, float, cost of previous problem of the sub-opt problem
-    L_sub_pre: list, optimal transprotation plan of previous problem, whose entry must be 0,1,...or -1
-             L_sub_pre[end]=-1 or L_sub_pre=[], otherwise, there is bug in this function. 
-    
-    '''
-    
-    n1,m1=M1.shape
-    Dtype=type(Lambda)
-    L_sub_pre=np.empty(0,dtype=np.int64)
-    cost_sub_pre=Dtype(0)
-    cost_sub=Dtype(0)
-    L_sub=np.empty(0,dtype=np.int64)
-    if m1==0: # initial case, empty Y
-        cost_sub,L_sub,cost_sub_pre,L_sub_pre=empty_Y_opt(n1,Lambda)
-        return cost_sub,L_sub,cost_sub_pre,L_sub_pre
-    
-    i_act,j_act=unassign_y(L1) # i_act is the index for L_sub, not the original_index
-    L1=L1[0:n1-1]
-    
-    if L1.shape[0]==0:
-        cost_sub,L_sub,cost_sub_pre,L_sub_pre=one_x_opt_np(M1,i_act,j_act,Lambda)
-        return cost_sub,L_sub, cost_sub_pre,L_sub_pre
 
-    L1_inact=L1[0:i_act]
-    L1x_inact=arange(0,i_act)  
-    
-    cost_inact=np.sum(matrix_take(M1,L1x_inact,L1_inact))
-
-    if i_act==n1-1:
-        cost_sub,L_sub,cost_sub_pre,L_sub_pre=one_x_opt_np(M1,i_act,j_act,Lambda)
-        cost_sub=cost_inact+cost_sub      
-        L_sub=np.concatenate((L1_inact,L_sub))
-        if -1 ==L_sub[i_act]:
-            cost_sub_pre=cost_sub 
-            L_sub_pre=L_sub.copy()            
-            return cost_sub,L_sub,cost_sub_pre,L_sub_pre
-
-    # find the optimal d1 plan    
-    L1_act=L1[i_act:]
-    L1x_act=arange(i_act,n1)
-   
-
-
-    cost_L1=matrix_take(M1,L1x_act[1:],L1_act) # cost of 1 shift plan 
-    cost_L2=matrix_take(M1,L1x_act[0:-1],L1_act) # cost of original shift 
-    s=cost_L2.shape[0]
-    cost_list=np.concatenate((cost_L1,cost_L2))
-    C=np.zeros((2*s,s+1),dtype=Dtype)
-    ones=np.ones(s,dtype=Dtype)
-    for i in range(s+1):
-        C[i:i+s,i]=ones
- 
-    cost_d1=np.dot(cost_list,C)
-    index_d1_opt=cost_d1.argmin()
-    cost_d1_opt=cost_d1.min()+Lambda
-  
-    #find the optimal d0 plan
-    cost_d0=Dtype(np.inf)
-    if j_act>=0:
-        cost_d0=cost_d1[0]+M1[i_act,j_act]
-        
-    if cost_d1_opt<=cost_d0:
-        cost_sub=cost_inact+cost_d1_opt
-        L_sub=np.concatenate((L1_inact,L1_act[0:index_d1_opt],np.array([-1],dtype=np.int64),L1_act[index_d1_opt:]))     
-        cost_sub_pre=cost_inact+np.sum(cost_L2[0:index_d1_opt])+Lambda
-        L_sub_pre=np.concatenate((L1_inact,L1_act[0:index_d1_opt],np.array([-1],dtype=np.int64)))         
-        return cost_sub,L_sub,cost_sub_pre,L_sub_pre
-        
-    else:
-        L_sub=np.concatenate((L1_inact,np.array([j_act],dtype=np.int64),L1_act))
-        cost_sub=cost_inact+cost_d0
-        cost_sub_pre=Dtype(0)
-        L_sub_pre=np.empty(0,dtype=np.int64)
-        return cost_sub,L_sub,cost_sub_pre,L_sub_pre
-
-
-@nb.njit(['Tuple((float32,int64[:]))(float32[:],float32[:],float32)','Tuple((float64,int64[:]))(float64[:],float64[:],float64)'])
-def opt_1d_np(X,Y,Lambda):
-    '''
-    Parameters
-    ------
-    X: array_list shape, shape(n,) or (n,1), X should be shorted, float 
-    Y: array_list shape, shape(n,) or (n,1), Y should be shorted, float
-    Lambda: float number >=0
-    
-    Returns:
-    -----
-    cost: float, cost of opt problem
-    L: n*1 list, entry could be 0,1,2.... or -1
-    where L[i]=j denote x_i->y_j and L[i]=-1 denotes we destroy x_i
-    L must be in increasing order,
-    if L=[0,1,1,2,-1], or L=[1,2,5,3], there is a bug. 
-    optimal transportation plan
-    
-    '''
-    Dtype=type(Lambda)
-    M=cost_matrix(X,Y)
-
-    n,m=M.shape
- 
-    L=np.empty(0,dtype=np.int64) # save the optimal plan
-    cost=Dtype(0) # save the optimal cost
-    
-    argmin_Y=closest_y_M(M)
-
-    # initial the sub
-    cost_pre=Dtype(0)
-    L_pre=np.empty(0,dtype=np.int64)
-    cost_sub_pre=Dtype(0)
-    L_sub_pre=np.empty(0,dtype=np.int64)
-    i_start=0
-    j_start=0
-    
-
-    
-    # initial loop    
-    k=0
-    jk=argmin_Y[k]
-    cost_xk_yjk=M[k,jk]    
-    if cost_xk_yjk<Lambda:
-        cost+=cost_xk_yjk
-        L=np.concatenate((L,np.array([jk],dtype=np.int64)))    
-    else: #  we destroy a point 
-        cost+=Lambda
-        L=np.concatenate((L,np.array([-1],dtype=np.int64))) 
-        cost_pre=cost
-        L_pre=L.copy()
-        i_start,j_start=startindex(L_pre)
-     
-    # start loop 
-    # 0 denote the case destroy point, 1 denote 
-    cost_book_orig=np.array([np.inf,np.inf,np.inf,np.inf],dtype=Dtype)
-
-    for k in range(1,n):
-        cost_book=cost_book_orig.copy()
-        if j_start==m: # There is no y, so we destroy point
-            cost_end,L_end,xx,yy=empty_Y_opt(n-k, Lambda)
-            cost=cost+cost_end
-            L=np.concatenate((L,L_end))
-            return cost,L
-        
-        jk=argmin_Y[k]
-        cost_xk_yjk=M[k,jk]
-        
-        j_last=L[-1] # index of last y 
-        if j_last<0:
-            j_last=j_start-1
-            
-        # case of no conflict
-        if jk>j_last:# No conflict L[-1]=j_last
-            cost_book[0]=cost+Lambda
-            cost_book[1]=cost+cost_xk_yjk
-        
-        else:# conflict
-            cost_book[0]=cost+Lambda
-    
-            # cost 1c
-            if j_last+1<=m-1:
-                cost_xk_yjlast1=M[k,j_last+1]
-                cost_book[2]=cost+cost_xk_yjlast1
-            #cost2c
-            cost_xk_yjlast=M[k,j_last]                  
-            if cost_xk_yjlast<Lambda and j_start<=m and i_start<k:
-                M1=M[i_start:k,j_start:j_last]
-                L1=L[i_start:k].copy() 
-        #     # we need the last assign index since we need to retrieve the closest unassigend j                    
-                index_adjust(L1,-j_start)
-                cost_sub,L_sub,cost_sub_pre,L_sub_pre=opt_sub_np(M1,L1,Lambda)
-                cost_book[3]=cost_pre+cost_sub+cost_xk_yjlast                       
-                index_adjust(L_sub,j_start)
-                index_adjust(L_sub_pre,j_start)
-        # # find the optimal cost over all 
-        min_case=cost_book.argmin()
-        cost=cost_book.min()
-        
-        # update problem, if destroy points, update pre_problem)
-  
-        if min_case==0:
-            L=np.concatenate((L,np.array([-1],dtype=np.int64)))
-            # update previous problem 
-            cost_pre=cost
-            L_pre=L.copy()
-            i_start,j_start=startindex(L_pre)
-        elif min_case==1:
-            L=np.concatenate((L,np.array([jk],dtype=np.int64)))
-        elif min_case==2:
-            L=np.concatenate((L,np.array([j_last+1],dtype=np.int64)))
-        elif min_case==3:
-            L=np.concatenate((L_pre,L_sub,np.array([j_last],dtype=np.int64)))
-            # update previous problem 
-            if L_sub_pre.shape[0]>=1:
-                cost_pre=cost_pre+cost_sub_pre
-                L_pre=np.concatenate((L_pre,L_sub_pre))
-                
-                # empty the variable for sub problem
-            L_sub=np.empty(0,dtype=np.int64)
-            L_sub_pre=np.empty(0,dtype=np.int64)
-            cost_sub=Dtype(0)
-            cost_sub_pre=Dtype(0)
-            i_start,j_start=startindex(L_pre)
-
-
-    return cost,L
 
    
 
 
-@nb.njit(['Tuple((float32,int64[:]))(float32[:],float32[:])','Tuple((float64,int64[:]))(float64[:],float64[:])'])
+@nb.njit(['Tuple((float64,int64[:]))(float64[:],float64[:])'])
 def pot_1d(X,Y): 
     n=X.shape[0]
     m=Y.shape[0]
     L=np.empty(0,dtype=np.int64) # save the optimal plan
-    Dtype=type(X[0])
-    cost=Dtype(0) # save the optimal cost
+    dtype=type(X[0])
+    cost=0.0 # save the optimal cost
     M=cost_matrix(X,Y)
     
     argmin_Y=closest_y_M(M)
@@ -917,22 +699,22 @@ def pot_1d(X,Y):
 # Y=data['Y']
 # X.sort()
 # Y.sort()
-# Lambda=Dtype(20)
+# Lambda=np.float64(20)
 # opt_decomposition(X,Y,Lambda)
 # #torch.save(data,'data.pt')
 
 # n=100
 # m=n+500
 # #Lambda=4
-# Lambda=Dtype(2)
+# Lambda=np.float64(2)
 
 # for i in range(1):
 #     X=torch.rand(n,dtype=torch.float32)-1.5
 #     Y=torch.rand(m,dtype=torch.float32)*2+1.5
 #     X=X.sort().values
 #     Y=Y.sort().values
-#     X=Dtype(np.random.uniform(-5,5,n))
-#     Y=Dtype(np.random.uniform(-8,8,m))+5
+#     X=np.float64(np.random.uniform(-5,5,n))
+#     Y=np.float64(np.random.uniform(-8,8,m))+5
 #     X.sort()
 #     Y.sort()
 
@@ -949,15 +731,15 @@ def pot_1d(X,Y):
 
 # X=np.array([0.47016394, 1.0328217 , 1.3818892 , 1.4757019 , 1.9214936 ,
 #        2.1895437 , 2.604464  , 2.7063289 , 2.7503216 , 2.922912  ],
-#       dtype=Dtype)
+#       dtype=np.float64)
 
 # Y=np.array([-0.93786955, -0.8235371 , -0.658347  , -0.4214544 , -0.3613819 ,
 #        -0.11025443, -0.06072737,  0.02043935,  0.11602888,  0.22903188,
-#         0.4837798 ,  0.5873061 ,  0.7503131 ], dtype=Dtype)
+#         0.4837798 ,  0.5873061 ,  0.7503131 ], dtype=np.float64)
 # X1=torch.from_numpy(X)
 # Y1=torch.from_numpy(Y)
-# #X1=np.array([0.9788, 2.0892, 2.5528, 2.6119, 3.0876], dtype=Dtype)
-# #Y1=np.array([4.1054, 4.5741, 4.6948, 5.3001, 5.4889, 5.7816, 6.1562, 6.3901],dtype=Dtype)
+# #X1=np.array([0.9788, 2.0892, 2.5528, 2.6119, 3.0876], dtype=np.float64)
+# #Y1=np.array([4.1054, 4.5741, 4.6948, 5.3001, 5.4889, 5.7816, 6.1562, 6.3901],dtype=np.float64)
 # cost2,L2=opt_1d_v2(X,Y,Lambda)
 # cost1,L1=opt_1d_v1(X,Y,Lambda)
 # opt_1d_np(X,Y,Lambda)
