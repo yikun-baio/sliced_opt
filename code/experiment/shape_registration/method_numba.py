@@ -44,9 +44,9 @@ def sopt_main(S,T,n_iterations,N0):
     mass_diff=0
     b=np.log((N1-N0+1)/1)
     Lambda=3*np.sum(beta**2)
-    rotation_list=np.zeros((n_iterations,d,d)) #.astype(np.float32)
-    scalar_list=np.zeros((n_iterations)) #.astype(np.float32)
-    beta_list=np.zeros((n_iterations,d)) #.astype(np.float32)
+    rotation_list=np.zeros((n_iterations,d,d)) #.astype(np.float64)
+    scalar_list=np.zeros((n_iterations)) #.astype(np.float64)
+    beta_list=np.zeros((n_iterations,d)) #.astype(np.float64)
     T_hat=S.dot(rotation)*scalar+beta
     
     Domain_org=arange(0,N1)
@@ -62,9 +62,9 @@ def sopt_main(S,T,n_iterations,N0):
         T_indice=T_theta.argsort()
         T_hat_s=T_hat_theta[T_hat_indice]
         T_s=T_theta[T_indice]
-        c=cost_matrix(T_s,T_hat_s)
+        c=cost_matrix(T_hat_s,T_s)
         obj,phi,psi,piRow,piCol=solve_opt(c,Lambda)
-        L=piCol.copy()
+        L=piRow.copy()
         L=recover_indice(T_hat_indice,T_indice,L)
         
 #        debug 
@@ -110,14 +110,14 @@ def spot_bonneel(S,T,n_projections=20,n_iterations=200):
     n,d=T.shape
     N1=S.shape[0]
     # initlize 
-    rotation=np.eye(d) #,dtype=np.float32)
-    scalar=nb.float32(1.0) #
+    rotation=np.eye(d) #,dtype=np.float64)
+    scalar=nb.float64(1.0) #
     beta=vec_mean(T)-vec_mean(scalar*S.dot(rotation))
     #paramlist=[]
     
-    rotation_list=np.zeros((n_iterations,d,d)) #.astype(np.float32)
-    scalar_list=np.zeros((n_iterations)) #.astype(np.float32)
-    beta_list=np.zeros((n_iterations,d)) #.astype(np.float32)
+    rotation_list=np.zeros((n_iterations,d,d)) #.astype(np.float64)
+    scalar_list=np.zeros((n_iterations)) #.astype(np.float64)
+    beta_list=np.zeros((n_iterations,d)) #.astype(np.float64)
     T_hat=S.dot(rotation)*scalar+beta
     
     #Lx_hat_org=arange(0,n)
@@ -146,18 +146,18 @@ def icp_du(S,T,n_iterations):
     n,d=T.shape
 
     # initlize 
-    rotation=np.eye(d) #,dtype=np.float32)
-    scalar=1.0  #nb.float32(1) #
+    rotation=np.eye(d) #,dtype=np.float64)
+    scalar=1.0  #nb.float64(1) #
     beta=vec_mean(T)-vec_mean(scalar*np.dot(S,rotation))
-    #paramlist=[]
+
     
     
-    rotation_list=np.zeros((n_iterations,d,d)) #.astype(np.float32)
-    scalar_list=np.zeros((n_iterations)) #.astype(np.float32)
-    beta_list=np.zeros((n_iterations,d)) #.astype(np.float32)
+    rotation_list=np.zeros((n_iterations,d,d)) #.astype(np.float64)
+    scalar_list=np.zeros((n_iterations)) #.astype(np.float64)
+    beta_list=np.zeros((n_iterations,d)) #.astype(np.float64)
     T_hat=np.dot(S,rotation)*scalar+beta
     
-    #Lx_hat_org=arange(0,n)
+    # #Lx_hat_org=arange(0,n)
     
     for i in range(n_iterations):
         M=cost_matrix_d(T_hat,T)
@@ -183,13 +183,13 @@ def icp_umeyama(S,T,n_iterations):
     n,d=S.shape
 
     # initlize 
-    rotation=np.eye(d) #,dtype=np.float32)
-    scalar=1.0 #nb.float32(1.0) #
+    rotation=np.eye(d) #,dtype=np.float64)
+    scalar=1.0 #nb.float64(1.0) #
     beta=vec_mean(T)-vec_mean(scalar*S.dot(rotation))
     # paramlist=[]
-    rotation_list=np.zeros((n_iterations,d,d)) #.astype(np.float32)
-    scalar_list=np.zeros((n_iterations)) #.astype(np.float32)
-    beta_list=np.zeros((n_iterations,d)) #.astype(np.float32)
+    rotation_list=np.zeros((n_iterations,d,d)) #.astype(np.float64)
+    scalar_list=np.zeros((n_iterations)) #.astype(np.float64)
+    beta_list=np.zeros((n_iterations,d)) #.astype(np.float64)
     T_hat=S.dot(rotation)*scalar+beta
     
 
@@ -213,8 +213,8 @@ def icp_umeyama(S,T,n_iterations):
     return rotation_list,scalar_list,beta_list  
 
 
-#item_list=['/stanford_bunny']
-item='/dragon'
+item_list=['/stanford_bunny']
+item='/mumble_sitting'
 exp_num=item
 
 label_L=['0','1','2','3']
@@ -231,13 +231,14 @@ try:
     time_list=torch.load('experiment/shape_registration/result'+str(item)+'time_list.pt')
 except:
     time_list={}
-# print('experiment/shape_registration/result'+str(item)+'time_list.pt')
-# print('time_list',time_list)
-# print('data is',item)
-# T0=data['T0'] #.to(torch.float32)
-# S0=data['S0'+label] #.to(torch.float32)
-# T1=data['T1'+per_s] #.to(torch.float32)
-# S1=data['S1'+label+per_s] #.to(torch.float32)
+print('data',item)
+print('experiment/shape_registration/result'+str(item)+'time_list.pt')
+print('time_list',time_list)
+print('data is',item)
+T0=data['T0'].to(torch.float64)
+S0=data['S0'+label].to(torch.float64)
+T1=data['T1'+per_s].to(torch.float64)
+S1=data['S1'+label+per_s].to(torch.float64)
 
 # T=T1.numpy().copy().astype(np.float64)
 # S=S1.numpy().copy().astype(np.float64)
@@ -252,34 +253,34 @@ except:
 for (label,per_s) in [('0','-7p'),('1','-5p')]:
     n_point=L[int(label)]    
     data_path=parent_path+'/experiment/shape_registration/data/test2/saved'
-    save_path='experiment/shape_registration/result'+exp_num+n_point
+    save_path='experiment/shape_registration/result'+exp_num+n_point     
     data=torch.load(data_path+item+'.pt')
-    time_dict={}
+#     time_dict={}
     
-    T0=data['T0'].to(torch.float64)
-    S0=data['S0'+label].to(torch.float64)
-    T1=data['T1'+per_s].to(torch.float64)
-    S1=data['S1'+label+per_s].to(torch.float64)
+#     T0=data['T0'].to(torch.float64)
+#     S0=data['S0'+label].to(torch.float64)
+#     T1=data['T1'+per_s].to(torch.float64)
+#     S1=data['S1'+label+per_s].to(torch.float64)
     
-#     print('sopt')
+# #     print('sopt')
     
-#     T=T1.numpy().copy()
-#     S=S1.numpy().copy()
-#     N0=S0.shape[0]
-#     start_time=time.time()
-#     n_iterations=3000
-#     sopt_main(S,T,n_iterations,N0)
-#     end_time=time.time()
-#     wall_time=end_time-start_time
+# #     T=T1.numpy().copy()
+# #     S=S1.numpy().copy()
+# #     N0=S0.shape[0]
+# #     start_time=time.time()
+# #     n_iterations=3000
+# #     sopt_main(S,T,n_iterations,N0)
+# #     end_time=time.time()
+# #     wall_time=end_time-start_time
 
-#     result={}
-#     result['wall_time']=wall_time
-#     result['n_iterations']=n_iterations
-#     result['per_time']=wall_time/n_iterations
-# #    time_dict['sopt']=result
-#     time_list[n_point+per_s]['sopt']=result
-#     print('result',time_list)
-    #print('spot')
+# #     result={}
+# #     result['wall_time']=wall_time
+# #     result['n_iterations']=n_iterations
+# #     result['per_time']=wall_time/n_iterations
+# # #    time_dict['sopt']=result
+# #     time_list[n_point+per_s]['sopt']=result
+# #     print('result',time_list)
+    print('spot')
     
     T=T1.numpy().copy()
     S=S1.numpy().copy()
@@ -296,45 +297,45 @@ for (label,per_s) in [('0','-7p'),('1','-5p')]:
     time_list[n_point+per_s]['spot']=result
    
     
-    print('icp-du')
-    T=X1.numpy().copy()
-    S=Y1.numpy().copy()
-    n_iterations=400
+#     print('icp-du')
+#     T=T1.numpy().copy()
+#     S=S1.numpy().copy()
+#     n_iterations=400
     
-    start_time=time.time()
-    icp_du(S,T,n_iterations)
-    end_time=time.time()
-    wall_time=end_time-start_time
-    result={}
-    result['wall_time']=wall_time
-    result['n_iterations']=n_iterations
-    result['per_time']=wall_time/n_iterations
-    time_list[n_point+per_s]['icp-du']=result
+#     start_time=time.time()
+#     icp_du(S,T,n_iterations)
+#     end_time=time.time()
+#     wall_time=end_time-start_time
+#     result={}
+#     result['wall_time']=wall_time
+#     result['n_iterations']=n_iterations
+#     result['per_time']=wall_time/n_iterations
+#     time_list[n_point+per_s]['icp-du']=result
     
     
-    print('icp-umeyama')
-    T=T1.numpy().copy()
-    S=S1.numpy().copy()
-    n_iterations=400
+#     print('icp-umeyama')
+#     T=T1.numpy().copy()
+#     S=S1.numpy().copy()
+#     n_iterations=400
     
-    start_time=time.time()
-    icp_umeyama(S,T,n_iterations)
-    end_time=time.time()
-    wall_time=end_time-start_time
-    result={}
-    result['wall_time']=wall_time
-    result['n_iterations']=n_iterations
-    result['per_time']=wall_time/n_iterations
-    time_list[n_point+per_s]['icp-umeyama']=result
-    time_dict['icp-umeyama']=result 
-    
-
-
-
+#     start_time=time.time()
+#     icp_umeyama(S,T,n_iterations)
+#     end_time=time.time()
+#     wall_time=end_time-start_time
+#     result={}
+#     result['wall_time']=wall_time
+#     result['n_iterations']=n_iterations
+#     result['per_time']=wall_time/n_iterations
+#     time_list[n_point+per_s]['icp-umeyama']=result
+#     time_dict['icp-umeyama']=result 
     
 
 
-# torch.save(time_list,'experiment/shape_registration/result/'+str(item)+'-time_list.pt')
+
+    
+
+
+torch.save(time_list,'experiment/shape_registration/result/'+str(item)+'-time_list.pt')
 
 
 

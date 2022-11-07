@@ -38,7 +38,7 @@ def scalar_matrix(scalar):
 
 def rotation_matrix_3d_x(theta_x):
     device=theta_x.device.type
-    rotation_x=torch.zeros((3,3),dtype=torch.float32,device=device)
+    rotation_x=torch.zeros((3,3),dtype=torch.float64,device=device)
     rotation_x[1,1]=torch.cos(theta_x)
     rotation_x[1,2]=-torch.sin(theta_x)
     rotation_x[2,1]=torch.sin(theta_x)
@@ -49,7 +49,7 @@ def rotation_matrix_3d_x(theta_x):
 
 def rotation_matrix_3d_y(theta_y):
     device=theta_y.device.type
-    rotation_y=torch.zeros((3,3),dtype=torch.float32,device=device)
+    rotation_y=torch.zeros((3,3),dtype=torch.float64,device=device)
     rotation_y[0,0]=torch.cos(theta_y)
     rotation_y[0,2]=torch.sin(theta_y)
     rotation_y[2,0]=-torch.sin(theta_y)
@@ -59,7 +59,7 @@ def rotation_matrix_3d_y(theta_y):
 
 def rotation_matrix_3d_z(theta_z):
     device=theta_z.device.type
-    rotation_z=torch.zeros((3,3),dtype=torch.float32,device=device)
+    rotation_z=torch.zeros((3,3),dtype=torch.float64,device=device)
     rotation_z[0,0]=torch.cos(theta_z)
     rotation_z[0,1]=-torch.sin(theta_z)
     rotation_z[1,0]=torch.sin(theta_z)
@@ -89,7 +89,7 @@ def rotation_3d_2(theta,order='re'):
     return M
 
 def rotation_re(cos_x,sin_x,cos_y,sin_y,cos_z,sin_z):
-    M=torch.zeros((3,3),dtype=torch.float32)
+    M=torch.zeros((3,3),dtype=torch.float64)
     M[0,0]=cos_y*cos_z
     M[0,1]=-cos_y*sin_z
     M[0,2]=sin_y

@@ -75,14 +75,14 @@ def random_projections_nb(d,n_projections,Type=0):
 @nb.njit(['Tuple((float64[:],int64[:,:]))(float64[:,:],float64[:,:],float64[:])'],parallel=True,fastmath=True)
 def allplans_s(X_sliced,Y_sliced,Lambda_list):
     N,n=X_sliced.shape
-    Dtype=type(X_sliced[0,0])
+#    Dtype=type(X_sliced[0,0])
     plans=np.zeros((N,n),np.int64)
-    costs=np.zeros(N,Dtype)
+    costs=np.zeros(N,np.float64)
     for i in nb.prange(N):
         X_theta=X_sliced[i]
         Y_theta=Y_sliced[i]
         Lambda=Lambda_list[i]
-        cost,L=opt_1d_v2(X_theta,Y_theta,Lambda)
+        cost,L=opt_1d_v2_a(X_theta,Y_theta,Lambda)
         plans[i]=L
         costs[i]=cost
     return costs,plans

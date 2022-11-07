@@ -177,12 +177,13 @@ def solve_opt(c,lam): #,verbose=False):
     objective=np.sum(phi)+np.sum(psi)
     return objective,phi,psi,piRow,piCol
 
-data=torch.load('data.pt')
-X=data['X']
-Y=data['Y']
-Lambda=data['Lambda']
+data=torch.load('data1.pt')
+X,Y,Lambda=data
 X.sort()
 Y.sort()
 C=getCost(X,Y)
 
+n=X.shape[0]
+m=Y.shape[0]
 objective,phi,psi,piRow,piCol=solve_opt(C,Lambda)
+getPiFromRow(n,m,piRow)

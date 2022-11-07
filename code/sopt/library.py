@@ -14,6 +14,10 @@ from typing import Tuple #,List
 from numba.typed import List
 
 
+# def text():
+#     print('here')
+
+# print('here')
 @nb.njit()
 def cost_function(x,y): 
     ''' 
@@ -35,29 +39,19 @@ def cost_function(x,y):
     return V
 
 
-@torch.jit.script
-def cost_function_T(x,y): 
-    ''' 
-    case 1:
-        input:
-            x: 0 dimension float tensor
-            y: 0 dimension float tensor
-        output:
-            float number: (x-y)**2 
-    case 2: 
-        input: 
-            x: n*1 tensor
-            y: n*1 tensor 
-        output:
-            n*1 array: whose ith entry is (x_i-y_i)**2
-    '''
-    return torch.square(x-y)
-
 
 @nb.njit(['float64[:,:](float64[:])'],fastmath=True)
 def transpose(X):
     n=X.shape[0]
     XT=np.zeros((n,1),np.float64)
+    for i in range(n):
+        XT[i]=X[i]
+    return XT
+
+@nb.njit(['float32[:,:](float32[:])'],fastmath=True)
+def transpose_32(X):
+    n=X.shape[0]
+    XT=np.zeros((n,1),np.float32)
     for i in range(n):
         XT[i]=X[i]
     return XT
@@ -78,7 +72,6 @@ def cost_matrix(X,Y):
     return M
 
 
-    
 
 
 #@nb.jit(nopython=True)
@@ -100,37 +93,30 @@ def cost_matrix_d(X,Y):
             M[i,j]=np.sum(cost_function(X[i,:],Y[j,:]))
     return M
 
-
-    
-
-@torch.jit.script
-def cost_matrix_T(X,Y):
+@nb.njit(['float32[:,:](float32[:,:],float32[:,:])'],fastmath=True)
+def cost_matrix_d_32(X,Y):
     '''
     input: 
-        X: n*d float torch tensor
-        Y: m*d float torch tensor
+        X: (n,) float np array
+        Y: (m,) float np array
     output:
-        M: n*m matrix, M_ij=c(X_i,Y_j) where c is defined by cost_function_T.
+        M: n*m matrix, M_ij=c(X_i,Y_j) where c is defined by cost_function.
     
     '''
-    if len(X.shape)==1:
-        X=X.reshape([X.shape[0],1])
-        M=cost_function_T(X,Y)
-    else:
-        device=X.device.type
-        n,d=X.shape
-        m=Y.shape[0]
-        M=torch.zeros([n,m],device=device)
-        for i in range(d):
-            M+=cost_function_T(X[:,i:i+1],Y[:,i:i+1].T)      
+    n=X.shape[0]
+    m=Y.shape[0]
+    M=np.zeros((n,m),np.float32)
+    for i in range(n):
+        for j in range(m):
+            M[i,j]=np.sum(cost_function(X[i,:],Y[j,:]))
     return M
 
+    
 
 
-#types.Tuple
+
 
 @nb.njit(['Tuple((int64,float64))(float64,float64[:])'],fastmath=True) 
-#@nb.njit(fastmath=True)
 def closest_y(x,Y):
     '''
     Parameters
@@ -150,6 +136,7 @@ def closest_y(x,Y):
     min_index=cost_list.argmin()
     min_cost=cost_list[min_index]
     return min_index,min_cost
+
 
 #@nb.njit(fastmath=True)
 @nb.njit(['int64[:](float64[:,:])'],fastmath=True)
@@ -202,32 +189,6 @@ def index_adjust(L,j_start=0):
     L[positive_indices]=L[positive_indices]+j_start
 
          
-
-@torch.jit.script   
-def index_adjust_T(L: torch.Tensor,j_start: int =0):
-    '''
-
-    Parameters
-    ----------
-    L : n*1 torch tensor, whose entry is 0,1,2,3..... or -1. 
-          transporportation plan. L[i]=j denote we assign x_i to y_j, L[i]=-1, denote we destroy x_i. 
-          if we ignore -1, L must be in increasing order 
-
-    j_start : integer>=0 
-          index of y 
-    Returns
-    -------
-    L : List, whose entry is 0,1,.... or -1 
-    Go through all the entries in L, if the entry>=0, add j_start,
-    eg. input (L=[1,2,3], j_start=2)
-        return L=[3,4,5]
-    eg. input (L=[1,2,-1,3], j_start=2)
-        return L=[3,4,-1,5]
-
-    '''
-    
-    positive_indices=(L>=0).nonzero()
-    L[positive_indices]=L[positive_indices]+j_start
 
 @nb.njit(['Tuple((int64,int64))(int64[:])'])  
 def startindex(L_pre):
@@ -492,78 +453,6 @@ def recover_indice_M(indice_X,indice_Y,plans):
     mapping_final=torch.gather(mapping[1],1,mapping[0,:].argsort())
     return mapping_final
 
-
-@torch.jit.script                        
-def refined_cost_T(X,Y,L,Lambda,penulty: bool =False):
-    '''
-
-    Parameters
-    ----------
-    X : n*1 float tensor 
-    Y : m*1 float tensor
-    L : n*1 tensor, whose entries is 0,1,2,.... or -1
-    
-
-    Lambda : float number, determine the penualty 
-    penulty : Booleans
-        true denotes we add penulty to the return
-        false denots we do not add penulty to the return
-
-    Returns
-    -------
-    cost : 0 dimension float tensor 
-        if penulty=False: sum_{i:L[i]>=0} c(X[i],Y[L[i]]) 
-        if penulty=True: sum_{i:L[i]>=0}c(X[i],Y[L[i]])+Lambda*#{i:L[i]=-1} 
-
-    '''
-    n=L.shape[0]
-    L_X=torch.arange(n)[L>=0]
-    L_Y=L[L>=0]
-    Y_take=Y[L_Y]
-    X_take=X[L_X]
-    
-    if not penulty:
-        cost=torch.sum(cost_function_T(X_take, Y_take))
-    else:
-        num_destruction=len(L)-len(L_X)
-        cost=torch.sum(cost_function_T(X_take, Y_take))+Lambda*num_destruction
-    return cost
-
-# @nb.njit()
-# def refined_cost(X,Y,L,Lambda,penulty=True):
-#     '''
-
-#     Parameters
-#     ----------
-#     X : n*1 float np array 
-#     Y : m*1 float np array
-#     L : n*1 tensor, whose entries is 0,1,2,.... or -1
-    
-
-#     Lambda : float number, determine the penualty 
-#     penulty : Booleans
-#         true denotes we add penulty to the return
-#         false denots we do not add penulty to the return
-
-#     Returns
-#     -------
-#     cost : float number 
-#         if penulty=False: sum_{i:L[i]>=0} c(X[i],Y[L[i]]) 
-#         if penulty=True: sum_{i:L[i]>=0}c(X[i],Y[L[i]])+Lambda*#{i:L[i]=-1} 
-
-#     '''
-#     n=L.shape[0]
-#     Lx=arange(0,n)
-#     L_X=Lx[L>=0] #[i for i,j in enumerate(L) if j>=0]    
-#     L_Y=L[L>=0]
-#     Y_take=Y[L_Y]
-#     X_take=X[L_X]
-#     num_destruction=L.shape[0]-L_X.shape[0]
-#     if penulty==True:
-#         cost=np.sum(cost_function(X_take, Y_take))+Lambda*num_destruction
-#     else:
-#         cost=np.sum(cost_function(X_take, Y_take))
-#     return cost
 
 @nb.njit(['int64[:,:](int64[:],int64)'],fastmath=True)
 #@nb.njit(fastmath=True)

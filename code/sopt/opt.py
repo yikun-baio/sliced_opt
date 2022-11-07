@@ -24,7 +24,6 @@ os.chdir(parent_path)
 from sopt.library import *
 
 
-    
 @nb.njit(['Tuple((float64,int64[:],float64,int64[:]))(float64[:,:],int64[:],float64)'],fastmath=True,cache=True)
 def opt_sub(M1,L1,Lambda):
     '''
@@ -467,7 +466,7 @@ def opt_1d_v2_a(X,Y,Lambda):
     return cost,L
 
 #@nb.njit()
-#@nb.njit(nb.types.Tuple((List,List,nb.int64[:]))(nb.float32[:],nb.float32[:],nb.float32))
+#@nb.njit(nb.types.Tuple((List,List,nb.int64[:]))(nb.float64[:],nb.float64[:],nb.float64))
 def opt_decomposition(X,Y,Lambda):
     M=cost_matrix(X,Y)
     CM=M>=Lambda
@@ -599,7 +598,7 @@ def opt_decomposition(X,Y,Lambda):
             free_Y[-1]=free_y
     return X_list,Y_list,free_Y
 
-#@nb.njit(nb.types.Tuple((nb.float32,nb.int64[:]))(nb.float32[:],nb.float32[:],nb.float32),parallel=True,fastmath=True)
+#@nb.njit(nb.types.Tuple((nb.float64,nb.int64[:]))(nb.float64[:],nb.float64[:],nb.float64),parallel=True,fastmath=True)
 def opt_1d_v3(X,Y,Lambda):
     X_list,Y_list,free_Y=opt_decomposition(X,Y,Lambda)
     K=len(X_list)
@@ -709,8 +708,8 @@ def pot_1d(X,Y):
 # Lambda=np.float64(2)
 
 # for i in range(1):
-#     X=torch.rand(n,dtype=torch.float32)-1.5
-#     Y=torch.rand(m,dtype=torch.float32)*2+1.5
+#     X=torch.rand(n,dtype=torch.float64)-1.5
+#     Y=torch.rand(m,dtype=torch.float64)*2+1.5
 #     X=X.sort().values
 #     Y=Y.sort().values
 #     X=np.float64(np.random.uniform(-5,5,n))
