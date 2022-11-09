@@ -76,7 +76,6 @@ def spot_transfer(X1,X2,Xs,Xt,n_projections=300):
     XsT=torch.from_numpy(Xs).to(dtype=torch.float32)
     XtT=torch.from_numpy(Xt).to(dtype=torch.float32)
     A=spot(XsT.clone(),XtT.clone(),n_projections)
-    
     A.get_directions()
     A.correspond()
     transp_Xs=A.transform(torch.from_numpy(X1).to(dtype=torch.float32))

@@ -286,6 +286,8 @@ class sopt():
         self.L_max=self.plans[self.i_max]
         #self.Lx_max=torch.arange(self.n)
         #self.Lx_max=self.Lx_max[self.L_max>=0]
+    
+
 
         
 
