@@ -76,6 +76,10 @@ def solve(c,lam,verbose=False):
                 # threshold until constr iMin,jMin-1 becomes active
                 if jMin>0:
                     lowEndDiff=c[iMin,jMin-1]-phi[iMin]-psi[jMin-1]
+                    # catch: empty rows in between that could numerically be skipped
+                    if iMin>0:
+                        if piRow[iMin-1]==-1:
+                            lowEndDiff=np.infty
                 else:
                     lowEndDiff=np.infty
                 # threshold for upper end
