@@ -38,3 +38,134 @@ def mat2im(X, n,m,d):
 def minmax(img):
     return np.clip(img, 0, 1)
 
+
+def recover_image(transp_Xs,shape,name,save_path):
+    #print(transp_Xs)
+    n,m,d=shape
+    I1t = minmax(mat2im(transp_Xs, n,m,d))
+    plot_image(I1t,name,save_path)
+
+
+def plot_image(I1t,name,save_path):
+    #print(transp_Xs)
+    plt.figure()
+    plt.axis('off')
+    plt.imshow(I1t)
+    #plt.pad_inces=0.01
+    plt.savefig(save_path+'/'+name+'.png',format="png",dpi=800,bbox_inches='tight',pad_inches = 0)
+    plt.show()
+    #f.clear()
+    plt.close()
+
+    
+    
+def ot_transfer(Xs0,Xt0,Xs,Xt):
+#    XsT=torch.from_numpy(Xs).to(dtype=torch.float)
+#    XtT=torch.from_numpy(Xt).to(dtype=torch.float)
+    # EMDTransport
+    ot_emd = ot.da.EMDTransport(max_iter=1000000)
+    
+    ot_emd.fit(Xs=Xs, Xt=Xt)
+    # # prediction between images (using out of sample prediction as in [6])
+    transp_Xs = ot_emd.transform(Xs=Xs0)
+    return transp_Xs
+
+
+def eot_transfer(Xs0,Xt0,Xs,Xt):
+    # SinkhornTransport
+    ot_sinkhorn = ot.da.SinkhornTransport(reg_e=1e-1,max_iter=1000000)
+    ot_sinkhorn.fit(Xs=Xs, Xt=Xt)
+    transp_Xs = ot_sinkhorn.transform(Xs=Xs0)
+    return transp_Xs
+    
+
+
+
+@nb.njit(['float64[:,:](float64[:,:],float64[:,:],float64[:,:],int64)'],fastmath=True)
+def transform(Xs0,Xs,Xs1,batch_size=128):    
+    
+    # # perform out of sample mapping
+    n,m=Xs0.shape
+    indices = arange(0,Xs0.shape[0])
+    batch_ind = [indices[i:i + batch_size] for i in np.arange(0, len(indices), batch_size)]
+    transp_Xs = np.zeros((n,m))
+
+    for bi in batch_ind:
+        # get the nearest neighbor in the source domain
+        D0 = cost_matrix_d(Xs0[bi], Xs)
+        idx = np.argmin(D0, axis=1)
+        # define the transported points
+        transp_Xs[bi] =Xs0[bi]+Xs1[idx, :]  - Xs[idx, :]
+        #print(transp_Xs)
+        #transp_Xs.append(transp_Xs_)
+    #transp_Xs = torch.cat(transp_Xs, axis=0)
+    return transp_Xs
+
+
+@nb.njit(['float32[:,:](float32[:,:],float32[:,:],float32[:,:],int64)'],fastmath=True)
+def transform_32(Xs0,Xsc,Xs,batch_size=128):    
+    
+    # # perform out of sample mapping
+    n,m=Xs0.shape
+    indices = np.arange(0,Xs0.shape[0])
+    batch_ind = [indices[i:i + batch_size] for i in np.arange(0, len(indices), batch_size)]
+    transp_Xs = np.zeros((n,m),dtype=np.float32)
+    #transp_Xs=[]
+    for bi in batch_ind:
+        # get the nearest neighbor in the source domain
+        D0 = cost_matrix_d_32(Xs0[bi], Xsc)
+        idx = np.argmin(D0, axis=1)
+        # define the transported points
+        transp_Xs[bi] =Xs0[bi]+Xs[idx, :]  - Xsc[idx, :]
+#        transp_Xs_=Xs0[bi]+Xs1[idx, :]  - Xs[idx, :]
+        #print(transp_Xs)
+#        transp_Xs.append(transp_Xs_)
+#    transp_Xs = np.concatenate(transp_Xs, axis=0)
+    return transp_Xs
+
+
+@nb.njit(['float64[:,:](float64[:,:],float64[:,:],float64[:,:],float64[:,:],int64)'])
+def spot_transfer(Xs0,Xt0,Xs,Xt,n_projections=400):
+    n,d=Xs.shape
+    np.random.seed(0)
+    projections=random_projections(d,n_projections,1)
+    Xs1=Xs.copy()
+    X_correspondence_pot(Xs1,Xt,projections)     
+    batch_size=128
+    transp_Xs=transform(Xs0,Xs,Xs1,batch_size)
+    return transp_Xs
+
+
+@nb.njit(['float32[:,:](float32[:,:],float32[:,:],float32[:,:],float32[:,:],int64)'])
+def spot_transfer_32(Xs0,Xt0,Xs,Xt,n_projections=400):
+    n,d=Xs.shape
+    np.random.seed(0)
+    projections=random_projections_32(d,n_projections,1)
+    Xsc=Xs.copy()
+    X_correspondence_pot_32(Xs,Xt,projections)     
+    batch_size=128
+    transp_Xs=transform_32(Xs0,Xsc,Xs,batch_size)
+    return transp_Xs
+
+
+@nb.njit(['float32[:,:](float32[:,:],float32[:,:],float32[:,:],float32[:,:],float32[:],int64)'])
+def sopt_transfer_32(Xs0,Xt0,Xs,Xt,Lambda_list,n_projections=400):    
+    n,d=Xs.shape
+    np.random.seed(0)
+    projections=random_projections_32(d,n_projections,1)
+    Xsc=Xs.copy()
+    X_correspondence_32(Xs,Xt,projections,Lambda_list)     
+    batch_size=128
+    transp_Xs=transform_32(Xs0,Xsc,Xs,batch_size)
+    return transp_Xs
+
+@nb.njit(['float64[:,:](float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:],int64)'])
+def sopt_transfer(Xs0,Xt0,Xs,Xt,Lambda_list,n_projections=400):    
+    n,d=Xs.shape
+    np.random.seed(0)
+    projections=random_projections(d,n_projections,1)
+    Xsc=Xs.copy()
+    X_correspondence(Xs,Xt,projections,Lambda_list)     
+    batch_size=128
+    transp_Xs=transform(Xs0,Xsc,Xs,batch_size)
+    return transp_Xs
