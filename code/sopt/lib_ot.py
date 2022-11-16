@@ -45,15 +45,456 @@ def opt_lp(X,Y,Lambda,numItermax=100000):
     nu1[-1]=n
     cost_M=cost_matrix(X1[0:-1],Y1[0:-1])
     cost_M1=np.zeros((n+1,m+1),dtype=np.float64)
-    cost_M1[0:n,0:m]=cost_M-Lambda
+    cost_M1[0:n,0:m]=cost_M-2*Lambda
     plan1=ot.lp.emd(mu1,nu1,cost_M1,numItermax=numItermax)
     plan=plan1[0:n,0:m]
     cost=np.sum(cost_M*plan)
     return cost,plan
 
-    
+@nb.njit((nb.float64[:,:])(nb.float64[:],nb.float64[:],nb.float64[:,:],nb.float64,nb.float64,nb.int64))
+def sinkhorn_opt_pr(mu, nu, M, mass, reg, numItermax=100000):
+    r"""
+    Solves the partial optimal transport problem
+    and returns the OT plan
 
-import numpy as np
+    The function considers the following problem:
+
+    .. math::
+        \gamma = \mathop{\arg \min}_\gamma \quad \langle \gamma,
+                 \mathbf{M} \rangle_F + \mathrm{reg} \cdot\Omega(\gamma)
+
+        s.t. \gamma \mathbf{1} &\leq \mathbf{a} \\
+             \gamma^T \mathbf{1} &\leq \mathbf{b} \\
+             \gamma &\geq 0 \\
+             \mathbf{1}^T \gamma^T \mathbf{1} = m
+             &\leq \min\{\|\mathbf{a}\|_1, \|\mathbf{b}\|_1\} \\
+
+    where :
+
+    - :math:`\mathbf{M}` is the metric cost matrix
+    - :math:`\Omega`  is the entropic regularization term,
+      :math:`\Omega=\sum_{i,j} \gamma_{i,j}\log(\gamma_{i,j})`
+    - :math:`\mathbf{a}` and :math:`\mathbf{b}` are the sample weights
+    - `m` is the amount of mass to be transported
+
+    The formulation of the problem has been proposed in
+    :ref:`[3] <references-entropic-partial-wasserstein>` (prop. 5)
+
+
+    Parameters
+    ----------
+    mu : np.ndarray (dim_a,)
+        Unnormalized histogram of dimension `dim_a`
+    b : np.ndarray (dim_b,)
+        Unnormalized histograms of dimension `dim_b`
+    M : np.ndarray (dim_a, dim_b)
+        cost matrix
+    reg : float
+        Regularization term > 0
+    m : float, optional
+        Amount of mass to be transported
+    numItermax : int, optional
+        Max number of iterations
+    stopThr : float, optional
+        Stop threshold on error (>0)
+    verbose : bool, optional
+        Print information along iterations
+    log : bool, optional
+        record log if True
+
+
+    Returns
+    -------
+    gamma : (dim_a, dim_b) ndarray
+        Optimal transportation matrix for the given parameters
+    log : dict
+        log dictionary returned only if `log` is `True`
+
+
+    Examples
+    --------
+    >>> import ot
+    >>> mu = [.1, .2]
+    >>> nu = [.1, .1]
+    >>> M = [[0., 1.], [2., 3.]]
+    >>> np.round(entropic_partial_wasserstein(a, b, M, 1, 0.1), 2)
+    array([[0.06, 0.02],
+           [0.01, 0.  ]])
+
+
+    .. _references-entropic-partial-wasserstein:
+    References
+    ----------
+    .. [3] Benamou, J. D., Carlier, G., Cuturi, M., Nenna, L., & Peyré, G.
+       (2015). Iterative Bregman projections for regularized transportation
+       problems. SIAM Journal on Scientific Computing, 37(2), A1111-A1138.
+
+    See Also
+    --------
+    ot.partial.partial_wasserstein: exact Partial Wasserstein
+    """
+
+    #mu = np.asarray(a, dtype=np.float64)
+    #nu = np.asarray(b, dtype=np.float64)
+    #M = np.asarray(M, dtype=np.float64)
+
+    dim_mu, dim_nu = M.shape
+    dx = np.ones(dim_mu, dtype=np.float64)
+    dy = np.ones(dim_nu, dtype=np.float64)
+    stopThr=1e-13
+            
+
+    # Next 3 lines equivalent to K=np.exp(-M/reg), but faster to compute
+    K=np.exp(-M/reg)
+    #K = np.empty(M.shape, dtype=M.dtype)
+    #np.divide(M, -reg, out=K)
+    #np.exp(K, out=K)
+    
+    K=K*mass / np.sum(K) # make the total mass of K to be mass
+    
+    err, cpt = 1, 0
+    q1 = np.ones(K.shape)
+    q2 = np.ones(K.shape)
+    q3 = np.ones(K.shape)
+
+    while (err > stopThr and cpt < numItermax):
+        Kprev = K
+        K = K * q1
+        K1 = np.dot(np.diag(np.minimum(mu / np.sum(K, axis=1), dx)), K)
+        q1 = q1 * Kprev / K1
+        K1prev = K1
+        K1 = K1 * q2
+        K2 = np.dot(K1, np.diag(np.minimum(nu / np.sum(K1, axis=0), dy)))
+        q2 = q2 * K1prev / K2
+        K2prev = K2
+        K2 = K2 * q3
+        K = K2 * (mass / np.sum(K2))
+        q3 = q3 * K2prev / K
+
+
+        if cpt % 10 == 0:
+            err = np.linalg.norm(Kprev - K)
+
+        cpt = cpt + 1
+    if cpt==numItermax-1:
+        print('warning, maximum iteration reached')
+    # log_e['partial_w_dist'] = np.sum(M * K)
+    # if log:
+    #     return K, log_e
+    return K
+
+@nb.njit((nb.float64[:,:])(nb.float64[:],nb.float64[:],nb.float64[:,:],nb.float64,nb.int64))
+def sinkhorn_knopp(mu, nu, M, reg, numItermax=1000000):
+    r"""
+    Solve the entropic regularization optimal transport problem and return the OT matrix
+
+    The function solves the following optimization problem:
+
+    .. math::
+        \gamma = \mathop{\arg \min}_\gamma \quad \langle \gamma, \mathbf{M} \rangle_F +
+        \mathrm{reg}\cdot\Omega(\gamma)
+
+        s.t. \ \gamma \mathbf{1} &= \mathbf{a}
+
+             \gamma^T \mathbf{1} &= \mathbf{b}
+
+             \gamma &\geq 0
+    where :
+
+    - :math:`\mathbf{M}` is the (`dim_a`, `dim_b`) metric cost matrix
+    - :math:`\Omega` is the entropic regularization term
+      :math:`\Omega(\gamma)=\sum_{i,j} \gamma_{i,j}\log(\gamma_{i,j})`
+    - :math:`\mathbf{a}` and :math:`\mathbf{b}` are source and target
+      weights (histograms, both sum to 1)
+
+    The algorithm used for solving the problem is the Sinkhorn-Knopp
+    matrix scaling algorithm as proposed in :ref:`[2] <references-sinkhorn-knopp>`
+
+
+    Parameters
+    ----------
+    mu : array-like, shape (mu,)
+        samples weights in the source domain
+    nu : array-like, shape (nu,) or array-like, shape (dim_b, n_hists)
+        samples in the target domain, compute sinkhorn with multiple targets
+        and fixed :math:`\mathbf{M}` if :math:`\mathbf{b}` is a matrix
+        (return OT loss + dual variables in log)
+    M : array-like, shape (dim_a, dim_b)
+        loss matrix
+    reg : float
+        Regularization term >0
+    numItermax : int, optional
+        Max number of iterations
+    stopThr : float, optional
+        Stop threshold on error (>0)
+
+    Returns
+    -------
+    gamma : array-like, shape (dim_mu, dim_nu)
+        Optimal transportation matrix for the given parameters
+
+    Examples
+    --------
+
+    >>> import ot
+    >>> mu=[.5, .5]
+    >>> nu=[.5, .5]
+    >>> M=[[0., 1.], [1., 0.]]
+    >>> ot.sinkhorn(a, b, M, 1)
+    array([[0.36552929, 0.13447071],
+           [0.13447071, 0.36552929]])
+
+
+    .. _references-sinkhorn-knopp:
+    References
+    ----------
+
+    .. [2] M. Cuturi, Sinkhorn Distances : Lightspeed Computation
+        of Optimal Transport, Advances in Neural Information
+        Processing Systems (NIPS) 26, 2013
+
+
+    See Also
+    --------
+    ot.lp.emd : Unregularized OT
+    ot.optim.cg : General regularized OT
+
+    """
+
+    # init data
+    dim_mu = mu.shape[0]
+    dim_nu = nu.shape[0]
+    stopThr=1e-9
+    
+    #initialize u,v 
+    u = np.ones(dim_mu) # is exp()
+    v = np.ones(dim_nu)
+
+    K = np.exp(-M/reg)
+    
+    for ii in range(numItermax):
+        u_pre=u.copy()
+        v_pre=v.copy()
+        v = nu / np.dot(K, u)
+        u = mu / np.dot(K.T, v)
+        if ii % 10 == 0:
+            # we can speed up the process by checking for the error only all
+            # the 10th iterations
+            err = np.linalg.norm(u_pre - u)+np.linalg.norm(v_pre - v)  # violation of marginal
+            if err < stopThr:
+                break
+    
+    gamma=np.expand_dims(u,1)*(K*v.T)
+
+    return gamma
+
+@nb.njit(['(float64[:,:])(float64[:],float64[:],float64[:,:],float64,float64,int64)'])
+def sinkhorn_knopp_opt(mu, nu, M, Lambda, reg, numItermax=1000):
+    r"""
+    Solve the entropic regularization optimal transport problem and return the OT matrix
+
+    The function solves the following optimization problem:
+
+    .. math::
+        \gamma = \mathop{\arg \min}_\gamma \quad \langle \gamma, \mathbf{M} \rangle_F +
+        \mathrm{reg}\cdot\Omega(\gamma)
+
+        s.t. \ \gamma \mathbf{1} &= \mathbf{a}
+
+             \gamma^T \mathbf{1} &= \mathbf{b}
+
+             \gamma &\geq 0
+    where :
+
+    - :math:`\mathbf{M}` is the (`dim_a`, `dim_b`) metric cost matrix
+    - :math:`\Omega` is the entropic regularization term
+      :math:`\Omega(\gamma)=\sum_{i,j} \gamma_{i,j}\log(\gamma_{i,j})`
+    - :math:`\mathbf{a}` and :math:`\mathbf{b}` are source and target
+      weights (histograms, both sum to 1)
+
+    The algorithm used for solving the problem is the Sinkhorn-Knopp
+    matrix scaling algorithm as proposed in :ref:`[2] <references-sinkhorn-knopp>`
+
+
+    Parameters
+    ----------
+    mu : array-like, shape (mu,)
+        samples weights in the source domain
+    nu : array-like, shape (nu,) or array-like, shape (dim_b, n_hists)
+        samples in the target domain, compute sinkhorn with multiple targets
+        and fixed :math:`\mathbf{M}` if :math:`\mathbf{b}` is a matrix
+        (return OT loss + dual variables in log)
+    M : array-like, shape (dim_a, dim_b)
+        loss matrix
+    reg : float
+        Regularization term >0
+    numItermax : int, optional
+        Max number of iterations
+    stopThr : float, optional
+        Stop threshold on error (>0)
+
+    Returns
+    -------
+    gamma : array-like, shape (dim_mu, dim_nu)
+        Optimal transportation matrix for the given parameters
+
+    Examples
+    --------
+
+    >>> import ot
+    >>> mu=[.5, .5]
+    >>> nu=[.5, .5]
+    >>> M=[[0., 1.], [1., 0.]]
+    >>> ot.sinkhorn(a, b, M, 1)
+    array([[0.36552929, 0.13447071],
+           [0.13447071, 0.36552929]])
+
+
+    .. _references-sinkhorn-knopp:
+    References
+    ----------
+
+    .. [2] M. Cuturi, Sinkhorn Distances : Lightspeed Computation
+        of Optimal Transport, Advances in Neural Information
+        Processing Systems (NIPS) 26, 2013
+
+
+    See Also
+    --------
+    ot.lp.emd : Unregularized OT
+    ot.optim.cg : General regularized OT
+
+    """
+
+    # init data
+    dim_mu = mu.shape[0]
+    dim_nu = nu.shape[0]
+    stopThr=1e-9
+    
+    #initialize u,v 
+    u = np.ones(dim_mu) # is exp()
+    v = np.zeros(dim_nu)
+
+    K = np.exp(-M/reg)
+    
+    for ii in range(numItermax):
+        u_pre=u.copy()
+        v_pre=v.copy()
+        v = np.minimum(nu / np.dot(K.T, u),Lambda)
+        u = np.minimum(mu / np.dot(K, v),Lambda)
+        if ii % 10 == 0:
+            # we can speed up the process by checking for the error only all
+            # the 10th iterations
+            err = np.linalg.norm(u_pre - u)+np.linalg.norm(v_pre - v)  # violation of marginal
+            if err < stopThr:
+                break
+    gamma=np.expand_dims(u,1)*(K*v.T)
+
+    return gamma
+    
+@nb.njit(['(float32[:,:])(float32[:],float32[:],float32[:,:],float32,float32,int64)'])
+def sinkhorn_knopp_opt_32(mu, nu, M, Lambda, reg, numItermax=1000000):
+    r"""
+    Solve the entropic regularization optimal transport problem and return the OT matrix
+
+    The function solves the following optimization problem:
+
+    .. math::
+        \gamma = \mathop{\arg \min}_\gamma \quad \langle \gamma, \mathbf{M} \rangle_F +
+        \mathrm{reg}\cdot\Omega(\gamma)
+
+        s.t. \ \gamma \mathbf{1} &= \mathbf{a}
+
+             \gamma^T \mathbf{1} &= \mathbf{b}
+
+             \gamma &\geq 0
+    where :
+
+    - :math:`\mathbf{M}` is the (`dim_a`, `dim_b`) metric cost matrix
+    - :math:`\Omega` is the entropic regularization term
+      :math:`\Omega(\gamma)=\sum_{i,j} \gamma_{i,j}\log(\gamma_{i,j})`
+    - :math:`\mathbf{a}` and :math:`\mathbf{b}` are source and target
+      weights (histograms, both sum to 1)
+
+    The algorithm used for solving the problem is the Sinkhorn-Knopp
+    matrix scaling algorithm as proposed in :ref:`[2] <references-sinkhorn-knopp>`
+
+
+    Parameters
+    ----------
+    mu : array-like, shape (mu,)
+        samples weights in the source domain
+    nu : array-like, shape (nu,) or array-like, shape (dim_b, n_hists)
+        samples in the target domain, compute sinkhorn with multiple targets
+        and fixed :math:`\mathbf{M}` if :math:`\mathbf{b}` is a matrix
+        (return OT loss + dual variables in log)
+    M : array-like, shape (dim_a, dim_b)
+        loss matrix
+    reg : float
+        Regularization term >0
+    numItermax : int, optional
+        Max number of iterations
+    stopThr : float, optional
+        Stop threshold on error (>0)
+
+    Returns
+    -------
+    gamma : array-like, shape (dim_mu, dim_nu)
+        Optimal transportation matrix for the given parameters
+
+    Examples
+    --------
+
+    >>> import ot
+    >>> mu=[.5, .5]
+    >>> nu=[.5, .5]
+    >>> M=[[0., 1.], [1., 0.]]
+    >>> ot.sinkhorn(a, b, M, 1)
+    array([[0.36552929, 0.13447071],
+           [0.13447071, 0.36552929]])
+
+
+    .. _references-sinkhorn-knopp:
+    References
+    ----------
+
+    .. [2] M. Cuturi, Sinkhorn Distances : Lightspeed Computation
+        of Optimal Transport, Advances in Neural Information
+        Processing Systems (NIPS) 26, 2013
+
+
+    See Also
+    --------
+    ot.lp.emd : Unregularized OT
+    ot.optim.cg : General regularized OT
+
+    """
+
+    # init data
+    dim_mu = mu.shape[0]
+    dim_nu = nu.shape[0]
+    stopThr=np.float32(1e-9)
+    
+    #initialize u,v 
+    u = np.ones(dim_mu,dtype=np.float32) # is exp()
+    v = np.zeros(dim_nu,dtype=np.float32)
+
+    K = np.exp(-M/reg)
+    
+    for ii in range(numItermax):
+        u_pre=u.copy()
+        v_pre=v.copy()
+        v = np.minimum(nu / np.dot(K.T, u),Lambda)
+        u = np.minimum(mu / np.dot(K, v),Lambda)
+        if ii % 10 == 0:
+            # we can speed up the process by checking for the error only all
+            # the 10th iterations
+            err = np.linalg.norm(u_pre - u)+np.linalg.norm(v_pre - v)  # violation of marginal
+            if err < stopThr:
+                break
+    gamma=np.expand_dims(u,1)*(K*v.T)
+
+    return gamma
 
 def getCost(x,y,p=2.):
     """Squared Euclidean distance cost for two 1d arrays"""
@@ -74,6 +515,9 @@ def getPiFromCol(M,N,piCol):
     return pi
 
 
+def test():
+    print('25')
+    
 @nb.njit(nb.types.Tuple((nb.float64,nb.float64[:],nb.float64[:],nb.int64[:],nb.int64[:]))(nb.float64[:,:],nb.float64))
 def solve_opt(c,lam): #,verbose=False):
     M,N=c.shape
@@ -97,20 +541,20 @@ def solve_opt(c,lam): #,verbose=False):
             j=jLast+np.argmin(c[K,jLast:]-psi[jLast:])
         val=c[K,j]-psi[j]
         if val>=lam:
-#            if verbose: print("case 1")
+           # if verbose: print("case 1")
             phi[K]=lam
             K+=1
         elif piCol[j]==-1:
-#            if verbose: print("case 2")
+          #  if verbose: print("case 2")
             piCol[j]=K
             piRow[K]=j
             phi[K]=val
             K+=1
             jLast=j
         else:
-#            if verbose: print("case 3")
+          #  if verbose: print("case 3")
             phi[K]=val
-#            assert piCol[j]==K-1
+            #assert piCol[j]==K-1
             # Dijkstra distance vector and currently explored radius
             dist[K]=0.
             dist[K-1]=0.
@@ -145,11 +589,12 @@ def solve_opt(c,lam): #,verbose=False):
                 else:
                     hiEndDiff=np.infty
                 if hiEndDiff<=min(lowEndDiff,lamDiff):
- #                   if verbose: print("case 3.1")
+                  #  if verbose: print("case 3.1")
                     v+=hiEndDiff
                     domain1=arange(iMin,K)
                     phi[domain1]+=v-dist[domain1]
                     psi[piRow[domain1]]-=v-dist[domain1]
+                    
                     # for i in range(iMin,K):
                     #     phi[i]+=v-dist[i]
                     #     psi[piRow[i]]-=v-dist[i]
@@ -160,12 +605,12 @@ def solve_opt(c,lam): #,verbose=False):
                     resolved=True
                 elif lowEndDiff<=min(hiEndDiff,lamDiff):
                     if piCol[jMin-1]==-1:
-  #                      if verbose: print("case 3.2a")
+                       # if verbose: print("case 3.2a")
                         v+=lowEndDiff
                         domain1=arange(iMin,K)
                         phi[domain1]+=v-dist[domain1]
-                        psi[piRow[domain1]]-=v-dist[domain1]   
-                
+                        psi[piRow[domain1]]-=v-dist[domain1]
+                        
                         # for i in range(iMin,K):
                         #     phi[i]+=v-dist[i]
                         #     psi[piRow[i]]-=v-dist[i]
@@ -176,19 +621,22 @@ def solve_opt(c,lam): #,verbose=False):
                         piRow[iMin]-=1
                         
                         domain2=arange(iMin+1,K)
+#                        piCol[domain2-(iMin+1)+jPrime]+=1
                         piRow[domain2]-=1
-                        piCol[domain2-iMin-1+jPrime]+=1
-                        
+                        #domain3=arange(jMin,jMin+K-iMin-1)
+                        piCol[domain2-iMin-1+jMin]+=1
                         # for i in range(iMin+1,K):
                         #     piCol[jPrime]+=1
-                        #     piRow[i]-=1
+                        #     #piRow[i]-=1
                         #     jPrime+=1
+                        
+                        jPrime=K-iMin-1+jMin
                         piRow[K]=jPrime
                         piCol[jPrime]+=1
                         resolved=True
                     else:
-   #                     if verbose: print("case 3.2b")
-#                        assert piCol[jMin-1]==iMin-1
+                     #   if verbose: print("case 3.2b")
+                        #assert piCol[jMin-1]==iMin-1
                         v+=lowEndDiff
                         dist[iMin-1]=v
                         # adjust distance to threshold
@@ -200,23 +648,24 @@ def solve_opt(c,lam): #,verbose=False):
                             lamInd=iMin
 
                 else:
-    #                if verbose: print(f"case 3.3, lamInd={lamInd}")
+                  #  if verbose: print(f"case 3.3, lamInd={lamInd}")
                     v+=lamDiff
-                    domain1=arange(iMin,K)
-                    phi[domain1]+=v-dist[domain1]
-                    psi[piRow[domain1]]-=v-dist[domain1]
-                    # for i in range(iMin,K):
-                    #     phi[i]+=v-dist[i]
-                    #     psi[piRow[i]]-=v-dist[i]
+                    for i in range(iMin,K):
+                        phi[i]+=v-dist[i]
+                        psi[piRow[i]]-=v-dist[i]
                     phi[K]+=v
                     # "flip" assignment from lambda touching row onwards
                     if lamInd<K:
                         jPrime=piRow[lamInd]
                         piRow[lamInd]=-1
-                        for i in range(lamInd+1,K):
-                            piCol[jPrime]+=1
-                            piRow[i]-=1
-                            jPrime+=1
+                        domain1=arange(lamInd+1,K)
+                        piRow[domain1]-=1
+                        piCol[domain1-lamInd-1+jPrime]+=1
+                        # for i in range(lamInd+1,K):
+                        #     piCol[jPrime]+=1
+                        #     #piRow[i]-=1
+                        #     jPrime+=1
+                        jPrime=K-lamInd-1+piRow[lamInd]
                         piRow[K]=jPrime
                         piCol[jPrime]+=1
                     resolved=True
@@ -230,9 +679,11 @@ def solve_opt(c,lam): #,verbose=False):
 
 
 
+
 @nb.njit(nb.types.Tuple((nb.float32,nb.float32[:],nb.float32[:],nb.int64[:],nb.int64[:]))(nb.float32[:,:],nb.float32))
 def solve_opt_32(c,lam): #,verbose=False):
     M,N=c.shape
+    
     phi=np.full(shape=M,fill_value=-np.inf,dtype=np.float32)
     psi=np.full(shape=N,fill_value=lam,dtype=np.float32)
     # to which cols/rows are rows/cols currently assigned? -1: unassigned
@@ -252,24 +703,24 @@ def solve_opt_32(c,lam): #,verbose=False):
             j=jLast+np.argmin(c[K,jLast:]-psi[jLast:])
         val=c[K,j]-psi[j]
         if val>=lam:
-#            if verbose: print("case 1")
+           # if verbose: print("case 1")
             phi[K]=lam
             K+=1
         elif piCol[j]==-1:
-#            if verbose: print("case 2")
+          #  if verbose: print("case 2")
             piCol[j]=K
             piRow[K]=j
             phi[K]=val
             K+=1
             jLast=j
         else:
-#            if verbose: print("case 3")
+          #  if verbose: print("case 3")
             phi[K]=val
-#            assert piCol[j]==K-1
+            #assert piCol[j]==K-1
             # Dijkstra distance vector and currently explored radius
-            dist[K]=np.float32(0)
-            dist[K-1]=np.float32(0)
-            v=np.float32(0)
+            dist[K]=0.
+            dist[K-1]=0.
+            v=0
 
             # iMin and jMin indicate lower end of range of contiguous rows and cols
             # that are currently examined in subroutine;
@@ -298,13 +749,14 @@ def solve_opt_32(c,lam): #,verbose=False):
                 if j<N-1:
                     hiEndDiff=c[K,j+1]-phi[K]-psi[j+1]-v
                 else:
-                    hiEndDiff=np.float32(np.infty)
+                    hiEndDiff=np.infty
                 if hiEndDiff<=min(lowEndDiff,lamDiff):
- #                   if verbose: print("case 3.1")
+                  #  if verbose: print("case 3.1")
                     v+=hiEndDiff
                     domain1=arange(iMin,K)
                     phi[domain1]+=v-dist[domain1]
                     psi[piRow[domain1]]-=v-dist[domain1]
+                    
                     # for i in range(iMin,K):
                     #     phi[i]+=v-dist[i]
                     #     psi[piRow[i]]-=v-dist[i]
@@ -315,14 +767,15 @@ def solve_opt_32(c,lam): #,verbose=False):
                     resolved=True
                 elif lowEndDiff<=min(hiEndDiff,lamDiff):
                     if piCol[jMin-1]==-1:
-  #                      if verbose: print("case 3.2a")
+                       # if verbose: print("case 3.2a")
                         v+=lowEndDiff
                         domain1=arange(iMin,K)
                         phi[domain1]+=v-dist[domain1]
-                        psi[piRow[domain1]]-=v-dist[domain1]    
-#                        for i in range(iMin,K):
-#                            phi[i]+=v-dist[i]
-#                            psi[piRow[i]]-=v-dist[i]
+                        psi[piRow[domain1]]-=v-dist[domain1]
+                        
+                        # for i in range(iMin,K):
+                        #     phi[i]+=v-dist[i]
+                        #     psi[piRow[i]]-=v-dist[i]
                         phi[K]+=v
                         # "flip" assignment along whole chain
                         jPrime=jMin
@@ -330,18 +783,21 @@ def solve_opt_32(c,lam): #,verbose=False):
                         piRow[iMin]-=1
                         
                         domain2=arange(iMin+1,K)
+#                        piCol[domain2-(iMin+1)+jPrime]+=1
                         piRow[domain2]-=1
-                        piCol[domain2-iMin-1+jPrime]+=1
-                        
+                        #domain3=arange(jMin,jMin+K-iMin-1)
+                        piCol[domain2-iMin-1+jMin]+=1
                         # for i in range(iMin+1,K):
                         #     piCol[jPrime]+=1
-                        #     piRow[i]-=1
+                        #     #piRow[i]-=1
                         #     jPrime+=1
+                        
+                        jPrime=K-iMin-1+jMin
                         piRow[K]=jPrime
                         piCol[jPrime]+=1
                         resolved=True
                     else:
-   #                     if verbose: print("case 3.2b")
+                     #   if verbose: print("case 3.2b")
                         #assert piCol[jMin-1]==iMin-1
                         v+=lowEndDiff
                         dist[iMin-1]=v
@@ -354,26 +810,24 @@ def solve_opt_32(c,lam): #,verbose=False):
                             lamInd=iMin
 
                 else:
-    #                if verbose: print(f"case 3.3, lamInd={lamInd}")
+                  #  if verbose: print(f"case 3.3, lamInd={lamInd}")
                     v+=lamDiff
-                    domain1=arange(iMin,K)
-                    phi[domain1]+=v-dist[domain1]
-                    psi[piRow[domain1]]-=v-dist[domain1]
-                    # for i in range(iMin,K):
-                    #     phi[i]+=v-dist[i]
-                    #     psi[piRow[i]]-=v-dist[i]
+                    for i in range(iMin,K):
+                        phi[i]+=v-dist[i]
+                        psi[piRow[i]]-=v-dist[i]
                     phi[K]+=v
                     # "flip" assignment from lambda touching row onwards
                     if lamInd<K:
                         jPrime=piRow[lamInd]
                         piRow[lamInd]=-1
-                        domain2=arange(lamInd+1,K)
-                        piRow[domain2]-=1
-                        piCol[domain2-lamInd-1+piRow[lamInd]]+=1
+                        domain1=arange(lamInd+1,K)
+                        piRow[domain1]-=1
+                        piCol[domain1-lamInd-1+jPrime]+=1
                         # for i in range(lamInd+1,K):
                         #     piCol[jPrime]+=1
-                        #     piRow[i]-=1
+                        #     #piRow[i]-=1
                         #     jPrime+=1
+                        jPrime=K-lamInd-1+piRow[lamInd]
                         piRow[K]=jPrime
                         piCol[jPrime]+=1
                     resolved=True
@@ -381,3 +835,6 @@ def solve_opt_32(c,lam): #,verbose=False):
             K+=1
     objective=np.sum(phi)+np.sum(psi)
     return objective,phi,psi,piRow,piCol
+
+
+

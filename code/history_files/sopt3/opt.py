@@ -1058,7 +1058,7 @@ def opt_1d_T(X,Y,Lambda: float):
 
 
 @nb.njit()
-def pot_1d(X,Y,Lambda=0): 
+def pot(X,Y,Lambda=0): 
     n=len(X)
     m=len(Y)
     L=np.empty(0,dtype=np.int64) # save the optimal plan

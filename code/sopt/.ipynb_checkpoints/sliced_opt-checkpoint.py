@@ -17,33 +17,37 @@ parent_path=work_path[0:loc1+5]
 sys.path.append(parent_path)
 from sopt.library import *
 from sopt.opt import *
+from sopt.lib_ot import *
 
 
 
-# def random_projections(d,n_projections,device='cpu',dtype=torch.float,Type=None):
-#     '''
-#     input: 
-#     d: int 
-#     n_projections: int
+def random_projections_T(d,n_projections,Type): #,device='cpu',dtype=torch.float,Type=None):
+    '''
+    input: 
+    d: int 
+    n_projections: int
 
-#     output: 
-#     projections: d*n torch tensor
+    output: 
+    projections: d*n torch tensor
 
-#     '''
-#     if Type==None:
-# #        torch.manual_seed(0)
-#         Gaussian_vector=torch.normal(0,1,size=[d,n_projections],device=device,dtype=dtype)
-#         projections=Gaussian_vector/torch.sqrt(torch.sum(torch.square(Gaussian_vector),0))
-#         projections=projections.T
-#     elif Type=='orth':
-#  #       np.random.seed(0)
-#         r=int(n_projections/d)+1
-#         projections=np.concatenate([ortho_group.rvs(d) for i in range(r)],axis=1)
-#         projections=torch.from_numpy(projections).to(device=device).to(dtype=dtype).T
-#         projections=projections[0:n_projections]
-#     else:
-#         print('Type must be None or orth')
-#     return projections
+    '''
+    if Type==0:
+#        torch.manual_seed(0)
+        Gaussian_vector=np.random.normal(0,1,size=[d,n_projections],device=device,dtype=dtype)
+        projections=Gaussian_vector/np.sqrt(np.sum(np.square(Gaussian_vector),0))
+        projections=projections.T
+    elif Type==1:
+#        np.random.seed(0)
+        r=int(n_projections/d)+1
+        projections=np.concatenate([ortho_group.rvs(d) for i in range(r)],axis=1)
+        projections=projections[0:n_projections]
+#        projections=torch.from_numpy(projections).to(device=device).to(dtype=dtype).T
+    else:
+        print('Type must be None or orth')
+    return projections
+
+
+
 
 @nb.njit(['float64[:,:](int64,int64,int64)'],fastmath=True)
 def random_projections(d,n_projections,Type=0):
@@ -56,18 +60,20 @@ def random_projections(d,n_projections,Type=0):
     projections: d*n torch tensor
 
     '''
+    np.random.seed(0)
     if Type==0:
         Gaussian_vector=np.random.normal(0,1,size=(d,n_projections)) #.astype(np.float64)
         projections=Gaussian_vector/np.sqrt(np.sum(np.square(Gaussian_vector),0))
         projections=projections.T
 
     elif Type==1:
-        r=np.int64(n_projections/d)
-        projections=np.zeros((n_projections,d)) #,dtype=np.float64)
+        r=np.int64(n_projections/d)+1
+        projections=np.zeros((d*r,d)) #,dtype=np.float64)
         for i in range(r):
             H=np.random.randn(d,d) #.astype(np.float64)
             Q,R=np.linalg.qr(H)
             projections[i*d:(i+1)*d]=Q
+        projections=projections[0:n_projections]
     return projections
 
 
@@ -82,18 +88,20 @@ def random_projections_32(d,n_projections,Type=0):
     projections: d*n torch tensor
 
     '''
+    np.random.seed(0)
     if Type==0:
         Gaussian_vector=np.random.normal(0,1,size=(d,n_projections)).astype(np.float32) #.astype(np.float64)
         projections=Gaussian_vector/np.sqrt(np.sum(np.square(Gaussian_vector),0))
         projections=projections.T
 
     elif Type==1:
-        r=np.int64(n_projections/d)
-        projections=np.zeros((n_projections,d),dtype=np.float32)
+        r=np.int64(n_projections/d)+1
+        projections=np.zeros((r*d,d),dtype=np.float32)
         for i in range(r):
             H=np.random.randn(d,d).astype(np.float32)
             Q,R=np.linalg.qr(H)
             projections[i*d:(i+1)*d]=Q
+        projections=projections[0:n_projections]
     return projections
 
 
@@ -129,7 +137,11 @@ def X_correspondence(X,Y,projections,Lambda_list):
         X_s=X_theta[X_indice]
         Y_s=Y_theta[Y_indice]
         Lambda=Lambda_list[i]
-        cost,L=opt_1d_v2_a(X_s,Y_s,Lambda)
+        M=cost_matrix(X_s,Y_s)
+        obj,phi,psi,piRow,piCol=solve_opt(M,Lambda)
+#        Cost,L=o(X_s,Y_s,Lambda)
+        
+        L=piRow
         L=recover_indice(X_indice,Y_indice,L)
         #move X
         Lx=Lx_org.copy()
@@ -139,64 +151,37 @@ def X_correspondence(X,Y,projections,Lambda_list):
 #            dim=Ly.shape[0]
             X_take=X_theta[Lx]
             Y_take=Y_theta[Ly]
-            X[Lx]+=(Y_take-X_take).reshape(-1,1)*theta
+            X[Lx]+=np.expand_dims(Y_take-X_take,1)*theta
+            
+@nb.njit(['(float32[:,:],float32[:,:],float32[:,:],float32[:])'])
+def X_correspondence_32(X,Y,projections,Lambda_list):
+    N,d=projections.shape
+    n=X.shape[0]
+    Lx_org=arange(0,n)
+    for i in range(N):
+        theta=projections[i]
+        X_theta=np.dot(theta,X.T)
+        Y_theta=np.dot(theta,Y.T)
+        X_indice=X_theta.argsort()
+        Y_indice=Y_theta.argsort()
+        X_s=X_theta[X_indice]
+        Y_s=Y_theta[Y_indice]
+        Lambda=Lambda_list[i]
+        M=cost_matrix(X_s,Y_s)
+        obj,phi,psi,piRow,piCol=solve_opt_32(M,Lambda)
+        L=piRow
+        L=recover_indice(X_indice,Y_indice,L)
+        #move X
+        Lx=Lx_org.copy()
+        Lx=Lx[L>=0]
+        if Lx.shape[0]>=1:
+            Ly=L[L>=0]
+#            dim=Ly.shape[0]
+            X_take=X_theta[Lx]
+            Y_take=Y_theta[Ly]
+            X[Lx]+=np.expand_dims(Y_take-X_take,1)*theta
 
-
-# @nb.njit(['(float32[:,:],float32[:,:],float32[:,:],float32[:])'])
-# def X_correspondence_32(X,Y,projections,Lambda_list):
-#     N,d=projections.shape
-#     n=X.shape[0]
-#     Lx_org=arange(0,n)
-#     for i in range(N):
-#         theta=projections[i]
-#         X_theta=np.dot(theta,X.T)
-#         Y_theta=np.dot(theta,Y.T)
-#         X_indice=X_theta.argsort()
-#         Y_indice=Y_theta.argsort()
-#         X_s=X_theta[X_indice]
-#         Y_s=Y_theta[Y_indice]
-#         Lambda=Lambda_list[i]
-#         cost,L=opt_1d_v2_a(X_s,Y_s,Lambda)
-#         L=recover_indice(X_indice,Y_indice,L)
-#         #move X
-#         Lx=Lx_org.copy()
-#         Lx=Lx[L>=0]
-#         if Lx.shape[0]>=1:
-#             Ly=L[L>=0]
-# #            dim=Ly.shape[0]
-#             X_take=X_theta[Lx]
-#             Y_take=Y_theta[Ly]
-#             X[Lx]+=(Y_take-X_take).reshape(-1,1)*theta    
-
-
-# @nb.njit([nb.types.Tuple((nb.int64[:],nb.float64))(nb.float64[:,:],nb.float64[:,:],nb.float64[:,:],nb.float64[:])])
-# def X_correspondence(X,Y,Lambda_list,projections):
-#     N,d=projections.shape
-#     n=X.shape[0]
-#     Lx_org=arange(0,n)
-#     for i in range(N):
-#         theta=projections[i]
-#         Lambda=Lambda_list[i]
-#         X_theta=mat_vec_mul(X.T,theta)
-#         Y_theta=mat_vec_mul(Y.T,theta)
-#         X_indice=X_theta.argsort()
-#         Y_indice=Y_theta.argsort()
-#         X_s=X_theta[X_indice]
-#         Y_s=Y_theta[Y_indice]
-#         Lambda=Lambda_list[i]
-#         #cost,L=pot_1(X_s,Y_s)
-#         cost,L=opt_1d_v2_apro(X_s,Y_s,Lambda)
-#         L=recover_indice(X_indice,Y_indice,L)
-#         #move X
-#         Lx=Lx_org.copy()
-#         Lx=Lx[L>=0]
-#         if Lx.shape[0]>=1:
-#             Ly=L[L>=0]
-#             X_take=X_theta[Lx]
-#             Y_take=Y_theta[Ly]
-#             X[Lx]+=transpose(Y_take-X_take)*theta              
-#     return frequency,Lambda
-
+ 
 
 @nb.njit(['(float64[:,:],float64[:,:],float64[:,:])'])
 def X_correspondence_pot(X,Y,projections):
@@ -239,7 +224,7 @@ def X_correspondence_pot_32(X,Y,projections):
     
     
 class sopt():    
-    def __init__(self,X,Y,Lambda_list,n_projections,Type=None):
+    def __init__(self,X,Y,Lambda_list,n_projections,Type=1):
         self.X=X
         self.Y=Y
         self.device=X.device.type
@@ -256,7 +241,9 @@ class sopt():
         return cost,mass
     
     def get_directions(self):
-        self.projections=random_projections(self.d,self.n_projections,self.device,self.dtype)
+        projections=random_projections_32(self.d,self.n_projections,1) #,self.device,self.dtype)
+        self.projections=torch.from_numpy(projections).to(self.device).to(self.dtype)
+#        self.projections=random_projections_T(self.d,self.n_projections,self.device,self.dtype)
 
     def get_all_projections(self):
         self.X_sliced=torch.matmul(self.projections,self.X.T)
@@ -286,8 +273,6 @@ class sopt():
         self.L_max=self.plans[self.i_max]
         #self.Lx_max=torch.arange(self.n)
         #self.Lx_max=self.Lx_max[self.L_max>=0]
-    
-
 
         
 
@@ -322,8 +307,7 @@ class sopt_correspondence(sopt):
         if self.X.shape[0]>0:
             if mass<0:
                 mass=self.n
-
-            self.X_frequency=X_correspondence(self.X.numpy(),self.Y.numpy(),self.projections.numpy(),self.Lambda_list.numpy())
+            self.X_frequency=X_correspondence_32(self.X.numpy(),self.Y.numpy(),self.projections.numpy(),self.Lambda_list)
 
 
     def transform(self,Xs,batch_size=128):    
@@ -359,7 +343,7 @@ class spot(sopt_correspondence):
         
     def correspond(self):    
         if self.X.shape[0]>0:
-             X_correspondence_pot(self.X.numpy(),self.Y.numpy(),self.projections.numpy())      
+             X_correspondence_pot_32(self.X.numpy(),self.Y.numpy(),self.projections.numpy())      
     
 
 

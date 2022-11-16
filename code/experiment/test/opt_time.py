@@ -106,7 +106,7 @@ for n in range (start_n,end_n,step):
             X1.sort()
             Y1.sort()       
 #            M=cost_matrix(X1,Y1)
-            phi,psi,piRow,piCol=solve1DOPT(X1,Y1,Lambda/2) #,verbose=False,plots=False)
+            phi,psi,piRow,piCol=solve_opt(X1,Y1,Lambda) #,verbose=False,plots=False)
             L_new=getPiFromRow(n,m,piRow)
             end_time = time.time()
             time_new[j]+=end_time-start_time

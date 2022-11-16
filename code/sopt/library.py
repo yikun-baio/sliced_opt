@@ -86,12 +86,14 @@ def cost_matrix_d(X,Y):
         M: n*m matrix, M_ij=c(X_i,Y_j) where c is defined by cost_function.
     
     '''
-    n=X.shape[0]
+    n,d=X.shape
     m=Y.shape[0]
     M=np.zeros((n,m)) 
+    # for i in range(d):
+    #     C=cost_function(X[:,i:i+1],Y[:,i])
+    #     M+=C
     for i in range(n):
-        C=cost_function(X[i,:],Y)
-        M[i]=C.sum(1)
+        M[i]=np.sum(cost_function(X[i],Y),1)
     return M
 
 
@@ -105,12 +107,17 @@ def cost_matrix_d_32(X,Y):
         M: n*m matrix, M_ij=c(X_i,Y_j) where c is defined by cost_function.
     
     '''
-    n=X.shape[0]
+    # n,d=X.shape
+    # m=Y.shape[0]
+    # M=np.zeros((n,m),dtype=np.float32) 
+    # for i in range(d):
+    #     C=cost_function(X[:,i:i+1],Y[:,i])
+    #     M+=C
+    n,d=X.shape
     m=Y.shape[0]
     M=np.zeros((n,m),dtype=np.float32) 
     for i in range(n):
-        C=cost_function(X[i,:],Y)
-        M[i]=C.sum(1)
+        M[i]=np.sum(cost_function(X[i],Y),1)
     return M
 
     
@@ -819,12 +826,69 @@ def matrix_take(X,L1,L2):
 
 
 
+@nb.njit(['(float64[:])(float64[:],float64[:],int64)'],fastmath=True)
+def Gaussian_mixture(mu_list, variance_list,n):
+    N=mu_list.shape[0]
+    indices=np.random.randint(0,N,n)
+    X=np.zeros(n)
+    for i in range(n):
+        X[i]=np.random.normal(mu_list[indices[i]],variance_list[indices[i]])
+    return X
+
+@nb.njit(['(float32[:])(float32[:],float32[:],int64)'],fastmath=True)
+def Gaussian_mixture_32(mu_list, variance_list,n):
+    N=mu_list.shape[0]
+    indices=np.random.randint(0,N,n)
+    X=np.zeros(n,dtype=np.float32)
+    for i in range(n):
+        X[i]=np.float32(np.random.normal(mu_list[indices[i]],variance_list[indices[i]]))
+    return X
 
 
     
     
     
+@torch.jit.script
+def cost_function_T(x,y): 
+    ''' 
+    case 1:
+        input:
+            x: 0 dimension float tensor
+            y: 0 dimension float tensor
+        output:
+            float number: (x-y)**2 
+    case 2: 
+        input: 
+            x: n*1 tensor
+            y: n*1 tensor 
+        output:
+            n*1 array: whose ith entry is (x_i-y_i)**2
+    '''
+    return torch.square(x-y)
 
+    
+@torch.jit.script
+def cost_matrix_T(X,Y):
+    '''
+    input: 
+        X: n*d float torch tensor
+        Y: m*d float torch tensor
+    output:
+        M: n*m matrix, M_ij=c(X_i,Y_j) where c is defined by cost_function_T.
+    
+    '''
+    if len(X.shape)==1:
+        X=X.reshape([X.shape[0],1])
+        M=cost_function_T(X,Y)
+    else:
+        device=X.device.type
+        n,d=X.shape
+        m=Y.shape[0]
+        M=torch.zeros([n,m],device=device)
+        for i in range(d):
+            M+=cost_function_T(X[:,i:i+1],Y[:,i:i+1].T)      
+#        M=torch.sum(torch.stack([cost_function_T(X[:,d:d+1],Y[:,d:d+1].T) for d in range(dim)]),0)
+    return M
 
 
 

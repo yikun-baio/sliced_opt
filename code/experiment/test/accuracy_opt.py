@@ -35,7 +35,7 @@ from sopt.lib_ot import *
 Lambda_list=np.array([10.0,50.0,100.0])
 
 start_n=50
-end_n=1100
+end_n=80
 step=10
 n_list=np.array(range(start_n,end_n,step))
 N=n_list.shape[0]
