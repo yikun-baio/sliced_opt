@@ -60,7 +60,7 @@ def random_projections(d,n_projections,Type=0):
     projections: d*n torch tensor
 
     '''
-    np.random.seed(0)
+#    np.random.seed(0)
     if Type==0:
         Gaussian_vector=np.random.normal(0,1,size=(d,n_projections)) #.astype(np.float64)
         projections=Gaussian_vector/np.sqrt(np.sum(np.square(Gaussian_vector),0))

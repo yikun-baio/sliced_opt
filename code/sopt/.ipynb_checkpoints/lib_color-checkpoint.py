@@ -3,17 +3,22 @@ import numpy as np
 import math
 import torch
 import os
-
 import numba as nb 
 #from numba.types import Tuple
 from typing import Tuple
 import sys
+import matplotlib.pyplot as plt
+
 from numba.typed import List
 work_path=os.path.dirname(__file__)
 loc1=work_path.find('/code')
 parent_path=work_path[0:loc1+5]
 sys.path.append(parent_path)
 os.chdir(parent_path)
+
+from sopt.library import *
+from sopt.sliced_opt import *   
+from sopt.lib_ot import *   
 
 @nb.njit([nb.float64[:,:](nb.float64[:,:,:]),nb.float32[:,:](nb.float32[:,:,:])])
 def im2mat(img):
@@ -25,6 +30,7 @@ def im2mat(img):
     X=img_a.reshape(n*m,d)
     return X
 
+print('hello')
 
 @nb.njit(['float64[:,:,:](float64[:,:],int64,int64,int64)','float32[:,:,:](float32[:,:],int64,int64,int64)'])
 def mat2im(X, n,m,d):
@@ -59,24 +65,7 @@ def plot_image(I1t,name,save_path):
 
     
     
-def ot_transfer(Xs0,Xt0,Xs,Xt):
-#    XsT=torch.from_numpy(Xs).to(dtype=torch.float)
-#    XtT=torch.from_numpy(Xt).to(dtype=torch.float)
-    # EMDTransport
-    ot_emd = ot.da.EMDTransport(max_iter=1000000)
-    
-    ot_emd.fit(Xs=Xs, Xt=Xt)
-    # # prediction between images (using out of sample prediction as in [6])
-    transp_Xs = ot_emd.transform(Xs=Xs0)
-    return transp_Xs
 
-
-def eot_transfer(Xs0,Xt0,Xs,Xt):
-    # SinkhornTransport
-    ot_sinkhorn = ot.da.SinkhornTransport(reg_e=1e-1,max_iter=1000000)
-    ot_sinkhorn.fit(Xs=Xs, Xt=Xt)
-    transp_Xs = ot_sinkhorn.transform(Xs=Xs0)
-    return transp_Xs
     
 
 
@@ -127,19 +116,19 @@ def transform_32(Xs0,Xsc,Xs,batch_size=128):
 @nb.njit(['float64[:,:](float64[:,:],float64[:,:],float64[:,:],float64[:,:],int64)'])
 def spot_transfer(Xs0,Xt0,Xs,Xt,n_projections=400):
     n,d=Xs.shape
-    np.random.seed(0)
+    #np.random.seed(0)
     projections=random_projections(d,n_projections,1)
-    Xs1=Xs.copy()
-    X_correspondence_pot(Xs1,Xt,projections)     
+    Xsc=Xs.copy()
+    X_correspondence_pot(Xs,Xt,projections)     
     batch_size=128
-    transp_Xs=transform(Xs0,Xs,Xs1,batch_size)
+    transp_Xs=transform(Xs0,Xsc,Xs,batch_size)
     return transp_Xs
 
 
 @nb.njit(['float32[:,:](float32[:,:],float32[:,:],float32[:,:],float32[:,:],int64)'])
 def spot_transfer_32(Xs0,Xt0,Xs,Xt,n_projections=400):
     n,d=Xs.shape
-    np.random.seed(0)
+    #np.random.seed(0)
     projections=random_projections_32(d,n_projections,1)
     Xsc=Xs.copy()
     X_correspondence_pot_32(Xs,Xt,projections)     
@@ -151,7 +140,7 @@ def spot_transfer_32(Xs0,Xt0,Xs,Xt,n_projections=400):
 @nb.njit(['float32[:,:](float32[:,:],float32[:,:],float32[:,:],float32[:,:],float32[:],int64)'])
 def sopt_transfer_32(Xs0,Xt0,Xs,Xt,Lambda_list,n_projections=400):    
     n,d=Xs.shape
-    np.random.seed(0)
+    #np.random.seed(0)
     projections=random_projections_32(d,n_projections,1)
     Xsc=Xs.copy()
     X_correspondence_32(Xs,Xt,projections,Lambda_list)     
@@ -162,10 +151,54 @@ def sopt_transfer_32(Xs0,Xt0,Xs,Xt,Lambda_list,n_projections=400):
 @nb.njit(['float64[:,:](float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:],int64)'])
 def sopt_transfer(Xs0,Xt0,Xs,Xt,Lambda_list,n_projections=400):    
     n,d=Xs.shape
-    np.random.seed(0)
+    #np.random.seed(0)
     projections=random_projections(d,n_projections,1)
     Xsc=Xs.copy()
     X_correspondence(Xs,Xt,projections,Lambda_list)     
     batch_size=128
     transp_Xs=transform(Xs0,Xsc,Xs,batch_size)
+    return transp_Xs
+
+# OT-based color adaptation 
+def ot_transfer_32(Xs0,Xt0,Xs,Xt,numItermax=1000000):
+    n,d=Xs.shape
+    m=Xt.shape[0]
+    #plan=ot.emd()
+    # get the transporation plan
+    Xsc=Xs.copy()
+    M=cost_matrix_d_32(Xs,Xt)
+    mu=np.ones(n,dtype=np.float32)/n
+    nu=np.ones(m,dtype=np.float32)/m
+    plan=ot.lp.emd(mu, nu, M, numItermax=numItermax)
+
+    # get the transported Xs
+    cond_plan=plan/np.expand_dims(np.sum(plan,1),1)
+    Xs=np.dot(cond_plan,Xt)
+    
+#    # # prediction between images (using out of sample prediction as in [6])
+    batch_size=128
+    transp_Xs = transform_32(Xs0,Xsc,Xs,batch_size)
+    return transp_Xs
+
+
+
+def ot_transfer_orig(Xs0,Xt0,Xs,Xt,max_iter=1000000):
+#    XsT=torch.from_numpy(Xs).to(dtype=torch.float)
+#    XtT=torch.from_numpy(Xt).to(dtype=torch.float)
+    # EMDTransport
+    ot_emd = ot.da.EMDTransport(max_iter=max_iter)
+    
+    ot_emd.fit(Xs=Xs, Xt=Xt)
+    # # prediction between images (using out of sample prediction as in [6])
+    transp_Xs = ot_emd.transform(Xs=Xs0)
+    return transp_Xs
+
+
+
+# EOT-based method
+def eot_transfer_orig(Xs0,Xt0,Xs,Xt,reg=0.1,max_iter=1000000):
+    # SinkhornTransport
+    ot_sinkhorn = ot.da.SinkhornTransport(reg_e=reg,max_iter=max_iter)
+    ot_sinkhorn.fit(Xs=Xs, Xt=Xt)
+    transp_Xs = ot_sinkhorn.transform(Xs=Xs0)
     return transp_Xs

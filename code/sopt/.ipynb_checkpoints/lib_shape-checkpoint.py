@@ -16,7 +16,9 @@ os.chdir(parent_path)
 
 
 from sopt.library import *
-
+from sopt.lib_ot import *   
+from sopt.sliced_opt import * 
+#print('hello')
 
 
 def get_swiss(N=100,a = 4,r_min = 0.1,r_max = 1):  
@@ -230,6 +232,406 @@ def recover_rotation_du_32(X,Y):
     return rotation,scaling
 
 
+
+# our method
+#@nb.njit(['Tuple((float64[:,:,:],float64[:],float64[:,:]))(float64[:,:],float64[:,:],int64,int64)'])
+def sopt_main(S,T,n_iterations,N0):
+    n,d=T.shape
+    N1=S.shape[0]
+    
+    # initlize 
+    rotation=np.eye(d) #.astype(Dtype)    
+    scalar=1.0 #
+    beta=vec_mean(T)-vec_mean(scalar*S.dot(rotation)) 
+    #paramlist=[]
+    projections=random_projections(d,n_iterations,1)
+    mass_diff=0
+    b=np.log((N1-N0+1)/1)
+    Lambda=3*np.sum(beta**2)
+    rotation_list=np.zeros((n_iterations,d,d)) #.astype(np.float64)
+    scalar_list=np.zeros((n_iterations)) #.astype(np.float64)
+    beta_list=np.zeros((n_iterations,d)) #.astype(np.float64)
+    T_hat=S.dot(rotation)*scalar+beta
+    
+    Domain_org=arange(0,N1)
+    Delta=Lambda/8
+    lower_bound=Lambda/100
+    for i in range(n_iterations):
+        print('i',i)
+        theta=projections[i]
+        T_hat_theta=np.dot(theta,T_hat.T)
+        T_theta=np.dot(theta,T.T)
+        
+        T_hat_indice=T_hat_theta.argsort()
+        T_indice=T_theta.argsort()
+        T_hat_s=T_hat_theta[T_hat_indice]
+        T_s=T_theta[T_indice]
+        c=cost_matrix(T_hat_s,T_s)
+        obj,phi,psi,piRow,piCol=solve_opt(c,Lambda)
+        L=piRow.copy()
+        L=recover_indice(T_hat_indice,T_indice,L)
+        
+        
+        #move T_hat
+        Domain=Domain_org[L>=0]
+        mass=Domain.shape[0]
+        if Domain.shape[0]>=1:
+            Range=L[L>=0]
+            T_hat_take_theta=T_hat_theta[Domain]
+            T_take_theta=T_theta[Range]
+            T_hat[Domain]+=np.expand_dims(T_take_theta-T_hat_take_theta,1)*theta
+
+        T_hat_take=T_hat[Domain]
+        S_take=S[Domain]
+        
+        rotation,scalar_d=recover_rotation(T_hat_take,S_take)
+        scalar=np.sqrt(np.trace(np.cov(T_hat_take.T))/np.trace(np.cov(S_take.T)))
+        beta=vec_mean(T_hat_take)-vec_mean(scalar*S_take.dot(rotation))
+        T_hat=S.dot(rotation)*scalar+beta
+       
+        rotation_list[i]=rotation
+        scalar_list[i]=scalar
+        beta_list[i]=beta
+        N=(N1-N0)*1/(1+b*(i/n_iterations))+N0
+        mass_diff=mass-N
+        if mass_diff>N*0.009:
+            Lambda-=Delta 
+        if mass_diff<-N*0.003:
+            Lambda+=Delta
+            Delta=Lambda*1/8
+        if Lambda<lower_bound:
+            Lambda=lower_bound
+    return rotation_list,scalar_list,beta_list    
+
+
+# our method
+def sopt_main_32(S,T,n_iterations,N0):
+    n,d=T.shape
+    N1=S.shape[0]
+    # initlize 
+    rotation=np.eye(d,dtype=np.float32)    
+    scalar=np.float32(1) 
+    beta=vec_mean_32(T)-vec_mean_32(scalar*S.dot(rotation)) 
+    #paramlist=[]
+    projections=random_projections_32(d,n_iterations,1)
+    mass_diff=0
+    #b=np.float32(np.log((N1-N0+1)/1))
+    Lambda=3*np.sum(beta**2)
+    rotation_list=np.zeros((n_iterations,d,d),dtype=np.float32)
+    scalar_list=np.zeros((n_iterations),dtype=np.float32)
+    beta_list=np.zeros((n_iterations,d),dtype=np.float32)
+    T_hat=S.dot(rotation)*scalar+beta
+    Domain_org=arange(0,N1)
+    Delta=np.float32(Lambda/8)
+    lower_bound=np.float32(Lambda/100)
+    for i in range(n_iterations):
+#        print('i',i)
+        theta=projections[i]
+        T_hat_theta=np.dot(theta,T_hat.T)
+        T_theta=np.dot(theta,T.T)
+        
+        T_hat_indice=T_hat_theta.argsort()
+        T_indice=T_theta.argsort()
+        T_hat_s=T_hat_theta[T_hat_indice]
+        T_s=T_theta[T_indice]
+        c=cost_matrix(T_hat_s,T_s)
+        obj,phi,psi,piRow,piCol=solve_opt_32(c,Lambda)
+        L=piRow.copy()
+        L=recover_indice(T_hat_indice,T_indice,L)
+        
+      #debug 
+        # if L.max()>=n:
+        #     print('error')
+        #     return T_hat_theta,T_theta,Lambda
+        #     break
+        
+        #move T_hat
+        Domain=Domain_org[L>=0]
+        mass=Domain.shape[0]
+        if Domain.shape[0]>=1:
+            Range=L[L>=0]
+            T_hat_take_theta=T_hat_theta[Domain]
+            T_take_theta=T_theta[Range]
+            T_hat[Domain]+=np.expand_dims(T_take_theta-T_hat_take_theta,1)*theta
+
+        T_hat_take=T_hat[Domain]
+        S_take=S[Domain]
+        
+        # compute the optimal rotation, scaling, shift
+        rotation,scalar=recover_rotation_32(T_hat_take,S_take)
+        scalar=np.float32(np.sqrt(np.trace(np.cov(T_hat_take.T))/np.trace(np.cov(S_take.T))))
+        beta=vec_mean_32(T_hat_take)-vec_mean_32(scalar*S_take.dot(rotation))
+        T_hat=S.dot(rotation)*scalar+beta
+        
+        rotation_list[i]=rotation
+        scalar_list[i]=scalar
+        beta_list[i]=beta
+        N=N0
+        mass_diff=mass-N
+        if mass_diff>N*0.009:
+            Lambda-=Delta 
+        if mass_diff<-N*0.003:
+            Lambda+=Delta
+            Delta=Lambda*1/8
+        if Lambda<lower_bound:
+            Lambda=lower_bound
+        # if i&50==0:
+        #     print('scalar',scalar)
+    return rotation_list,scalar_list,beta_list   
+print('done')
+
+
+
+
+
+# method of spot_boneel 
+@nb.njit(['Tuple((float64[:,:,:],float64[:],float64[:,:]))(float64[:,:],float64[:,:],int64,int64)'])
+def spot_bonneel(S,T,n_projections=20,n_iterations=200):
+    n,d=T.shape
+    N1=S.shape[0]
+    # initlize 
+    rotation=np.eye(d) #,dtype=np.float64)
+    scalar=nb.float64(1.0) #
+    beta=vec_mean(T)-vec_mean(scalar*S.dot(rotation))
+    #paramlist=[]
+    
+    rotation_list=np.zeros((n_iterations,d,d)) #.astype(np.float64)
+    scalar_list=np.zeros((n_iterations)) #.astype(np.float64)
+    beta_list=np.zeros((n_iterations,d)) #.astype(np.float64)
+    T_hat=S.dot(rotation)*scalar+beta
+    
+    #Lx_hat_org=arange(0,n)
+    
+    for i in range(n_iterations):
+#        print('i',i)
+
+        projections=random_projections(d,n_projections,1)
+        
+# #        print('start1')
+        T_hat=X_correspondence_pot(T_hat,T,projections)
+        rotation,scalar=recover_rotation(T_hat,S)
+        beta=vec_mean(T_hat)-vec_mean(scalar*S.dot(rotation))
+        T_hat=S.dot(rotation)*scalar+beta
+
+#         #move That         
+        rotation_list[i]=rotation         
+        scalar_list[i]=scalar
+        beta_list[i]=beta
+
+    return rotation_list,scalar_list,beta_list    
+
+
+@nb.njit(['Tuple((float32[:,:,:],float32[:],float32[:,:]))(float32[:,:],float32[:,:],int64,int64)'])
+def spot_bonneel_32(S,T,n_projections=20,n_iterations=200):
+    n,d=T.shape
+    N1=S.shape[0]
+    # initlize 
+    rotation=np.eye(d,dtype=np.float32)
+    scalar=np.float32(1) 
+    beta=vec_mean_32(T)-vec_mean_32(scalar*S.dot(rotation))
+    #paramlist=[]
+    
+    rotation_list=np.zeros((n_iterations,d,d),dtype=np.float32)
+    scalar_list=np.zeros((n_iterations),dtype=np.float32)
+    beta_list=np.zeros((n_iterations,d),dtype=np.float32)
+    T_hat=S.dot(rotation)*scalar+beta
+    
+    #Lx_hat_org=arange(0,n)
+    
+    for i in range(n_iterations):
+#        print('i',i)
+        projections=random_projections_32(d,n_projections,1)
+        T_hat=X_correspondence_pot_32(T_hat,T,projections)
+        rotation,scalar=recover_rotation_32(T_hat,S)
+        beta=vec_mean_32(T_hat)-vec_mean_32(scalar*S.dot(rotation))
+        T_hat=S.dot(rotation)*scalar+beta
+
+        #move That         
+        rotation_list[i]=rotation         
+        scalar_list[i]=scalar
+        beta_list[i]=beta
+
+    return rotation_list,scalar_list,beta_list    
+
+
+@nb.njit(['Tuple((float32[:,:,:],float32[:],float32[:,:]))(float32[:,:],float32[:,:],int64,int64)'])
+def spot_bonneel_32(S,T,n_projections=20,n_iterations=200):
+    n,d=T.shape
+    N1=S.shape[0]
+    # initlize 
+    rotation=np.eye(d,dtype=np.float32)
+    scalar=np.float32(1) 
+    beta=vec_mean_32(T)-vec_mean_32(scalar*S.dot(rotation))
+    #paramlist=[]
+    
+    rotation_list=np.zeros((n_iterations,d,d),dtype=np.float32)
+    scalar_list=np.zeros((n_iterations),dtype=np.float32)
+    beta_list=np.zeros((n_iterations,d),dtype=np.float32)
+    T_hat=S.dot(rotation)*scalar+beta
+    
+    #Lx_hat_org=arange(0,n)
+    
+    for i in range(n_iterations):
+#        print('i',i)
+        projections=random_projections_32(d,n_projections,1)
+        T_hat=X_correspondence_pot_32(T_hat,T,projections)
+        rotation,scalar=recover_rotation_32(T_hat,S)
+        beta=vec_mean_32(T_hat)-vec_mean_32(scalar*S.dot(rotation))
+        T_hat=S.dot(rotation)*scalar+beta
+
+        #move That         
+        rotation_list[i]=rotation         
+        scalar_list[i]=scalar
+        beta_list[i]=beta
+
+    return rotation_list,scalar_list,beta_list    
+
+@nb.njit(['Tuple((float64[:,:,:],float64[:],float64[:,:]))(float64[:,:],float64[:,:],int64)'])
+def icp_du(S,T,n_iterations):
+    n,d=T.shape
+
+    # initlize 
+    rotation=np.eye(d) #,dtype=np.float64)
+    scalar=1.0  #nb.float64(1) #
+    beta=vec_mean(T)-vec_mean(scalar*np.dot(S,rotation))
+
+    
+    
+    rotation_list=np.zeros((n_iterations,d,d)) #.astype(np.float64)
+    scalar_list=np.zeros((n_iterations)) #.astype(np.float64)
+    beta_list=np.zeros((n_iterations,d)) #.astype(np.float64)
+    T_hat=np.dot(S,rotation)*scalar+beta
+    
+    # #Lx_hat_org=arange(0,n)
+    
+    for i in range(n_iterations):
+#        print('i',i)
+        M=cost_matrix_d(T_hat,T)
+        argmin_T=closest_y_M(M)
+        T_take=T[argmin_T]
+        T_hat=T_take
+        rotation,scalar_d=recover_rotation_du(T_hat,S)
+        scalar=np.mean(scalar_d)
+        beta=vec_mean(T_hat)-vec_mean(scalar*S.dot(rotation))
+        T_hat=S.dot(rotation)*scalar+beta
+        
+        #move Xhat         
+        rotation_list[i]=rotation
+        scalar_list[i]=scalar
+        beta_list[i]=beta
+
+    return rotation_list,scalar_list,beta_list  
+
+
+@nb.njit(['Tuple((float32[:,:,:],float32[:],float32[:,:]))(float32[:,:],float32[:,:],int64)'])
+def icp_du_32(S,T,n_iterations):
+    n,d=T.shape
+
+    # initlize 
+    rotation=np.eye(d,dtype=np.float32)
+    scalar=nb.float32(1) #
+    beta=vec_mean_32(T)-vec_mean_32(scalar*np.dot(S,rotation))
+    
+    
+    rotation_list=np.zeros((n_iterations,d,d),dtype=np.float32)
+    scalar_list=np.zeros(n_iterations,dtype=np.float32)
+    beta_list=np.zeros((n_iterations,d), dtype=np.float32)
+    T_hat=np.dot(S,rotation)*scalar+beta
+    
+    # #Lx_hat_org=arange(0,n)
+    
+    for i in range(n_iterations):
+#        print('i',i)
+        M=cost_matrix_d_32(T_hat,T)
+        argmin_T=closest_y_M(M)
+        T_take=T[argmin_T]
+        T_hat=T_take
+        rotation,scalar_d=recover_rotation_du_32(T_hat,S)
+        scalar=np.mean(scalar_d)
+        beta=vec_mean_32(T_hat)-vec_mean_32(scalar*S.dot(rotation))
+        T_hat=S.dot(rotation)*scalar+beta
+        
+        #move Xhat         
+        rotation_list[i]=rotation
+        scalar_list[i]=scalar
+        beta_list[i]=beta
+
+    return rotation_list,scalar_list,beta_list  
+
+
+@nb.njit(['Tuple((float64[:,:,:],float64[:],float64[:,:]))(float64[:,:],float64[:,:],int64)'])
+def icp_umeyama(S,T,n_iterations):
+    n,d=S.shape
+
+    # initlize 
+    rotation=np.eye(d) #,dtype=np.float64)
+    scalar=1.0 #nb.float64(1.0) #
+    beta=vec_mean(T)-vec_mean(scalar*S.dot(rotation))
+    # paramlist=[]
+    rotation_list=np.zeros((n_iterations,d,d)) #.astype(np.float64)
+    scalar_list=np.zeros((n_iterations)) #.astype(np.float64)
+    beta_list=np.zeros((n_iterations,d)) #.astype(np.float64)
+    T_hat=S.dot(rotation)*scalar+beta
+    
+
+    
+    for i in range(n_iterations):
+#        print('i',i)
+       # print(i)
+        M=cost_matrix_d(T_hat,T)
+        argmin_T=closest_y_M(M)
+        T_take=T[argmin_T]
+        T_hat=T_take
+        rotation,scalar=recover_rotation(T_hat,S)
+        #scalar=np.mean(scalar_d)
+        beta=vec_mean(T_hat)-vec_mean(scalar*S.dot(rotation))
+        X_hat=S.dot(rotation)*scalar+beta
+        
+        #move That         
+        rotation_list[i]=rotation
+        scalar_list[i]=scalar
+        beta_list[i]=beta
+
+    return rotation_list,scalar_list,beta_list  
+
+
+@nb.njit(['Tuple((float32[:,:,:],float32[:],float32[:,:]))(float32[:,:],float32[:,:],int64)'])
+def icp_umeyama_32(S,T,n_iterations):
+    n,d=S.shape
+
+    # initlize 
+    rotation=np.eye(d,dtype=np.float32)
+    scalar=nb.float32(1) 
+    beta=vec_mean_32(T)-vec_mean_32(scalar*S.dot(rotation))
+    # paramlist=[]
+    rotation_list=np.zeros((n_iterations,d,d),dtype=np.float32)
+    scalar_list=np.zeros((n_iterations),dtype=np.float32)
+    beta_list=np.zeros((n_iterations,d),dtype=np.float32)
+    T_hat=S.dot(rotation)*scalar+beta
+        
+    for i in range(n_iterations):
+#        print('i',i)
+       # print(i)
+        M=cost_matrix_d_32(T_hat,T)
+        argmin_T=closest_y_M(M)
+        T_take=T[argmin_T]
+        T_hat=T_take
+        rotation,scalar=recover_rotation_32(T_hat,S)
+        #scalar=np.mean(scalar_d)
+        beta=vec_mean_32(T_hat)-vec_mean_32(scalar*S.dot(rotation))
+        X_hat=S.dot(rotation)*scalar+beta
+        
+        #move That         
+        rotation_list[i]=rotation
+        scalar_list[i]=scalar
+        beta_list[i]=beta
+
+    return rotation_list,scalar_list,beta_list  
+
+
+
+
+
 # def recover_rotation_du(X,Y):
 #     n,d=X.shape
 #     X_c=X-torch.mean(X,0)
@@ -272,3 +674,107 @@ def recover_rotation_du_32(X,Y):
     
     
 
+# visualization 
+
+def get_noise(Y0,Y1):
+    N=Y1.shape[0]
+    data_indices=[]
+    noise_indices=[]
+    for j in range(N):
+        yj=Y1[j]
+        if yj in Y0:
+            data_indices.append(j)
+        else:
+            noise_indices.append(j)
+    return np.array(data_indices),np.array(noise_indices)
+
+def init_image(X_data,X_noise,Y_data,Y_noise,image_path,name):
+    fig = plt.figure(figsize=(10,10))
+    ax = plt.axes(projection='3d')
+    ax.scatter(X_data[:,0]+5,X_data[:,1],X_data[:,2]-10,alpha=.5,c='C2',s=2,marker='o')
+    ax.scatter(X_noise[:,0]+5,X_noise[:,1],X_noise[:,2]-10,alpha=.5,c='C2',s=10,marker='o')
+    ax.scatter(Y_data[:,0]+5,Y_data[:,1],Y_data[:,2]-10,alpha=0.5,c='C1',s=2,marker='o')
+    ax.scatter(Y_noise[:,0]+5,Y_noise[:,1],Y_noise[:,2]-10,alpha=.5,c='C1',s=10,marker='o')
+    ax.set_facecolor('black') 
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_zticks([])
+    ax.grid(True)
+    ax.axis('off')
+    
+    # whitch_castle 
+    # x+5, z-10
+    ax.set_xlim([-38,38])
+    ax.set_ylim([-38,38])
+    ax.set_zlim([-38,38])
+    ax.view_init(45,120)
+    
+    
+    #mumble_sitting 
+    # ax.set_xlim([-66,66])
+    # ax.set_ylim([-66,66])
+    # ax.set_zlim([-66,66])
+    # ax.axis('off')
+    # ax.view_init(-20,10,'y')
+
+    
+    #dragon +bunny     
+    # bunny y-0.05,
+    # ax.set_xlim([-.25,.25])
+    # ax.set_ylim([-.25,.25])
+    # ax.set_zlim([-.25,.25])
+    # ax.axis('off')
+    # ax.view_init( 90, -90)
+    
+
+    plt.savefig(image_path+'/'+name+'.png',dpi=200,format='png',bbox_inches='tight')
+    plt.show()
+    plt.close()
+    
+    
+
+def regular_image(X_data,X_noise,Y_data,Y_noise,image_path,name):
+    fig = plt.figure(figsize=(10,10))
+    ax = plt.axes(projection='3d')
+    ax.scatter(X_data[:,0]+3,X_data[:,1],X_data[:,2]-15,alpha=.3,c='C2',s=5,marker='o')
+    ax.scatter(X_noise[:,0]+3,X_noise[:,1],X_noise[:,2]-15,alpha=.5,c='C2',s=15,marker='o')
+    ax.scatter(Y_data[:,0]+3,Y_data[:,1],Y_data[:,2]-15,alpha=.9,c='C1',s=6,marker='o')
+    ax.scatter(Y_noise[:,0]+3,Y_noise[:,1],Y_noise[:,2]-15,alpha=.5,c='C1',s=15,marker='o')
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_zticks([])
+    ax.axis('off')
+    ax.set_facecolor('black') 
+    ax.grid(True)
+    
+    # castle,   
+    #x+3, z-15 
+    ax.set_xlim([-20,20])
+    ax.set_ylim([-20,20])
+    ax.set_zlim([-20,20])
+    ax.view_init(45,120)
+#    ax.view_init(0,10,'y')
+
+
+    # #mumble_sitting, bunny  
+    # y-10
+    # ax.set_xlim([-36,36])
+    # ax.set_ylim([-36,36])
+    # ax.set_zlim([-36,36])
+    # ax.view_init(-20,10,'y')
+    #ax.view_init( 90, -90)
+     
+    #dragon, bunny 
+    #dragon y-0.1
+    #bunny, x+0.02, y-0.1    
+    # ax.set_xlim([-.1,.1])
+    # ax.set_ylim([-.1,.1])
+    # ax.set_zlim([-.1,.1])
+
+    # ax.view_init( 90, -90)
+    # fig.set_facecolor('black')
+    
+    plt.savefig(image_path+'/'+name+'.png',dpi=200,format='png',bbox_inches='tight')
+    plt.show()
+    plt.close()
+    

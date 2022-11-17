@@ -1,5 +1,0 @@
-data/modelnet40_hdf5_2048/train0.h5
-data/modelnet40_hdf5_2048/train1.h5
-data/modelnet40_hdf5_2048/train2.h5
-data/modelnet40_hdf5_2048/train3.h5
-data/modelnet40_hdf5_2048/train4.h5
