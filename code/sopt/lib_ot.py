@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Aug  3 14:52:30 2022
 
-@author: baly
+
 """
 
 

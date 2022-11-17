@@ -2,7 +2,6 @@
 """
 Created on Sun Apr 17 20:52:13 2022
 
-@author: laoba
 """
 
 import torch

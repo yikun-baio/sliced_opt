@@ -2,8 +2,6 @@
 """
 Created on Mon Apr  4 19:57:34 2022
 
-@author: Yikun Bai
-Yikun.bai@Vanderbilt.edu
 """
 
 import numpy as np

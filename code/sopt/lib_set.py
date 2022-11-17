@@ -3,7 +3,6 @@
 """
 Created on Mon Jul  4 13:57:49 2022
 
-@author: baly
 """
 import torch
 import sys

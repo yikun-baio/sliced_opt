@@ -3,15 +3,11 @@
 """
 Created on Thu Sep  1 19:35:49 2022
 
-@author: baly
 """
 
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Apr  4 19:57:34 2022
-@author: Yikun Bai
-Yikun.bai@Vanderbilt.edu
-"""
+
+
 
 import numpy as np
 import math

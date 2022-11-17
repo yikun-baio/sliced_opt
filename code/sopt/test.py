@@ -3,7 +3,6 @@
 """
 Created on Wed Aug  3 12:34:44 2022
 
-@author: baly
 """
 
 import sys

@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Sep  1 20:16:47 2022
-
-@author: baly
 """
 
 n=10000

@@ -3,7 +3,6 @@
 """
 Created on Sun Jun 26 14:25:29 2022
 
-@author: baly
 """
 import torch 
 import os
@@ -235,29 +234,28 @@ def recover_rotation_du_32(X,Y):
 
 # our method
 #@nb.njit(['Tuple((float64[:,:,:],float64[:],float64[:,:]))(float64[:,:],float64[:,:],int64,int64)'])
-def sopt_main(S,T,n_iterations,N0):
+@nb.njit(['Tuple((float64[:,:,:],float64[:],float64[:,:]))(float64[:,:],float64[:,:],int64,int64)'])
+def sopt_main_32(S,T,n_iterations,N0):
     n,d=T.shape
     N1=S.shape[0]
-    
     # initlize 
-    rotation=np.eye(d) #.astype(Dtype)    
-    scalar=1.0 #
+    rotation=np.eye(d,dtype=np.float64)    
+    scalar=np.float32(1) 
     beta=vec_mean(T)-vec_mean(scalar*S.dot(rotation)) 
     #paramlist=[]
     projections=random_projections(d,n_iterations,1)
     mass_diff=0
     b=np.log((N1-N0+1)/1)
-    Lambda=3*np.sum(beta**2)
-    rotation_list=np.zeros((n_iterations,d,d)) #.astype(np.float64)
-    scalar_list=np.zeros((n_iterations)) #.astype(np.float64)
-    beta_list=np.zeros((n_iterations,d)) #.astype(np.float64)
+    Lambda=6*np.sum(beta**2)
+    rotation_list=np.zeros((n_iterations,d,d)) #,dtype=np.float32)
+    scalar_list=np.zeros((n_iterations)) #,dtype=np.float32)
+    beta_list=np.zeros((n_iterations,d)) #,dtype=np.float32)
     T_hat=S.dot(rotation)*scalar+beta
-    
     Domain_org=arange(0,N1)
     Delta=Lambda/8
-    lower_bound=Lambda/100
+    lower_bound=Lambda/10000
     for i in range(n_iterations):
-        print('i',i)
+#        print('i',i)
         theta=projections[i]
         T_hat_theta=np.dot(theta,T_hat.T)
         T_theta=np.dot(theta,T.T)
@@ -271,6 +269,11 @@ def sopt_main(S,T,n_iterations,N0):
         L=piRow.copy()
         L=recover_indice(T_hat_indice,T_indice,L)
         
+      #debug 
+        # if L.max()>=n:
+        #     print('error')
+        #     return T_hat_theta,T_theta,Lambda
+        #     break
         
         #move T_hat
         Domain=Domain_org[L>=0]
@@ -284,11 +287,12 @@ def sopt_main(S,T,n_iterations,N0):
         T_hat_take=T_hat[Domain]
         S_take=S[Domain]
         
-        rotation,scalar_d=recover_rotation(T_hat_take,S_take)
+        # compute the optimal rotation, scaling, shift
+        rotation,scalar=recover_rotation(T_hat_take,S_take)
         scalar=np.sqrt(np.trace(np.cov(T_hat_take.T))/np.trace(np.cov(S_take.T)))
         beta=vec_mean(T_hat_take)-vec_mean(scalar*S_take.dot(rotation))
         T_hat=S.dot(rotation)*scalar+beta
-       
+        
         rotation_list[i]=rotation
         scalar_list[i]=scalar
         beta_list[i]=beta
@@ -299,12 +303,22 @@ def sopt_main(S,T,n_iterations,N0):
         if mass_diff<-N*0.003:
             Lambda+=Delta
             Delta=Lambda*1/8
-        if Lambda<lower_bound:
-            Lambda=lower_bound
-    return rotation_list,scalar_list,beta_list    
+        if Lambda<Delta:
+            Lambda=Delta
+            Delta=Delta*1/2
+        if Delta<lower_bound:
+            Delta=lower_bound
+        # if i&50==0:
+        #     print('scalar',scalar)
+        #     print('lambda',Lambda)
+        #     print('delta',Delta)
+        #     print('N',N)
+        #     print('mass_diff',mass_diff)
+    return rotation_list,scalar_list,beta_list   
 
 
-# our method
+
+@nb.njit(['Tuple((float32[:,:,:],float32[:],float32[:,:]))(float32[:,:],float32[:,:],int64,int64)'])
 def sopt_main_32(S,T,n_iterations,N0):
     n,d=T.shape
     N1=S.shape[0]
@@ -315,15 +329,15 @@ def sopt_main_32(S,T,n_iterations,N0):
     #paramlist=[]
     projections=random_projections_32(d,n_iterations,1)
     mass_diff=0
-    #b=np.float32(np.log((N1-N0+1)/1))
-    Lambda=3*np.sum(beta**2)
+    b=np.float32(np.log((N1-N0+1)/1))
+    Lambda=6*np.sum(beta**2)
     rotation_list=np.zeros((n_iterations,d,d),dtype=np.float32)
     scalar_list=np.zeros((n_iterations),dtype=np.float32)
     beta_list=np.zeros((n_iterations,d),dtype=np.float32)
     T_hat=S.dot(rotation)*scalar+beta
     Domain_org=arange(0,N1)
     Delta=np.float32(Lambda/8)
-    lower_bound=np.float32(Lambda/100)
+    lower_bound=np.float32(Lambda/10000)
     for i in range(n_iterations):
 #        print('i',i)
         theta=projections[i]
@@ -366,20 +380,25 @@ def sopt_main_32(S,T,n_iterations,N0):
         rotation_list[i]=rotation
         scalar_list[i]=scalar
         beta_list[i]=beta
-        N=N0
+        N=(N1-N0)*1/(1+b*(i/n_iterations))+N0
         mass_diff=mass-N
         if mass_diff>N*0.009:
             Lambda-=Delta 
         if mass_diff<-N*0.003:
             Lambda+=Delta
             Delta=Lambda*1/8
-        if Lambda<lower_bound:
-            Lambda=lower_bound
+        if Lambda<Delta:
+            Lambda=Delta
+            Delta=Delta*1/2
+        if Delta<lower_bound:
+            Delta=lower_bound
         # if i&50==0:
         #     print('scalar',scalar)
+        #     print('lambda',Lambda)
+        #     print('delta',Delta)
+        #     print('N',N)
+        #     print('mass_diff',mass_diff)
     return rotation_list,scalar_list,beta_list   
-print('done')
-
 
 
 
@@ -670,6 +689,18 @@ def icp_umeyama_32(S,T,n_iterations):
 #     theta_es=recover_angle(R_es)
 #     return theta_es
 
+
+def save_parameter(rotation_list,scalar_list,beta_list,save_path):
+    paramlist=[]
+    N=len(rotation_list)
+    for i in range(N):
+        param={}
+        param['rotation']=rotation_list[i]
+        param['beta']=beta_list[i]
+        param['scalar']=scalar_list[i]
+        paramlist.append(param)
+    torch.save(paramlist,save_path)
+    return paramlist
 
     
     

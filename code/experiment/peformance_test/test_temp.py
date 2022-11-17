@@ -3,7 +3,6 @@
 """
 Created on Thu Aug 18 19:47:07 2022
 
-@author: baly
 """
 
 data=torch.load('data.pt')

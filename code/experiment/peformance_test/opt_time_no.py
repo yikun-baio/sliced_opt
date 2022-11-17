@@ -3,7 +3,6 @@
 """
 Created on Tue Aug  2 17:22:02 2022
 
-@author: baly
 """
 
 

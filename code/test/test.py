@@ -7,14 +7,6 @@ Created on Mon Oct 31 09:19:40 2022
 """
 
 
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Aug  3 14:52:30 2022
-
-@author: baly
-"""
-
 
 import numpy as np
 import torch

@@ -6,13 +6,6 @@ Created on Sun Sep 11 19:19:27 2022
 @author: baly
 """
 
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Aug  5 16:01:32 2022
-
-@author: baly
-"""
 
 
 

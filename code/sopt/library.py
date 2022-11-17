@@ -2,7 +2,6 @@
 # """
 # Created on Tue Apr 19 11:32:17 2022
 
-# @author: laoba
 # """
 
 import numpy as np
