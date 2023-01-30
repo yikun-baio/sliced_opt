@@ -166,7 +166,7 @@ def ot_transfer_32(Xs0,Xt0,Xs,Xt,numItermax=1000000):
     nu=np.ones(m,dtype=np.float32)/m
     plan=ot.lp.emd(mu, nu, M, numItermax=numItermax)
 
-    # get the transported Xs
+    # get the transported Xs It is the barycentric projection of Xt (with respect to Xs) 
     cond_plan=plan/np.expand_dims(np.sum(plan,1),1)
     Xs=np.dot(cond_plan,Xt)
     
