@@ -1119,6 +1119,7 @@ vis_param_list0={'stanford_bunny':
 
 
 
+
 def init_image(X_data,X_noise,Y_data,Y_noise,image_path,name):
     """
     make a plot for the data and noise and save the plot 
