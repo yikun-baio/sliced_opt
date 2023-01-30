@@ -11,7 +11,7 @@ import sys
 
 from .library import *
 from .lib_ot import *   
-from .sliced_opt1 import * 
+from .sliced_opt import * 
 import matplotlib.pyplot as plt
 
 # def get_swiss(N=100,a = 4,r_min = 0.1,r_max = 1): 

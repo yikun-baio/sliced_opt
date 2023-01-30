@@ -11,7 +11,6 @@ from scipy.stats import ortho_group
 import sys
 import numba as nb
 from .library import *
-from .opt import *
 from .lib_ot import *
 
 
@@ -102,7 +101,7 @@ def random_projections_32(d,n_projections,Type=0):
 
 #@nb.njit([nb.types.Tuple((nb.float64[:],nb.int64[:,:]))(nb.float64[:,:],nb.float64[:,:],nb.float64)],parallel=True,fastmath=True)
 @nb.njit(['Tuple((float64[:],int64[:,:]))(float64[:,:],float64[:,:],float64[:])'],parallel=True,fastmath=True)
-def allplans_s(X_sliced,Y_sliced,Lambda_list):
+def opt_plans(X_sliced,Y_sliced,Lambda_list):
     N,n=X_sliced.shape
 #    Dtype=type(X_sliced[0,0])
     plans=np.zeros((N,n),np.int64)
@@ -111,10 +110,15 @@ def allplans_s(X_sliced,Y_sliced,Lambda_list):
         X_theta=X_sliced[i]
         Y_theta=Y_sliced[i]
         Lambda=Lambda_list[i]
-        cost,L=opt_1d_v2_a(X_theta,Y_theta,Lambda)
+        M=cost_matrix(X_theta,Y_theta)
+        obj,phi,psi,piRow,piCol=solve_opt(M,Lambda)
+        cost=obj
+        L=piRow
         plans[i]=L
         costs[i]=cost
     return costs,plans
+
+
 
 
 
@@ -190,7 +194,8 @@ def X_correspondence_pot(X,Y,projections):
         Y_indice=Y_theta.argsort()
         X_s=X_theta[X_indice]
         Y_s=Y_theta[Y_indice]
-        cost,L=pot(X_s,Y_s)
+        M=cost_matrix(X_s,Y_s)
+        cost,L=pot(M)
         L=recover_indice(X_indice,Y_indice,L)
         X_take=X_theta
         Y_take=Y_theta[L]
@@ -209,7 +214,8 @@ def X_correspondence_pot_32(X,Y,projections):
         Y_indice=Y_theta.argsort()
         X_s=X_theta[X_indice]
         Y_s=Y_theta[Y_indice]
-        cost,L=pot_32(X_s,Y_s)
+        M=cost_matrix(X_s,Y_s)
+        cost,L=pot_32(M)
         L=recover_indice(X_indice,Y_indice,L)
         X_take=X_theta
         Y_take=Y_theta[L]
@@ -254,7 +260,7 @@ class sopt():
         X_sliced_np=X_sliced_s.cpu().numpy()
         Y_sliced_np=Y_sliced_s.cpu().numpy()
 #        Lambda_list_np=Lambda_list.numpy()
-        self.costs,plans=allplans_s(X_sliced_np,Y_sliced_np,self.Lambda_list.numpy())
+        self.costs,plans=opt_plans(X_sliced_np,Y_sliced_np,self.Lambda_list.numpy())
         plans=torch.from_numpy(plans).to(device=self.device,dtype=torch.int64)
         self.plans=recover_indice_M(indices_X,indices_Y,plans)
         self.costs=torch.from_numpy(self.costs)

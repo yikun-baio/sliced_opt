@@ -2,8 +2,6 @@
 """
 Created on Mon Apr  4 19:57:34 2022
 
-@author: Yikun Bai
-Yikun.bai@Vanderbilt.edu
 """
 
 import numpy as np
@@ -625,124 +623,6 @@ def opt_1d_v3(X,Y,Lambda):
 
 
 
-   
-
-
-@nb.njit(['Tuple((float64,int64[:]))(float64[:],float64[:])'])
-def pot(X,Y): 
-    n=X.shape[0]
-    m=Y.shape[0]
-    L=np.empty(0,dtype=np.int64) # save the optimal plan
-    dtype=type(X[0])
-    cost=0.0 # save the optimal cost
-    M=cost_matrix(X,Y)
-    
-    argmin_Y=closest_y_M(M)
- 
-    #initial loop:
-    k=0
-    xk=X[k]
-    jk=argmin_Y[k]
-    cost_xk_yjk=M[k,jk]
-
-    cost+=cost_xk_yjk
-    L=np.append(L,jk)
-    for k in range(1,n):
-        jk=argmin_Y[k]
-        cost_xk_yjk=M[k,jk]
-        j_last=L[-1]
-    
-        #define consistent term     
-        if jk>j_last:# No conflict, L[-1] is the j last assig
-            cost+=cost_xk_yjk
-            L=np.append(L,jk)
-        else:
-            # this is the case for conflict: 
-
-            # compute the first cost 
-            if j_last+1<=m-1:
-                cost_xk_yjlast1=M[k,j_last+1]
-                cost1=cost+cost_xk_yjlast1
-            else:
-                cost1=np.inf 
-            # compute the second cost 
-            i_act,j_act=unassign_y(L)
-            if j_act>=0:                        
-                L1=np.concatenate((L[0:i_act],np.array([j_act]),L[i_act:]))
-                X_indices=arange(0,k+1)
-                Y_indices=L1
-#                Y_assign=Y[L1]
-#                X_assign=X[0:k+1]
-                cost2=np.sum(matrix_take(M,X_indices,Y_indices))
-#                cost2=np.sum(cost_function(X_assign,Y_assign))
-            else:
-                cost2=np.inf
-            if cost1<cost2:
-                cost=cost1
-                L=np.append(L,j_last+1)
-            elif cost2<=cost1:
-                cost=cost2
-                L=L1.copy()    
-    return cost,L
-
-
-
-
-@nb.njit(['Tuple((float32,int64[:]))(float32[:],float32[:])'])
-def pot_32(X,Y): 
-    n=X.shape[0]
-    m=Y.shape[0]
-    L=np.empty(0,dtype=np.int64) # save the optimal plan
-    dtype=type(X[0])
-    cost=np.float32(0)  # save the optimal cost
-    M=cost_matrix(X,Y)    
-    argmin_Y=closest_y_M(M)
- 
-    #initial loop:
-    k=0
-    xk=X[k]
-    jk=argmin_Y[k]
-    cost_xk_yjk=M[k,jk]
-
-    cost+=cost_xk_yjk
-    L=np.append(L,jk)
-    for k in range(1,n):
-        jk=argmin_Y[k]
-        cost_xk_yjk=M[k,jk]
-        j_last=L[-1]
-    
-        #define consistent term     
-        if jk>j_last:# No conflict, L[-1] is the j last assig
-            cost+=cost_xk_yjk
-            L=np.append(L,jk)
-        else:
-            # this is the case for conflict: 
-
-            # compute the first cost 
-            if j_last+1<=m-1:
-                cost_xk_yjlast1=M[k,j_last+1]
-                cost1=cost+cost_xk_yjlast1
-            else:
-                cost1=np.inf 
-            # compute the second cost 
-            i_act,j_act=unassign_y(L)
-            if j_act>=0:                        
-                L1=np.concatenate((L[0:i_act],np.array([j_act]),L[i_act:]))
-                X_indices=arange(0,k+1)
-                Y_indices=L1
-#                Y_assign=Y[L1]
-#                X_assign=X[0:k+1]
-                cost2=np.sum(matrix_take(M,X_indices,Y_indices))
-#                cost2=np.sum(cost_function(X_assign,Y_assign))
-            else:
-                cost2=np.float32(np.inf)
-            if cost1<cost2:
-                cost=cost1
-                L=np.append(L,j_last+1)
-            elif cost2<=cost1:
-                cost=cost2
-                L=L1.copy()    
-    return cost,L
 
 
 

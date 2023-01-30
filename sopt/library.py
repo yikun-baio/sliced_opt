@@ -88,9 +88,6 @@ def cost_matrix_d(X,Y):
     n,d=X.shape
     m=Y.shape[0]
     M=np.zeros((n,m)) 
-    # for i in range(d):
-    #     C=cost_function(X[:,i:i+1],Y[:,i])
-    #     M+=C
     for i in range(n):
         M[i]=np.sum(cost_function(X[i],Y),1)
     return M
