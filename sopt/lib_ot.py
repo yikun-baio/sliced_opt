@@ -14,11 +14,6 @@ import sys
 from typing import Tuple #,List
 from numba.typed import List
 import ot
-work_path=os.path.dirname(__file__)
-loc1=work_path.find('/code')
-parent_path=work_path[0:loc1+5]
-sys.path.append(parent_path)
-os.chdir(parent_path)
 import numba as nb 
 
 
@@ -32,20 +27,17 @@ from .library import *
 
 #@nb.njit(nb.types.Tuple((nb.float64,nb.int64[:]))(nb.float64[:],nb.float64[:],nb.float64))
 # solve opt by linear programming 
-def opt_lp(X,Y,Lambda,numItermax=100000):
-    n=X.shape[0]
-    m=Y.shape[0]
-    exp_point=np.float64(np.inf)
-    X1=np.append(X,exp_point)
-    Y1=np.append(Y,exp_point)
+def opt_lp(mu,nu,M,Lambda,numItermax=100000):
+    n,M=M.shape 
     mu1=np.ones(n+1)
     nu1=np.ones(m+1)
-    mu1[-1]=m
-    nu1[-1]=n
-    cost_M=cost_matrix(X1[0:-1],Y1[0:-1])
-    cost_M1=np.zeros((n+1,m+1),dtype=np.float64)
-    cost_M1[0:n,0:m]=cost_M-2*Lambda
-    plan1=ot.lp.emd(mu1,nu1,cost_M1,numItermax=numItermax)
+    mu1[0:n]=mu
+    nu1[0:m]=nu
+    mu1[-1]=np.sum(nu)
+    nu1[-1]=np.sum(mu)
+    M1=np.zeros((n+1,m+1),dtype=np.float64)
+    M1[0:n,0:m]=M-2*Lambda
+    plan1=ot.lp.emd(mu1,nu1,M1,numItermax=numItermax)
     plan=plan1[0:n,0:m]
     cost=np.sum(cost_M*plan)
     return cost,plan
