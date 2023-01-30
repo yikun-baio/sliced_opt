@@ -74,8 +74,9 @@ def cost_matrix(X,Y):
 
 
 
-#@nb.jit(nopython=True)
-@nb.njit(['float64[:,:](float64[:,:],float64[:,:])'],fastmath=True)
+
+#@nb.njit(fastmath=True)
+@nb.njit(['float32[:,:](float32[:,:],float32[:,:])','float64[:,:](float64[:,:],float64[:,:])'],fastmath=True)
 def cost_matrix_d(X,Y):
     '''
     input: 
@@ -85,38 +86,16 @@ def cost_matrix_d(X,Y):
         M: n*m matrix, M_ij=c(X_i,Y_j) where c is defined by cost_function.
     
     '''
-    n,d=X.shape
-    m=Y.shape[0]
-    M=np.zeros((n,m)) 
-    for i in range(n):
-        M[i]=np.sum(cost_function(X[i],Y),1)
-    return M
-
-
-@nb.njit(['float32[:,:](float32[:,:],float32[:,:])'],fastmath=True)
-def cost_matrix_d_32(X,Y):
-    '''
-    input: 
-        X: (n,) float np array
-        Y: (m,) float np array
-    output:
-        M: n*m matrix, M_ij=c(X_i,Y_j) where c is defined by cost_function.
-    
-    '''
-    # n,d=X.shape
-    # m=Y.shape[0]
-    # M=np.zeros((n,m),dtype=np.float32) 
+#    n,d=X.shape
+#    m=Y.shape[0]
+#    M=np.zeros((n,m)) 
     # for i in range(d):
     #     C=cost_function(X[:,i:i+1],Y[:,i])
     #     M+=C
-    n,d=X.shape
-    m=Y.shape[0]
-    M=np.zeros((n,m),dtype=np.float32) 
-    for i in range(n):
-        M[i]=np.sum(cost_function(X[i],Y),1)
+    X1=np.expand_dims(X,1)
+    Y1=np.expand_dims(Y,0)
+    M=np.sum(cost_function(X1,Y1),2)
     return M
-
-    
 
 
 
