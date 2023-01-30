@@ -28,7 +28,7 @@ from .library import *
 #@nb.njit(nb.types.Tuple((nb.float64,nb.int64[:]))(nb.float64[:],nb.float64[:],nb.float64))
 # solve opt by linear programming 
 def opt_lp(mu,nu,M,Lambda,numItermax=100000):
-    n,M=M.shape 
+    n,m=M.shape 
     mu1=np.ones(n+1)
     nu1=np.ones(m+1)
     mu1[0:n]=mu
@@ -39,7 +39,7 @@ def opt_lp(mu,nu,M,Lambda,numItermax=100000):
     M1[0:n,0:m]=M-2*Lambda
     plan1=ot.lp.emd(mu1,nu1,M1,numItermax=numItermax)
     plan=plan1[0:n,0:m]
-    cost=np.sum(cost_M*plan)
+    cost=np.sum(M*plan)
     return cost,plan
 
 @nb.njit((nb.float64[:,:])(nb.float64[:],nb.float64[:],nb.float64[:,:],nb.float64,nb.float64,nb.int64))

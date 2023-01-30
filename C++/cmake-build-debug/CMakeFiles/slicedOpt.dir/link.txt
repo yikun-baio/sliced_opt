@@ -1,1 +1,0 @@
-/Library/Developer/CommandLineTools/usr/bin/c++  -Wall -Werror -Wextra -pedantic -pedantic-errors -g -g -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX11.1.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/slicedOpt.dir/experiments/main.cpp.o CMakeFiles/slicedOpt.dir/src/helpers.cpp.o CMakeFiles/slicedOpt.dir/src/sliced_opt.cpp.o -o slicedOpt 
