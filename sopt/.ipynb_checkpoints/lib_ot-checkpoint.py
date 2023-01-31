@@ -274,6 +274,8 @@ def sinkhorn_knopp(mu, nu, M, reg, numItermax=1000000):
             err = np.linalg.norm(u_pre - u)+np.linalg.norm(v_pre - v)  # violation of marginal
             if err < stopThr:
                 break
+    if ii==numItermax-1:
+        print('warning, maximum iteration reached')
     
     gamma=np.expand_dims(u,1)*(K*v.T)
 
@@ -380,6 +382,8 @@ def sinkhorn_knopp_32(mu, nu, M, reg, numItermax=1000000):
             err = np.linalg.norm(u_pre - u)+np.linalg.norm(v_pre - v)  # violation of marginal
             if err < stopThr:
                 break
+    if ii==numItermax-1:
+        print('warning, maximum iteration reached')
     
     gamma=np.expand_dims(u,1)*(K*v.T)
 
