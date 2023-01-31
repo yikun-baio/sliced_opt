@@ -67,7 +67,7 @@ def cost_matrix(X,Y):
     
     '''
     XT=np.expand_dims(X,1)
-    M=cost_function(XT,Y)
+    M=(XT-Y)**2
     return M
 
 
