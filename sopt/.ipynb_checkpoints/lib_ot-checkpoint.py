@@ -37,7 +37,7 @@ def opt_lp(mu,nu,M,Lambda,numItermax=100000):
     nu1[-1]=np.sum(mu)
     M1=np.zeros((n+1,m+1),dtype=np.float64)
     M1[0:n,0:m]=M-2*Lambda
-    plan1=ot.lp.emd(mu1,nu1,M1,numItermax=numItermax)
+    plan1=ot.lp.emd(mu1,nu1,M1,numItermax=numItermax,numThreads=1)
     plan=plan1[0:n,0:m]
     cost=np.sum(M*plan)
     return cost,plan
@@ -743,14 +743,19 @@ def solve_opt(c,lam): #,verbose=False):
                 else:
                  #   if verbose: print(f"case 3.3, lamInd={lamInd}")
                     v+=lamDiff
-                    for i in range(iMin,K):
-                        phi[i]+=v-dist[i]
-                        psi[piRow[i]]-=v-dist[i]
+                    domain=arange(iMin,K)
+                    phi[domain]+=v-dist[domain]
+                    psi[piRow[domain]]-=v-dist[domain]
+                    i=K-1
+                    # for i in range(iMin,K):
+                    #     phi[i]+=v-dist[i]
+                    #     psi[piRow[i]]-=v-dist[i]
                     phi[K]+=v
                     # "flip" assignment from lambda touching row onwards
                     if lamInd<K:
                         jPrime=piRow[lamInd]
                         piRow[lamInd]=-1
+                        
                         domain1=arange(lamInd+1,K)
                         piRow[domain1]-=1
                         piCol[domain1-(lamInd+1)+jPrime]+=1
