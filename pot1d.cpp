@@ -241,10 +241,10 @@ py::tuple pysolve(py::array_t<double> &x, py::array_t<double> &y, double lam) {
 
 
 
-PYBIND11_MODULE(pot1d, m) {
-	m.doc() = "Efficient solver for Partial Optimal Transport in 1d"; // module docstring
+PYBIND11_MODULE(opt1d, m) {
+	m.doc() = "Efficient solver for Optimal Partial Transport in 1d"; // module docstring
 
-    m.def("solve", &pysolve, "Solve 1d POT problem");
+    m.def("solve", &pysolve, "Solve 1d OPT problem");
 
 
 }

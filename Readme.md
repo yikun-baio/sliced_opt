@@ -2,6 +2,8 @@
 ## Install
 Required packeges: [numba](https://numba.pydata.org), [pytorch](https://pytorch.org), [PythonOT](https://pythonot.github.io). 
 
+g++ -O3 -Wall -shared -std=c++11 -I/home/baly/projects/pybind11/include/pybind11 -I/home/baly/miniconda3/envs/pot/include/python3.10 -fPIC -DVERBOSE pot1d.cpp -o pot1d.cpython-39-x86_64-linux-gnu.so
+
 ## OPT solver
 
 The file code/sopt/lib_ot.py contains our 1-D optimal partial transport (OPT problem) solver. In particular, it contains the following functions, most of which are accelarated by numba: 
