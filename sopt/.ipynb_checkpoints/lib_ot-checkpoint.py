@@ -29,8 +29,8 @@ from .library import *
 # solve opt by linear programming 
 def opt_lp(mu,nu,M,Lambda,numItermax=100000,numThreads=1):
     n,m=M.shape 
-    mu1=np.ones(n+1)
-    nu1=np.ones(m+1)
+    mu1=np.zeros(n+1)
+    nu1=np.zeros(m+1)
     mu1[0:n]=mu
     nu1[0:m]=nu
     mu1[-1]=np.sum(nu)
