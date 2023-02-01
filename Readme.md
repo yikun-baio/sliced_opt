@@ -38,7 +38,7 @@ cmake -DDOWNLOAD_CATCH=ON ..
 cmake --build . --config Release --target check
 ```
 
-### Installing pot1d
+### Installing opt1d
 
 Get the python path: 
 
@@ -67,22 +67,22 @@ Which should output something like:
 Then you can use the following to compile the opt1d.cpp:
 
 ```
-g++ -O3 -Wall -shared -std=c++11 -I/home/baly/Documents/pybind/pybind11/include/pybind11 -I/home/kolous2/miniconda3/envs/pybind/include/python3.10 -fPIC -DVERBOSE pot1d.cpp -o pot1d.cpython-310-x86_64-linux-gnu.so
+g++ -O3 -Wall -shared -std=c++11 -I/home/baly/projects/pybind11/include/pybind11 -I/home/baly/miniconda3/include/python3.10 -fPIC -DVERBOSE opt1d.cpp -o opt1d.cpython-310-x86_64-linux-gnu.so
 ```
 
 Please ensure to replace the paths with your relevant paths. 
 
-## Test pot1d
+## Test opt1d
 
 If all has gone well, then we can test the code in Python: 
 
 ```
-python3 test_pot1d.py
+python3 test_opt1d.py
 ```
 
 this should results in saved plot as follows.
 
-![Results of test_pot1d.py](Lambda.png)
+![Results of test_opt1d.py](Lambda.png)
  
 
 
