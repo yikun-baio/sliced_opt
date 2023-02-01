@@ -1,8 +1,91 @@
 
-## Install
-Required packeges: [numba](https://numba.pydata.org), [pytorch](https://pytorch.org), [PythonOT](https://pythonot.github.io). 
+# Sliced optimal partial transport (SOPT)
 
-g++ -O3 -Wall -shared -std=c++11 -I/home/baly/projects/pybind11/include/pybind11 -I/home/baly/miniconda3/envs/pot/include/python3.10 -fPIC -DVERBOSE pot1d.cpp -o pot1d.cpython-39-x86_64-linux-gnu.so
+#  Setup 
+To run the code, you must first install 
+First install [numba](https://numba.pydata.org) 
+```
+conda install numba 
+```
+and [PythonOT](https://pythonot.github.io) 
+```
+pip install pot
+```
+
+## Installing 1D OPT solver 
+We also provide the C++ implementation of our 1D OPT solver. 
+To use the C++ solver, you must first compile the 1D Partial Optimal Transport with pybind11. 
+
+### Installing pybind11
+
+Start by cloning the pybind11 repo:
+
+```
+git clone https://github.com/pybind/pybind11.git
+```
+Ensure cmake, cython, and pytest are installed: 
+```
+conda install cmake
+conda install pip
+pip install cython pytest
+```
+Then use: 
+```
+cd pybin11
+mkdir build
+cd build
+cmake -DDOWNLOAD_CATCH=ON ..
+cmake --build . --config Release --target check
+```
+
+### Installing pot1d
+
+Get the python path: 
+
+``` 
+python3-config --includes
+```
+
+for instance, this will give me the following output:
+
+```
+-I/home/baly/miniconda3/include/python3.10
+```
+
+Also, get the file extension of the lib:
+
+```
+python3-config --extension-suffix
+```
+
+Which should output something like: 
+
+```
+.cpython-310-x86_64-linux-gnu.so
+```
+
+Then you can use the following to compile the opt1d.cpp:
+
+```
+g++ -O3 -Wall -shared -std=c++11 -I/home/baly/Documents/pybind/pybind11/include/pybind11 -I/home/kolous2/miniconda3/envs/pybind/include/python3.10 -fPIC -DVERBOSE pot1d.cpp -o pot1d.cpython-310-x86_64-linux-gnu.so
+```
+
+Please ensure to replace the paths with your relevant paths. 
+
+## Test pot1d
+
+If all has gone well, then we can test the code in Python: 
+
+```
+python3 test_pot1d.py
+```
+
+this should results in saved plot as follows.
+
+![Results of test_pot1d.py](Lambda.png)
+ 
+
+
 
 ## OPT solver
 
