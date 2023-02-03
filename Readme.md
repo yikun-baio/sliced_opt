@@ -69,6 +69,12 @@ Then you can use the following to compile the opt1d.cpp:
 ```
 g++ -O3 -Wall -shared -std=c++11 -I/home/baly/projects/pybind11/include/pybind11 -I/home/baly/miniconda3/include/python3.10 -fPIC -DVERBOSE opt1d.cpp -o opt1d.cpython-310-x86_64-linux-gnu.so
 ```
+or 
+
+```
+g++ -O3 -Wall -shared -std=c++11 -I/home/baly/projects/pybind11/include/pybind11 -I/home/baly/miniconda3/include/python3.10 -fPIC -DVERBOSE opt1d.cpp -o opt1d.so
+```
+
 
 Please ensure to replace the paths with your relevant paths. 
 

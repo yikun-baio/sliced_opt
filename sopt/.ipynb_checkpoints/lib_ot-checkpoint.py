@@ -615,12 +615,10 @@ def getPiFromCol(M,N,piCol):
         if i>-1: pi[i,j]=1
     return pi
 
-
     
 @nb.njit(nb.types.Tuple((nb.float64,nb.float64[:],nb.float64[:],nb.int64[:],nb.int64[:]))(nb.float64[:,:],nb.float64))
 def solve_opt(c,lam): #,verbose=False):
     M,N=c.shape
-    
     phi=np.full(shape=M,fill_value=-np.inf)
     psi=np.full(shape=N,fill_value=lam)
     # to which cols/rows are rows/cols currently assigned? -1: unassigned
@@ -657,7 +655,7 @@ def solve_opt(c,lam): #,verbose=False):
             # Dijkstra distance vector and currently explored radius
             dist[K]=0.
             dist[K-1]=0.
-            v=0
+            v=0.
 
             # iMin and jMin indicate lower end of range of contiguous rows and cols
             # that are currently examined in subroutine;
@@ -687,52 +685,42 @@ def solve_opt(c,lam): #,verbose=False):
                     hiEndDiff=c[K,j+1]-phi[K]-psi[j+1]-v
                 else:
                     hiEndDiff=np.infty
-                if hiEndDiff<=min(lowEndDiff,lamDiff):
-                 #  if verbose: print("case 3.1")
+                if hiEndDiff<=min((lowEndDiff,lamDiff)):
+                 #  if verbose: print("case 3.2")
                     v+=hiEndDiff
-                    domain1=arange(iMin,K)
-                    phi[domain1]+=v-dist[domain1]
-                    psi[piRow[domain1]]-=v-dist[domain1]
-                    i=K-1
+                    for i in range(iMin,K):
+                        phi[i]+=v-dist[i]
+                        psi[piRow[i]]-=v-dist[i]
                     
-                    # for i in range(iMin,K):
-                    #     phi[i]+=v-dist[i]
-                    #     psi[piRow[i]]-=v-dist[i]
                     phi[K]+=v
                     piRow[K]=j+1
                     piCol[j+1]=K
                     jLast=j+1
                     resolved=True
-                elif lowEndDiff<=min(hiEndDiff,lamDiff):
+                elif lowEndDiff<=min((hiEndDiff,lamDiff)):
                     if piCol[jMin-1]==-1:
-                    #    if verbose: print("case 3.2a")
+                    #    if verbose: print("case 3.3a")
                         v+=lowEndDiff
-                        domain1=arange(iMin,K)
-                        phi[domain1]+=v-dist[domain1]
-                        psi[piRow[domain1]]-=v-dist[domain1]
-                        i=K-1
-                        # for i in range(iMin,K):
-                        #     phi[i]+=v-dist[i]
-                        #     psi[piRow[i]]-=v-dist[i]
+
+                        for i in range(iMin,K):
+                            phi[i]+=v-dist[i]
+                            psi[piRow[i]]-=v-dist[i]
                         phi[K]+=v
                         # "flip" assignment along whole chain
                         jPrime=jMin
                         piCol[jMin-1]=iMin
                         piRow[iMin]-=1
-                        domain2=arange(iMin+1,K)
-                        piCol[domain2-(iMin+1)+jPrime]+=1
-                        piRow[domain2]-=1
-                        jPrime=K-(iMin+1)+jPrime
-                        i=K-1
-                        # for i in range(iMin+1,K):
-                        #     piCol[jPrime]+=1
-                        #     piRow[i]-=1
-                        #     jPrime+=1
-                        piRow[K]=jPrime
-                        piCol[jPrime]+=1
+    
+                        
+                        for i in range(iMin+1,K):
+                            piCol[jPrime]+=1
+                            piRow[i]-=1
+                            jPrime+=1
+                        piRow[K]=j #jPrime
+                        piCol[j]+=1 #jPrime
                         resolved=True
                     else:
-                      #  if verbose: print("case 3.2b")
+                      #  if verbose: print("case 3.3b")
                       #  assert piCol[jMin-1]==iMin-1
                         v+=lowEndDiff
                         dist[iMin-1]=v
@@ -745,40 +733,38 @@ def solve_opt(c,lam): #,verbose=False):
                             lamInd=iMin
 
                 else:
-                 #   if verbose: print(f"case 3.3, lamInd={lamInd}")
+                 #   if verbose: print(f"case 3.1, lamInd={lamInd}")
                     v+=lamDiff
-                    domain=arange(iMin,K)
-                    phi[domain]+=v-dist[domain]
-                    psi[piRow[domain]]-=v-dist[domain]
-                    i=K-1
-                    # for i in range(iMin,K):
-                    #     phi[i]+=v-dist[i]
-                    #     psi[piRow[i]]-=v-dist[i]
+                    
+                    # domain=arange(iMin,K)
+                    # phi[domain]+=v-dist[domain]
+                    # psi[piRow[domain]]-=v-dist[domain]
+                    # i=K-1
+                    for i in range(iMin,K):
+                        phi[i]+=v-dist[i]
+                        psi[piRow[i]]-=v-dist[i]
                     phi[K]+=v
                     # "flip" assignment from lambda touching row onwards
                     if lamInd<K:
                         jPrime=piRow[lamInd]
                         piRow[lamInd]=-1
                         
-                        domain1=arange(lamInd+1,K)
-                        piRow[domain1]-=1
-                        piCol[domain1-(lamInd+1)+jPrime]+=1
-                        jPrime=K-(lamInd+1)+jPrime
-                        i=K-1
-                        # for i in range(lamInd+1,K):
-                        #     piCol[jPrime]+=1
-                        #     piRow[i]-=1
-                        #     jPrime+=1
-                        piRow[K]=jPrime
-                        piCol[jPrime]+=1
+                        # domain1=arange(lamInd+1,K)
+                        # piRow[domain1]-=1
+                        # piCol[domain1-(lamInd+1)+jPrime]+=1
+                        # jPrime=K-(lamInd+1)+jPrime
+                        # i=K-1
+                        for i in range(lamInd+1,K):
+                            piCol[jPrime]+=1
+                            piRow[i]-=1
+                            jPrime+=1
+                        piRow[K]=j #jPrime
+                        piCol[j]+=1 #jPrime
                     resolved=True
             #assert np.min(c-phi.reshape((M,1))-psi.reshape((1,N)))>=-1E-15
             K+=1
     objective=np.sum(phi)+np.sum(psi)
     return objective,phi,psi,piRow,piCol
-
-
-
 
 
 
@@ -858,14 +844,14 @@ def solve_opt_32(c,lam): #,verbose=False):
                 if hiEndDiff<=min(lowEndDiff,lamDiff):
                  #  if verbose: print("case 3.1")
                     v+=hiEndDiff
-                    domain1=arange(iMin,K)
-                    phi[domain1]+=v-dist[domain1]
-                    psi[piRow[domain1]]-=v-dist[domain1]
-                    i=K-1
+                    # domain1=arange(iMin,K)
+                    # phi[domain1]+=v-dist[domain1]
+                    # psi[piRow[domain1]]-=v-dist[domain1]
+                    # i=K-1
                     
-                    # for i in range(iMin,K):
-                    #     phi[i]+=v-dist[i]
-                    #     psi[piRow[i]]-=v-dist[i]
+                    for i in range(iMin,K):
+                        phi[i]+=v-dist[i]
+                        psi[piRow[i]]-=v-dist[i]
                     phi[K]+=v
                     piRow[K]=j+1
                     piCol[j+1]=K
@@ -873,34 +859,34 @@ def solve_opt_32(c,lam): #,verbose=False):
                     resolved=True
                 elif lowEndDiff<=min(hiEndDiff,lamDiff):
                     if piCol[jMin-1]==-1:
-                    #    if verbose: print("case 3.2a")
+                    #    if verbose: print("case 3.3a")
                         v+=lowEndDiff
-                        domain1=arange(iMin,K)
-                        phi[domain1]+=v-dist[domain1]
-                        psi[piRow[domain1]]-=v-dist[domain1]
-                        i=K-1
-                        # for i in range(iMin,K):
-                        #     phi[i]+=v-dist[i]
-                        #     psi[piRow[i]]-=v-dist[i]
+                        # domain1=arange(iMin,K)
+                        # phi[domain1]+=v-dist[domain1]
+                        # psi[piRow[domain1]]-=v-dist[domain1]
+                        # i=K-1
+                        for i in range(iMin,K):
+                            phi[i]+=v-dist[i]
+                            psi[piRow[i]]-=v-dist[i]
                         phi[K]+=v
                         # "flip" assignment along whole chain
                         jPrime=jMin
                         piCol[jMin-1]=iMin
                         piRow[iMin]-=1
-                        domain2=arange(iMin+1,K)
-                        piCol[domain2-(iMin+1)+jPrime]+=1
-                        piRow[domain2]-=1
-                        jPrime=K-(iMin+1)+jPrime
-                        i=K-1
-                        # for i in range(iMin+1,K):
-                        #     piCol[jPrime]+=1
-                        #     piRow[i]-=1
-                        #     jPrime+=1
-                        piRow[K]=jPrime
-                        piCol[jPrime]+=1
+                        # domain2=arange(iMin+1,K)
+                        # piCol[domain2-(iMin+1)+jPrime]+=1
+                        # piRow[domain2]-=1
+                        # jPrime=K-(iMin+1)+jPrime
+                        # i=K-1
+                        for i in range(iMin+1,K):
+                            piCol[jPrime]+=1
+                            piRow[i]-=1
+                            jPrime+=1
+                        piRow[K]=j #jPrime
+                        piCol[j]+=1 #jPrime
                         resolved=True
                     else:
-                      #  if verbose: print("case 3.2b")
+                      #  if verbose: print("case 3.3b")
                       #  assert piCol[jMin-1]==iMin-1
                         v+=lowEndDiff
                         dist[iMin-1]=v
@@ -913,7 +899,7 @@ def solve_opt_32(c,lam): #,verbose=False):
                             lamInd=iMin
 
                 else:
-                 #   if verbose: print(f"case 3.3, lamInd={lamInd}")
+                 #   if verbose: print(f"case 3.1, lamInd={lamInd}")
                     v+=lamDiff
                     for i in range(iMin,K):
                         phi[i]+=v-dist[i]
@@ -943,68 +929,8 @@ def solve_opt_32(c,lam): #,verbose=False):
 
 
 
-
-
-
-
-@nb.njit(['Tuple((float32,int64[:]))(float32[:],float32[:])'])
-def pot_32(X,Y): 
-    n=X.shape[0]
-    m=Y.shape[0]
-    L=np.empty(0,dtype=np.int64) # save the optimal plan
-    dtype=type(X[0])
-    cost=np.float32(0)  # save the optimal cost
-    M=cost_matrix(X,Y)    
-    argmin_Y=closest_y_M(M)
- 
-    #initial loop:
-    k=0
-    jk=argmin_Y[k]
-    cost_xk_yjk=M[k,jk]
-
-    cost+=cost_xk_yjk
-    L=np.append(L,jk)
-    for k in range(1,n):
-        jk=argmin_Y[k]
-        cost_xk_yjk=M[k,jk]
-        j_last=L[-1]
-    
-        #define consistent term     
-        if jk>j_last:# No conflict, L[-1] is the j last assig
-            cost+=cost_xk_yjk
-            L=np.append(L,jk)
-        else:
-            # this is the case for conflict: 
-
-            # compute the first cost 
-            if j_last+1<=m-1:
-                cost_xk_yjlast1=M[k,j_last+1]
-                cost1=cost+cost_xk_yjlast1
-            else:
-                cost1=np.inf 
-            # compute the second cost 
-            i_act,j_act=unassign_y(L)
-            if j_act>=0:                        
-                L1=np.concatenate((L[0:i_act],np.array([j_act]),L[i_act:]))
-                X_indices=arange(0,k+1)
-                Y_indices=L1
-#                Y_assign=Y[L1]
-#                X_assign=X[0:k+1]
-                cost2=np.sum(matrix_take(M,X_indices,Y_indices))
-#                cost2=np.sum(cost_function(X_assign,Y_assign))
-            else:
-                cost2=np.float32(np.inf)
-            if cost1<cost2:
-                cost=cost1
-                L=np.append(L,j_last+1)
-            elif cost2<=cost1:
-                cost=cost2
-                L=L1.copy()    
-    return cost,L
-
-
 @nb.njit(nb.types.Tuple((nb.float64,nb.float64[:],nb.float64[:],nb.int64[:],nb.int64[:]))(nb.float64[:,:],nb.float64))
-def solve(c,lam): #,verbose=False):
+def solve_opt_orig(c,lam): #,verbose=False):
     M,N=c.shape
     
     phi=np.full(shape=M,fill_value=-np.inf)
@@ -1141,7 +1067,7 @@ def solve(c,lam): #,verbose=False):
 
 
 @nb.njit(nb.types.Tuple((nb.float32,nb.float32[:],nb.float32[:],nb.int64[:],nb.int64[:]))(nb.float32[:,:],nb.float32))
-def solve_32(c,lam): #,verbose=False):
+def solve_opt_orig_32(c,lam): #,verbose=False):
     M,N=c.shape
     
     phi=np.full(shape=M,fill_value=-np.inf,dtype=np.float32)
@@ -1277,6 +1203,185 @@ def solve_32(c,lam): #,verbose=False):
     return objective,phi,psi,piRow,piCol
 
 
+@nb.njit(nb.types.Tuple((nb.float64,nb.float64[:],nb.float64[:],nb.int64[:],nb.int64[:]))(nb.float64[:,:],nb.float64))
+#@nb.jit()
+def solve_opt2(c,lam):
+    M,N=c.shape
+    phi=np.full(shape=M,fill_value=-np.inf)
+    psi=np.full(shape=N,fill_value=lam)
+    # to which cols/rows are rows/cols currently assigned? -1: unassigned
+    piRow=np.full(M,-1,dtype=np.int64)
+    piCol=np.full(N,-1,dtype=np.int64)
+    # a bit shifted from notes. K is index of the row that we are currently processing
+    K=0
+    # Dijkstra distance array, will be used and initialized on demand in case 3 subroutine
+    dist=np.full(M,np.inf)
+    
+    jLast=-1 # index of last assigned y_j
+    argmin_Y=c.argmin(1)
+
+    while K<M:
+#        if verbose: print(f"K={K}")
+        j_start=argmin_Y[K]
+        if jLast==-1:
+            j=j_start
+            #j=np.argmin(c[K,:]-psi)
+            
+        # elif piRow[K-1]==-1 and j_start<=jLast+1:
+        #     j_start=jLast+1
+        
+        elif j_start<=jLast:
+            j=jLast
+        else:
+            j=j_start
+            #j=jLast+np.argmin(c[K,jLast:]-psi[jLast:])
+        val=c[K,j]-psi[j]
+        if val>=lam:
+            #if verbose: print("case 1") We destroy x_k
+            phi[K]=lam
+            K+=1
+            #jLast+=1
+        elif piCol[j]==-1:
+            #if verbose: print("case 2")
+            piCol[j]=K
+            piRow[K]=j
+            phi[K]=val
+            K+=1
+            jLast=j
+        else:
+            #if verbose: print("case 3")
+            phi[K]=val
+            #assert piCol[j]==K-1
+            # Dijkstra distance vector and currently explored radius
+            dist[K]=0.
+            dist[K-1]=0.
+            v=0.0  # v is nonnegative 
+
+            # iMin and jMin indicate lower end of range of contiguous rows and cols
+            # that are currently examined in subroutine;
+            # upper end is always K and j
+            iMin=K-1
+            jMin=j
+            # threshold until an entry of phi hits lam
+            if phi[K]>phi[K-1]:
+                lamDiff=lam-phi[K]
+                lamInd=K
+            else:
+                lamDiff=lam-phi[K-1]
+                lamInd=K-1
+            #lamInd is the index of x_i that we will destroy
+            
+            resolved=False
+            while not resolved:
+                # threshold until constr iMin,jMin-1 becomes active
+                if jMin>0:
+                    lowEndDiff=c[iMin,jMin-1]-phi[iMin]-psi[jMin-1]
+                    # catch: empty rows in between that could numerically be skipped
+                    if iMin>0 and piRow[iMin-1]==-1:
+                        lowEndDiff=np.infty
+                else:
+                    lowEndDiff=np.infty
+                # threshold for upper end
+                if j<N-1:
+                    hiEndDiff=c[K,j+1]-phi[K]-psi[j+1]-v
+                else:
+                    hiEndDiff=np.infty
+                if hiEndDiff<=min((lowEndDiff,lamDiff)):
+                 #  if verbose: print("case 3.2 we will assign x_k to y_(j^*+1)")
+                    v+=hiEndDiff
+                    
+                    # domain=np.arange(iMin,K)
+                    # phi[domain]+=v-dist[domain]
+                    # psi[piRow[domain]]-=v-dist[domain]
+ 
+                    for i in range(iMin,K):
+                        phi[i]+=v-dist[i]
+                        psi[piRow[i]]-=v-dist[i]
+                
+                    phi[K]+=v
+                    piRow[K]=j+1
+                    piCol[j+1]=K
+                    jLast=j+1
+                    resolved=True
+                elif lowEndDiff<=min((hiEndDiff,lamDiff)):
+                    if piCol[jMin-1]==-1:
+                    #    if verbose: print("case 3.3a") 
+                        v+=lowEndDiff
+                        
+                        # domain=np.arange(iMin,K)
+                        # phi[domain]+=v-dist[domain]
+                        # psi[piRow[domain]]-=v-dist[domain]
+
+                        for i in range(iMin,K):
+                            phi[i]+=v-dist[i]
+                            psi[piRow[i]]-=v-dist[i]
+                        
+                        phi[K]+=v
+                        # "flip" assignment along whole chain                        
+                        jPrime=jMin
+                        piCol[jMin-1]=iMin
+                        piRow[iMin]-=1
+                        
+                        # piCol[domain[1:]-(iMin+1)+jPrime]+=1
+                        # piRow[domain[1:]]-=1
+                        
+                        for i in range(iMin+1,K):
+                            piCol[jPrime]+=1
+                            piRow[i]-=1
+                            jPrime+=1
+                        
+                        piRow[K]=j #Prime
+                        piCol[j]+=1
+                        resolved=True
+                    else:
+                      #  if verbose: print("case 3.3b")
+                        #assert piCol[jMin-1]==iMin-1
+                        v+=lowEndDiff
+                        dist[iMin-1]=v
+                        # adjust distance to threshold
+                        lamDiff-=lowEndDiff
+                        iMin-=1
+                        jMin-=1
+                        if lam-phi[iMin]<lamDiff:
+                            lamDiff=lam-phi[iMin]
+                            lamInd=iMin
+
+                else:
+                 #   if verbose: print(f"case 3.1, lamInd={lamInd}")
+                    v+=lamDiff
+                    
+                    # domain=np.arange(iMin,K)
+                    # phi[domain]+=v-dist[domain]
+                    # psi[piRow[domain]]-=v-dist[domain]
+
+                    for i in range(iMin,K):
+                        phi[i]+=v-dist[i]
+                        psi[piRow[i]]-=v-dist[i]
+                    
+                    phi[K]+=v
+                    # "flip" assignment from lambda touching row onwards
+                    if lamInd<K:
+                        jPrime=piRow[lamInd]
+                        piRow[lamInd]=-1   
+                        
+                        # domain=np.arange(lamInd+1,K)
+                        # piRow[domain]-=1
+                        # piCol[domain-(lamInd+1)+jPrime]+=1
+
+                        for i in range(lamInd+1,K):
+                            piCol[jPrime]+=1
+                            piRow[i]-=1
+                            jPrime+=1
+                        
+                        piRow[K]=j
+                        piCol[j]+=1
+                    resolved=True
+            #assert np.min(c-phi.reshape((M,1))-psi.reshape((1,N)))>=-1E-15
+            K+=1
+    objective=np.sum(phi)+np.sum(psi)
+    return objective,phi,psi,piRow,piCol
+
+
 
 
 @nb.njit(['Tuple((float64,int64[:]))(float64[:,:])'])
@@ -1284,7 +1389,7 @@ def pot(M):
     n,m=M.shape
     L=np.empty(0,dtype=np.int64) # save the optimal plan
     cost=0.0 # save the optimal cost    
-    argmin_Y=closest_y_M(M)
+    argmin_Y=M.argmin(1)
  
     #initial loop:
     k=0
@@ -1340,7 +1445,7 @@ def pot_32(M):
     n,m=M.shape 
     L=np.empty(0,dtype=np.int64) # save the optimal plan
     cost=np.float32(0)  # save the optimal cost
-    argmin_Y=closest_y_M(M)
+    argmin_Y=M.argmin(1)
  
     #initial loop:
     k=0
@@ -1387,3 +1492,59 @@ def pot_32(M):
                 L=L1.copy()    
     return cost,L
 
+
+
+# @nb.njit(['Tuple((float32,int64[:]))(float32[:],float32[:])'])
+# def pot_32(X,Y): 
+#     n=X.shape[0]
+#     m=Y.shape[0]
+#     L=np.empty(0,dtype=np.int64) # save the optimal plan
+#     dtype=type(X[0])
+#     cost=np.float32(0)  # save the optimal cost
+#     M=cost_matrix(X,Y)    
+#     argmin_Y=closest_y_M(M)
+ 
+#     #initial loop:
+#     k=0
+#     jk=argmin_Y[k]
+#     cost_xk_yjk=M[k,jk]
+
+#     cost+=cost_xk_yjk
+#     L=np.append(L,jk)
+#     for k in range(1,n):
+#         jk=argmin_Y[k]
+#         cost_xk_yjk=M[k,jk]
+#         j_last=L[-1]
+    
+#         #define consistent term     
+#         if jk>j_last:# No conflict, L[-1] is the j last assig
+#             cost+=cost_xk_yjk
+#             L=np.append(L,jk)
+#         else:
+#             # this is the case for conflict: 
+
+#             # compute the first cost 
+#             if j_last+1<=m-1:
+#                 cost_xk_yjlast1=M[k,j_last+1]
+#                 cost1=cost+cost_xk_yjlast1
+#             else:
+#                 cost1=np.inf 
+#             # compute the second cost 
+#             i_act,j_act=unassign_y(L)
+#             if j_act>=0:                        
+#                 L1=np.concatenate((L[0:i_act],np.array([j_act]),L[i_act:]))
+#                 X_indices=arange(0,k+1)
+#                 Y_indices=L1
+# #                Y_assign=Y[L1]
+# #                X_assign=X[0:k+1]
+#                 cost2=np.sum(matrix_take(M,X_indices,Y_indices))
+# #                cost2=np.sum(cost_function(X_assign,Y_assign))
+#             else:
+#                 cost2=np.float32(np.inf)
+#             if cost1<cost2:
+#                 cost=cost1
+#                 L=np.append(L,j_last+1)
+#             elif cost2<=cost1:
+#                 cost=cost2
+#                 L=L1.copy()    
+#     return cost,L
