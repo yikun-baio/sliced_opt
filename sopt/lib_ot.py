@@ -20,6 +20,7 @@ import numba as nb
 
 
 import scipy
+from ot.lp.emd_wrap import emd_c, check_result, emd_1d_sorted
 #import matplotlib
 #import matplotlib.pyplot as plt
 #import matplotlib.cm as cm
@@ -29,7 +30,34 @@ from .library import *
 
 #@nb.njit(nb.types.Tuple((nb.float64,nb.int64[:]))(nb.float64[:],nb.float64[:],nb.float64))
 # solve opt by linear programming 
+ 
+
 def opt_lp(mu,nu,M,Lambda,numItermax=100000,numThreads=1):
+    """
+    Solves the partial optimal transport problem
+    and returns the OT plan by linear programming in PythonOT 
+    
+    Parameters
+    ----------
+    mu : np.ndarray (dim_mu,) float64 
+        Unnormalized histogram of dimension `dia_mu`
+    nu : np.ndarray (dim_nu,) float64
+        Unnormalized histograms of dimension `dia_nu`
+    M : np.ndarray (dim_mu, dim_nu) float64
+        cost matrix
+    reg : float
+        Regularization term > 0
+    numItermax : int64, optional
+        Max number of iterations
+
+
+    Returns
+    -------
+    gamma : (dim_mu, dim_nu) ndarray
+        Optimal transportation matrix for the given parameters
+    cost : float64
+        
+    """
     n,m=M.shape 
     mu1=np.zeros(n+1)
     nu1=np.zeros(m+1)
@@ -39,16 +67,20 @@ def opt_lp(mu,nu,M,Lambda,numItermax=100000,numThreads=1):
     nu1[-1]=np.sum(mu)
     M1=np.zeros((n+1,m+1),dtype=np.float64)
     M1[0:n,0:m]=M-2*Lambda
-    plan1=ot.lp.emd(mu1,nu1,M1,numItermax=numItermax,numThreads=numThreads)
+    plan1, cost1, u, v, result_code = emd_c(mu1, nu1, M1, numItermax, numThreads)
+    result_code_string = check_result(result_code)
+    #plan1=ot.lp.emd(mu1,nu1,M1,numItermax=numItermax,numThreads=numThreads)
     plan=plan1[0:n,0:m]
     cost=np.sum(M*plan)
     return cost,plan
 
+# 
 @nb.njit((nb.float64[:,:])(nb.float64[:],nb.float64[:],nb.float64[:,:],nb.float64,nb.float64,nb.int64))
 def sinkhorn_opt_pr(mu, nu, M, mass, reg, numItermax=100000):
     r"""
+    (we modify the code in PythonOT) 
     Solves the partial optimal transport problem
-    and returns the OT plan
+    and returns the OT plan vis Sinkhorn algorithm (we modify the code in PythonOT)
 
     The function considers the following problem:
 
@@ -76,19 +108,19 @@ def sinkhorn_opt_pr(mu, nu, M, mass, reg, numItermax=100000):
 
     Parameters
     ----------
-    mu : np.ndarray (dim_a,)
-        Unnormalized histogram of dimension `dim_a`
-    b : np.ndarray (dim_b,)
-        Unnormalized histograms of dimension `dim_b`
-    M : np.ndarray (dim_a, dim_b)
+    mu : np.ndarray (dia_mu,) float64
+        Unnormalized histogram of dimension `dia_mu`
+    b : np.ndarray (dia_nu,) float64
+        Unnormalized histograms of dimension `dia_nu`
+    M : np.ndarray (dia_mu, dia_nu)
         cost matrix
     reg : float
         Regularization term > 0
-    m : float, optional
+    m : float64, optional
         Amount of mass to be transported
-    numItermax : int, optional
+    numItermax : int64, optional
         Max number of iterations
-    stopThr : float, optional
+    stopThr : float64, optional
         Stop threshold on error (>0)
     verbose : bool, optional
         Print information along iterations
@@ -98,7 +130,7 @@ def sinkhorn_opt_pr(mu, nu, M, mass, reg, numItermax=100000):
 
     Returns
     -------
-    gamma : (dim_a, dim_b) ndarray
+    gamma : (dia_mu, dia_nu) ndarray
         Optimal transportation matrix for the given parameters
     log : dict
         log dictionary returned only if `log` is `True`
@@ -179,9 +211,10 @@ def sinkhorn_opt_pr(mu, nu, M, mass, reg, numItermax=100000):
 @nb.njit((nb.float64[:,:])(nb.float64[:],nb.float64[:],nb.float64[:,:],nb.float64,nb.int64))
 def sinkhorn_knopp(mu, nu, M, reg, numItermax=1000000):
     r"""
+    we modify the code in PythonOT
     Solve the entropic regularization optimal transport problem and return the OT matrix
 
-    The function solves the following optimization problem:
+    The function solves the following optimization problem via Sinkhorn Algorithm: (we modify the code in PythonOT)
 
     .. math::
         \gamma = \mathop{\arg \min}_\gamma \quad \langle \gamma, \mathbf{M} \rangle_F +
@@ -194,7 +227,7 @@ def sinkhorn_knopp(mu, nu, M, reg, numItermax=1000000):
              \gamma &\geq 0
     where :
 
-    - :math:`\mathbf{M}` is the (`dim_a`, `dim_b`) metric cost matrix
+    - :math:`\mathbf{M}` is the (`dia_mu`, `dia_nu`) metric cost matrix
     - :math:`\Omega` is the entropic regularization term
       :math:`\Omega(\gamma)=\sum_{i,j} \gamma_{i,j}\log(\gamma_{i,j})`
     - :math:`\mathbf{a}` and :math:`\mathbf{b}` are source and target
@@ -206,19 +239,19 @@ def sinkhorn_knopp(mu, nu, M, reg, numItermax=1000000):
 
     Parameters
     ----------
-    mu : array-like, shape (mu,)
+    mu : array-like, shape (mu,) float64
         samples weights in the source domain
-    nu : array-like, shape (nu,) or array-like, shape (dim_b, n_hists)
+    nu : array-like, shape (nu,) float64
         samples in the target domain, compute sinkhorn with multiple targets
         and fixed :math:`\mathbf{M}` if :math:`\mathbf{b}` is a matrix
         (return OT loss + dual variables in log)
-    M : array-like, shape (dim_a, dim_b)
+    M : array-like, shape (dia_mu, dia_nu) float64
         loss matrix
-    reg : float
+    reg : float 
         Regularization term >0
-    numItermax : int, optional
-        Max number of iterations
-    stopThr : float, optional
+    numItermax : int64, optional  
+        Max number of iterations 
+    stopThr : float64, optional 
         Stop threshold on error (>0)
 
     Returns
@@ -287,6 +320,7 @@ def sinkhorn_knopp(mu, nu, M, reg, numItermax=1000000):
 @nb.njit((nb.float32[:,:])(nb.float32[:],nb.float32[:],nb.float32[:,:],nb.float32,nb.int64))
 def sinkhorn_knopp_32(mu, nu, M, reg, numItermax=1000000):
     r"""
+    we modify the code in PythonOT
     Solve the entropic regularization optimal transport problem and return the OT matrix
 
     The function solves the following optimization problem:
@@ -302,7 +336,7 @@ def sinkhorn_knopp_32(mu, nu, M, reg, numItermax=1000000):
              \gamma &\geq 0
     where :
 
-    - :math:`\mathbf{M}` is the (`dim_a`, `dim_b`) metric cost matrix
+    - :math:`\mathbf{M}` is the (`dia_mu`, `dia_nu`) metric cost matrix
     - :math:`\Omega` is the entropic regularization term
       :math:`\Omega(\gamma)=\sum_{i,j} \gamma_{i,j}\log(\gamma_{i,j})`
     - :math:`\mathbf{a}` and :math:`\mathbf{b}` are source and target
@@ -314,19 +348,16 @@ def sinkhorn_knopp_32(mu, nu, M, reg, numItermax=1000000):
 
     Parameters
     ----------
-    mu : array-like, shape (mu,)
+    mu : array-like, shape (mu,) float32
         samples weights in the source domain
-    nu : array-like, shape (nu,) or array-like, shape (dim_b, n_hists)
-        samples in the target domain, compute sinkhorn with multiple targets
-        and fixed :math:`\mathbf{M}` if :math:`\mathbf{b}` is a matrix
-        (return OT loss + dual variables in log)
-    M : array-like, shape (dim_a, dim_b)
+    nu : array-like, shape (nu,) float32
+    M : array-like, shape (dia_mu, dia_nu) float32
         loss matrix
     reg : float
         Regularization term >0
-    numItermax : int, optional
-        Max number of iterations
-    stopThr : float, optional
+    numItermax : int64, optional 
+        Max number of iterations 
+    stopThr : float32, optional 
         Stop threshold on error (>0)
 
     Returns
@@ -356,9 +387,7 @@ def sinkhorn_knopp_32(mu, nu, M, reg, numItermax=1000000):
 
 
     See Also
-    --------
-    ot.lp.emd : Unregularized OT
-    ot.optim.cg : General regularized OT
+    -------
 
     """
 
@@ -409,7 +438,7 @@ def sinkhorn_knopp_opt(mu, nu, M, Lambda, reg, numItermax=1000):
              \gamma &\geq 0
     where :
 
-    - :math:`\mathbf{M}` is the (`dim_a`, `dim_b`) metric cost matrix
+    - :math:`\mathbf{M}` is the (`dia_mu`, `dia_nu`) metric cost matrix
     - :math:`\Omega` is the entropic regularization term
       :math:`\Omega(\gamma)=\sum_{i,j} \gamma_{i,j}\log(\gamma_{i,j})`
     - :math:`\mathbf{a}` and :math:`\mathbf{b}` are source and target
@@ -421,19 +450,16 @@ def sinkhorn_knopp_opt(mu, nu, M, Lambda, reg, numItermax=1000):
 
     Parameters
     ----------
-    mu : array-like, shape (mu,)
+    mu : array-like, shape (mu,) float64
         samples weights in the source domain
-    nu : array-like, shape (nu,) or array-like, shape (dim_b, n_hists)
-        samples in the target domain, compute sinkhorn with multiple targets
-        and fixed :math:`\mathbf{M}` if :math:`\mathbf{b}` is a matrix
-        (return OT loss + dual variables in log)
-    M : array-like, shape (dim_a, dim_b)
+    nu : array-like, shape (nu,) float64
+    M : array-like, shape (dia_mu, dia_nu) float64
         loss matrix
     reg : float
         Regularization term >0
-    numItermax : int, optional
+    numItermax : int64, optional
         Max number of iterations
-    stopThr : float, optional
+    stopThr : float64, optional
         Stop threshold on error (>0)
 
     Returns
@@ -513,7 +539,7 @@ def sinkhorn_knopp_opt_32(mu, nu, M, Lambda, reg, numItermax=1000000):
              \gamma &\geq 0
     where :
 
-    - :math:`\mathbf{M}` is the (`dim_a`, `dim_b`) metric cost matrix
+    - :math:`\mathbf{M}` is the (`dia_mu`, `dia_nu`) metric cost matrix
     - :math:`\Omega` is the entropic regularization term
       :math:`\Omega(\gamma)=\sum_{i,j} \gamma_{i,j}\log(\gamma_{i,j})`
     - :math:`\mathbf{a}` and :math:`\mathbf{b}` are source and target
@@ -525,19 +551,17 @@ def sinkhorn_knopp_opt_32(mu, nu, M, Lambda, reg, numItermax=1000000):
 
     Parameters
     ----------
-    mu : array-like, shape (mu,)
+    mu : array-like, shape (mu,) float64
         samples weights in the source domain
-    nu : array-like, shape (nu,) or array-like, shape (dim_b, n_hists)
-        samples in the target domain, compute sinkhorn with multiple targets
-        and fixed :math:`\mathbf{M}` if :math:`\mathbf{b}` is a matrix
-        (return OT loss + dual variables in log)
-    M : array-like, shape (dim_a, dim_b)
+    nu : array-like, shape (nu,) float64
+        samples in the target domain, 
+    M : array-like, shape (dia_mu, dia_nu)
         loss matrix
     reg : float
         Regularization term >0
-    numItermax : int, optional
+    numItermax : int64, optional
         Max number of iterations
-    stopThr : float, optional
+    stopThr : float32, optional
         Stop threshold on error (>0)
 
     Returns
