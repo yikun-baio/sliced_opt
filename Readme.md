@@ -92,8 +92,8 @@ this should results in saved plot as follows.
 
 ## Examples: 
 - Run the file running_time.ipynb to see the comparision of running time between our method, spot, Sinkhorn, and Linear programming (Network simplexity). 
-- shape_registration.ipynb demonstrate an example of our method and other methods in shape registration problem. 
-- color_adaptation.ipynb demonstrate an example of our method and other methods in color adaptation problem. 
+- shape_registration.ipynb demonstrates an example of our method and other methods in shape registration problem. 
+- color_adaptation.ipynb demonstrates an example of our method and other methods in color adaptation problem. 
 ## Outline of repository
 ### OPT solver
 
