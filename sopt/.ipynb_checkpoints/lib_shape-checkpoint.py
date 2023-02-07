@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sun Jun 26 14:25:29 2022
-
+@author: Yikun Bai yikun.bai@Vanderbilt.edu 
 """
 import torch 
 import os
@@ -775,7 +775,7 @@ def icp_du(S,T,n_iterations):
     for i in range(n_iterations):
 #        print('i',i)
         M=cost_matrix_d(T_hat,T)
-        argmin_T=closest_y_M(M)
+        argmin_T=closest_y_M(M) #M.argmin(1) 
         T_take=T[argmin_T]
         T_hat=T_take
         rotation,scalar_d=recover_rotation_du(T_hat,S)
@@ -834,8 +834,8 @@ def icp_du_32(S,T,n_iterations):
     
     for i in range(n_iterations):
 #        print('i',i)
-        M=cost_matrix_d_32(T_hat,T)
-        argmin_T=closest_y_M(M)
+        M=cost_matrix_d(T_hat,T)
+        argmin_T=closest_y_M(M) #M.argmin(1) #closest_y_M(M)
         T_take=T[argmin_T]
         T_hat=T_take
         rotation,scalar_d=recover_rotation_du_32(T_hat,S)
@@ -895,7 +895,7 @@ def icp_umeyama(S,T,n_iterations):
 #        print('i',i)
        # print(i)
         M=cost_matrix_d(T_hat,T)
-        argmin_T=closest_y_M(M)
+        argmin_T=closest_y_M(M) #M.argmin(1) #closest_y_M(M)
         T_take=T[argmin_T]
         T_hat=T_take
         rotation,scalar=recover_rotation(T_hat,S)
@@ -950,8 +950,8 @@ def icp_umeyama_32(S,T,n_iterations):
     for i in range(n_iterations):
 #        print('i',i)
        # print(i)
-        M=cost_matrix_d_32(T_hat,T)
-        argmin_T=closest_y_M(M)
+        M=cost_matrix_d(T_hat,T)
+        argmin_T=closest_y_M(M) #M.argmin(1) # closest_y_M(M)
         T_take=T[argmin_T]
         T_hat=T_take
         rotation,scalar=recover_rotation_32(T_hat,S)

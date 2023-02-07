@@ -1,4 +1,7 @@
-
+"""
+Created on Sun Jun 26 14:25:29 2022
+@author: Yikun Bai Yikun.Bai@Vanderbilt.edu
+"""
 import numpy as np
 import math
 import torch
@@ -97,7 +100,7 @@ def transform_32(Xs0,Xsc,Xs,batch_size=128):
     #transp_Xs=[]
     for bi in batch_ind:
         # get the nearest neighbor in the source domain
-        D0 = cost_matrix_d_32(Xs0[bi], Xsc)
+        D0 = cost_matrix_d(Xs0[bi], Xsc)
         idx = np.argmin(D0, axis=1)
         # define the transported points
         transp_Xs[bi] =Xs0[bi]+Xs[idx, :]  - Xsc[idx, :]
@@ -161,7 +164,7 @@ def ot_transfer_32(Xs0,Xt0,Xs,Xt,numItermax=1000000):
     #plan=ot.emd()
     # get the transporation plan
     Xsc=Xs.copy()
-    M=cost_matrix_d_32(Xs,Xt)
+    M=cost_matrix_d(Xs,Xt)
     mu=np.ones(n,dtype=np.float32)/n
     nu=np.ones(m,dtype=np.float32)/m
     plan=ot.lp.emd(mu, nu, M, numItermax=numItermax)
@@ -175,6 +178,50 @@ def ot_transfer_32(Xs0,Xt0,Xs,Xt,numItermax=1000000):
     transp_Xs = transform_32(Xs0,Xsc,Xs,batch_size)
     return transp_Xs
 
+@nb.njit(['float64[:,:](float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64,int64)'])
+def eot_transfer_32(Xs0,Xt0,Xs,Xt,reg=0.1,numItermax=1000000):
+    n,d=Xs.shape
+    m=Xt.shape[0]
+    #plan=ot.emd()
+    # get the transporation plan
+    Xsc=Xs.copy()
+    M=cost_matrix_d(Xs,Xt)
+    mu=np.ones(n,dtype=np.float32)/n
+    nu=np.ones(m,dtype=np.float32)/m
+    plan=sinkhorn_knopp(mu, nu, M, reg=reg,numItermax=numItermax)
+
+    # get the transported Xs
+    cond_plan=plan/np.expand_dims(np.sum(plan,1),1)
+    Xs=np.dot(cond_plan,Xt)
+    
+#    # # prediction between images (using out of sample prediction as in [6])
+    batch_size=128
+    transp_Xs = transform(Xs0,Xsc,Xs,batch_size)
+    
+    return transp_Xs
+
+
+@nb.njit(['float32[:,:](float32[:,:],float32[:,:],float32[:,:],float32[:,:],float32,int64)'])
+def eot_transfer_32(Xs0,Xt0,Xs,Xt,reg=0.1,numItermax=1000000):
+    n,d=Xs.shape
+    m=Xt.shape[0]
+    #plan=ot.emd()
+    # get the transporation plan
+    Xsc=Xs.copy()
+    M=cost_matrix_d(Xs,Xt)
+    mu=np.ones(n,dtype=np.float32)/n
+    nu=np.ones(m,dtype=np.float32)/m
+    plan=sinkhorn_knopp_32(mu, nu, M, reg=reg,numItermax=numItermax)
+
+    # get the transported Xs
+    cond_plan=plan/np.expand_dims(np.sum(plan,1),1)
+    Xs=np.dot(cond_plan,Xt)
+    
+#    # # prediction between images (using out of sample prediction as in [6])
+    batch_size=128
+    transp_Xs = transform_32(Xs0,Xsc,Xs,batch_size)
+    
+    return transp_Xs
 
 
 def ot_transfer_orig(Xs0,Xt0,Xs,Xt,max_iter=1000000):

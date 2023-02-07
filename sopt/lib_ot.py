@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-
+Created on Sun Jun 26 14:25:29 2022
+@author: Yikun Bai yikun.bai@Vanderbilt.edu  
+@author: Bernard Schmitzer, schmitzer @cs.uni-goettingen.de
 
 """
 
@@ -1389,7 +1391,7 @@ def pot(M):
     n,m=M.shape
     L=np.empty(0,dtype=np.int64) # save the optimal plan
     cost=0.0 # save the optimal cost    
-    argmin_Y=M.argmin(1)
+    argmin_Y=closest_y_M(M) # M.argmin(1)
  
     #initial loop:
     k=0
@@ -1445,7 +1447,7 @@ def pot_32(M):
     n,m=M.shape 
     L=np.empty(0,dtype=np.int64) # save the optimal plan
     cost=np.float32(0)  # save the optimal cost
-    argmin_Y=M.argmin(1)
+    argmin_Y=closest_y_M(M) #M.argmin(1)
  
     #initial loop:
     k=0

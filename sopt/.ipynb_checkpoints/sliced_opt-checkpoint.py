@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Apr 21 11:58:08 2022
-
+@author: Yikun Bai yikun.bai@Vanderbilt.edu 
 """
 import os
 import numpy as np
@@ -223,129 +223,7 @@ def X_correspondence_pot_32(X,Y,projections):
     return X
 
     
-    
-class sopt():    
-    def __init__(self,X,Y,Lambda_list,n_projections,Type=1):
-        self.X=X
-        self.Y=Y
-        self.device=X.device.type
-        self.dtype=X.dtype
-        self.n,self.d=X.shape
-        self.m=Y.shape[0]
-        self.n_projections=n_projections
-        self.Lambda_list=Lambda_list
-        self.Type=Type
 
-    def sliced_cost(self,penulty=False):
-        cost=self.refined_cost(self.X_sliced,self.Y_sliced,self.plans,penulty)
-        mass=torch.sum(self.plans>=0)/self.plans.shape[0]
-        return cost,mass
-    
-    def get_directions(self):
-        projections=random_projections_32(self.d,self.n_projections,1) #,self.device,self.dtype)
-        self.projections=torch.from_numpy(projections).to(self.device).to(self.dtype)
-#        self.projections=random_projections_T(self.d,self.n_projections,self.device,self.dtype)
-
-    def get_all_projections(self):
-        self.X_sliced=torch.matmul(self.projections,self.X.T)
-        self.Y_sliced=torch.matmul(self.projections,self.Y.T)
-        
-    def get_one_projection(self,i):
-        self.X_sliced=torch.matmul(self.projections[i],self.X.T).unsqueeze(0)
-        self.Y_sliced=torch.matmul(self.projections[i],self.Y.T).unsqueeze(0)
-
-    def get_plans(self):
-        X_sliced_s,indices_X=self.X_sliced.detach().sort()
-        Y_sliced_s,indices_Y=self.Y_sliced.detach().sort()
-        X_sliced_np=X_sliced_s.cpu().numpy()
-        Y_sliced_np=Y_sliced_s.cpu().numpy()
-#        Lambda_list_np=Lambda_list.numpy()
-        self.costs,plans=opt_plans(X_sliced_np,Y_sliced_np,self.Lambda_list.numpy())
-        plans=torch.from_numpy(plans).to(device=self.device,dtype=torch.int64)
-        self.plans=recover_indice_M(indices_X,indices_Y,plans)
-        self.costs=torch.from_numpy(self.costs)
-#       self.X_frequency=torch.sum(self.plans>=0,0)
-    
-    def max_plan(self):
-        self.get_directions()
-        self.get_all_projections()
-        self.get_plans()
-        self.i_max=self.costs.argmax()
-        self.L_max=self.plans[self.i_max]
-        #self.Lx_max=torch.arange(self.n)
-        #self.Lx_max=self.Lx_max[self.L_max>=0]
-
-        
-
-    def refined_cost(self,Xs,Ys,plans,penulty=True):
-        N=Xs.shape[0]
-        self.Lx=[torch.arange(self.n,device=self.device)[plans[i]>=0] for i in range(N)]
-        self.mass_list=[torch.sum(plans[i]>=0) for i in range(N)]
-        self.mass_list=torch.tensor(self.mass_list,dtype=torch.float64)
-        self.Ly=[plans[i][plans[i]>=0] for i in range(N)]
-        self.X_take=torch.cat([Xs[i][self.Lx[i]] for i in range(N)])
-        self.Y_take=torch.cat([Ys[i][self.Ly[i]] for i in range(N)])        
-        cost_trans=torch.sum(cost_function_T(self.X_take, self.Y_take))
-  #       self.mass=[torch.sum(plans[i][plans[i]>=0]) for i in range(N)]
-  #       self.mass=torch.cat(self.mass)
-        penulty_value=torch.dot(self.Lambda_list,self.n-self.mass_list)
-        if penulty==True:
-            return (cost_trans+penulty_value)/N    
-        elif penulty==False:
-            return cost_trans/N
-
-
-
-        
-        
-class sopt_correspondence(sopt):
-    def __init__(self,X,Y,Lambda_list,N_projections=20,Type=None):
-        sopt.__init__(self,X,Y,Lambda_list,N_projections,Type)
-        self.Xc=self.X.clone()
-        #X_correspondence(self.X.numpy(),self.Y.numpy(),self.projections.numpy())
-
-    def correspond(self,mass=-1,b=np.float64(0)):
-        if self.X.shape[0]>0:
-            if mass<0:
-                mass=self.n
-            self.X_frequency=X_correspondence_32(self.X.numpy(),self.Y.numpy(),self.projections.numpy(),self.Lambda_list)
-
-
-    def transform(self,Xs,batch_size=128):    
-        #D0 = cost_matrix_T(Xs, self.Xc)
-        #idx = torch.argmin(D0, axis=1)
-        #transp_Xs=Xs+self.X[idx, :]  - self.Xc[idx, :]
-        #     #print(transp_Xs)
-
-        # # perform out of sample mapping
-        indices = torch.arange(Xs.shape[0])
-        batch_ind = [indices[i:i + batch_size] for i in range(0, len(indices), batch_size)]
-
-        transp_Xs = []
-
-        for bi in batch_ind:
-            # get the nearest neighbor in the source domain
-            D0 = cost_matrix_T(Xs[bi], self.Xc)
-            idx = torch.argmin(D0, axis=1)
-            # define the transported points
-            transp_Xs_ =Xs[bi]+self.X[idx, :]  - self.Xc[idx, :]
-            #print(transp_Xs)
-            transp_Xs.append(transp_Xs_)
-        transp_Xs = torch.cat(transp_Xs, axis=0)
-        return transp_Xs
-    
-        
-        
-class spot(sopt_correspondence):
-    def __init__(self,X,Y,N_projections=20,Type=None):
-        Lambda_list=torch.zeros(N_projections)
-        sopt.__init__(self,X,Y,Lambda_list,N_projections,Type)
-        self.Xc=self.X.clone()
-        
-    def correspond(self):    
-        if self.X.shape[0]>0:
-             X_correspondence_pot_32(self.X.numpy(),self.Y.numpy(),self.projections.numpy())      
-    
 
 
         
