@@ -1,9 +1,11 @@
 
 # Sliced optimal partial transport (SOPT)
+## Introduction 
+This restortion contains example code for sliced optimal partial transport introduced in [Sliced optimal partial transport](https://arxiv.org/abs/2212.08049). All code is written in Python / numpy / scipy /torch without any additional exotic dependencies. The code reproduces all the numerical examples in the paper. 
 
-#  Setup 
-To run the code, you must first install 
-First install [numba](https://numba.pydata.org) 
+##  Setup 
+To run the code, you must first install [Pytorch](https://pytorch.org/get-started/locally/), 
+[numba](https://numba.pydata.org) 
 ```
 conda install numba 
 ```
@@ -12,7 +14,7 @@ and [PythonOT](https://pythonot.github.io)
 pip install pot
 ```
 
-## Installing 1D OPT solver 
+## Optional: Installing C++ 1D OPT solver 
 We also provide the C++ implementation of our 1D OPT solver. 
 To use the C++ solver, you must first compile the 1D Partial Optimal Transport with pybind11. 
 
@@ -72,7 +74,7 @@ g++ -O3 -Wall -shared -std=c++11 -I/home/baly/projects/pybind11/include/pybind11
 or 
 
 ```
-g++ -O3 -Wall -shared -std=c++11 -I/home/baly/projects/pybind11/include/pybind11 -I/home/baly/miniconda3/include/python3.10 -fPIC -DVERBOSE opt1d.cpp -o opt1d.cpython-310-x86_64-linux-gnu.so
+g++ -O3 -Wall -shared -std=c++11 -I/home/baly/projects/pybind11/include/pybind11 -I/home/baly/miniconda3/include/python3.10 -fPIC -DVERBOSE opt1d.cpp -o opt1d.so
 ```
 
 
@@ -88,12 +90,12 @@ python3 test_opt1d.py
 
 this should results in saved plot as follows.
 
-![Results of test_opt1d.py](Lambda.png)
- 
-
-
-
-## OPT solver
+## Examples: 
+- Run the file running_time.ipynb to see the comparision of running time between our method, spot, Sinkhorn, and Linear programming (Network simplexity). 
+- shape_registration.ipynb demonstrate an example of our method and other methods in shape registration problem. 
+- color_adaptation.ipynb demonstrate an example of our method and other methods in color adaptation problem. 
+## Outline of repository
+### OPT solver
 
 The file code/sopt/lib_ot.py contains our 1-D optimal partial transport (OPT problem) solver. In particular, it contains the following functions, most of which are accelarated by numba: 
 - "solve_opt" (for data in float64) and "solve_opt_32" (for data in flaot32): our 1-D Optimal partial transport (OPT) sovler 
@@ -104,7 +106,7 @@ The file code/sopt/lib_ot.py contains our 1-D optimal partial transport (OPT pro
 
 
 
-## Shape registration experiment 
+### Shape registration 
 The file code/sopt/lib_shape.py contains our method for shape registration experiment based on our OPT solver. In particular it contains the following functions: 
 
 - sopt_main and sopt_main_32: our method for shape registration problem based on our 1-D OPT sovler 
@@ -112,9 +114,9 @@ The file code/sopt/lib_shape.py contains our method for shape registration exper
 - icp_du and icp_du_32: Du's ICP algorithm (see [3])
 - icp_umeyama and icp_umeyama_32: classical ICP algorithm (see [4]) 
 
-Run the file code/experiment/shape_registration/shape_registration_example.ipynb (need to modify the "parant path") to see an example of all methods. 
 
-## color adaptation experiment
+
+### Color adaptation 
 The file code/sopt/lib_color.py contains our color adaptation method based on our 1-D OPT solver. In particular, it contains the following functions: 
 - sopt_transfer and sopt_transfer_32: our color transporation method based on 1-D OPT solver. 
 - spot_transfer and spot_transfer_32: one python implementation of the color transportation method based on SPOT (see [2])
@@ -122,6 +124,13 @@ The file code/sopt/lib_color.py contains our color adaptation method based on ou
 - eot_transfer: one python implemtation of entropic OT-based color adaptation method (we modify the code of ot.da.SinkhornTransport in PythonOT) (see [5])
 
 Run code/experiment/color_adaptation/color_example.ipynb (need to modify the "parant path") to see an example. 
+
+
+
+
+
+
+
 
 
 ## References
