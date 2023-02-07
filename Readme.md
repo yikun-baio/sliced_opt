@@ -80,7 +80,7 @@ g++ -O3 -Wall -shared -std=c++11 -I/home/baly/projects/pybind11/include/pybind11
 
 Please ensure to replace the paths with your relevant paths. 
 
-## Test opt1d
+### Test opt1d
 
 If all has gone well, then we can test the code in Python: 
 
