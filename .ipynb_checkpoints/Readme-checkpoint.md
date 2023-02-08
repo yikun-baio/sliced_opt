@@ -80,7 +80,7 @@ g++ -O3 -Wall -shared -std=c++11 -I/home/baly/projects/pybind11/include/pybind11
 
 Please ensure to replace the paths with your relevant paths. 
 
-## Test opt1d
+### Test opt1d
 
 If all has gone well, then we can test the code in Python: 
 
@@ -89,11 +89,11 @@ python3 test_opt1d.py
 ```
 
 this should results in saved plot as follows.
-
+![Results of test_pot1d.py](Lambda.png)
 ## Examples: 
 - Run the file running_time.ipynb to see the comparision of running time between our method, spot, Sinkhorn, and Linear programming (Network simplexity). 
-- shape_registration.ipynb demonstrate an example of our method and other methods in shape registration problem. 
-- color_adaptation.ipynb demonstrate an example of our method and other methods in color adaptation problem. 
+- shape_registration.ipynb demonstrates an example of our method and other methods in shape registration problem. 
+- color_adaptation.ipynb demonstrates an example of our method and other methods in color adaptation problem. 
 ## Outline of repository
 ### OPT solver
 

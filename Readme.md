@@ -89,7 +89,7 @@ python3 test_opt1d.py
 ```
 
 this should results in saved plot as follows.
-
+![Results of test_pot1d.py](Lambda.png)
 ## Examples: 
 - Run the file running_time.ipynb to see the comparision of running time between our method, spot, Sinkhorn, and Linear programming (Network simplexity). 
 - shape_registration.ipynb demonstrates an example of our method and other methods in shape registration problem. 
