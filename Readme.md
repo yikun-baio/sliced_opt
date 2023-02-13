@@ -91,7 +91,9 @@ python3 test_opt1d.py
 this should results in saved plot as follows.
 ![Results of test_pot1d.py](Lambda.png)
 ## Examples: 
+First please ensure to replace the paths with your relevant paths. 
 - Run the file running_time.ipynb to see the comparision of running time between our method, spot, Sinkhorn, and Linear programming (Network simplexity). 
+You should comment out the lines which contains "opt1d.solve" if the C++ implementation of our 1D opt solver is not installed. 
 - shape_registration.ipynb demonstrates an example of our method and other methods in shape registration problem. 
 - color_adaptation.ipynb demonstrates an example of our method and other methods in color adaptation problem. 
 ## Outline of repository
@@ -120,11 +122,8 @@ The file code/sopt/lib_shape.py contains our method for shape registration exper
 The file code/sopt/lib_color.py contains our color adaptation method based on our 1-D OPT solver. In particular, it contains the following functions: 
 - sopt_transfer and sopt_transfer_32: our color transporation method based on 1-D OPT solver. 
 - spot_transfer and spot_transfer_32: one python implementation of the color transportation method based on SPOT (see [2])
-- ot_transfer: one python implementation of OT-based color adaptation method (we modify the code of ot.da.EMDTransport in PythonOT) (see [5])
-- eot_transfer: one python implemtation of entropic OT-based color adaptation method (we modify the code of ot.da.SinkhornTransport in PythonOT) (see [5])
-
-Run code/experiment/color_adaptation/color_example.ipynb (need to modify the "parant path") to see an example. 
-
+- ot_transfer: one python implementation of OT-based color adaptation method (we modify the code of ot.da.EMDTransport in PythonOT to improve the speed) (see [5])
+- eot_transfer: one python implemtation of entropic OT-based color adaptation method (we modify the code of ot.da.SinkhornTransport in PythonOT to improve the speed) (see [5])
 
 
 
