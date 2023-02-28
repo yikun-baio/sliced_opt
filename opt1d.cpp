@@ -112,7 +112,7 @@ void solve(double *x, double *y, double *phi, double *psi, int *piRow, int *piCo
 						hiEndDiff=INFINITY;
 					}
 					if ((hiEndDiff<=lowEndDiff) && (hiEndDiff<=lamDiff)) {
-						// eprintf("case 3.1\n");
+						// eprintf("case 3.2\n");
 						v+=hiEndDiff;
 						for(size_t i=iMin;i<K;i++) {
 							phi[i]+=v-dist[i];
@@ -127,7 +127,7 @@ void solve(double *x, double *y, double *phi, double *psi, int *piRow, int *piCo
 					} else {
 						if ((lowEndDiff<=hiEndDiff) && (lowEndDiff<=lamDiff)) {
 							if (piCol[jMin-1]==-1) {
-								// eprintf("case 3.2a\n");
+								// eprintf("case 3.3a\n");
 								v+=lowEndDiff;
 								for (size_t i=iMin;i<K;i++) {
 									phi[i]+=v-dist[i];
@@ -148,7 +148,7 @@ void solve(double *x, double *y, double *phi, double *psi, int *piRow, int *piCo
 								resolved=true;
 
 							} else {
-								// eprintf("case 3.2b\n");
+								// eprintf("case 3.3b\n");
 								v+=lowEndDiff;
 								dist[iMin-1]=v;
 								// adjust distance to threshold
@@ -161,7 +161,7 @@ void solve(double *x, double *y, double *phi, double *psi, int *piRow, int *piCo
 								}
 							}
 						} else {
-							// eprintf("case 3.3, lamInd=%lu",lamInd);
+							// eprintf("case 3.1, lamInd=%lu",lamInd);
 							v+=lamDiff;
 							for(size_t i=iMin;i<K;i++) {
 								phi[i]+=v-dist[i];
@@ -181,8 +181,8 @@ void solve(double *x, double *y, double *phi, double *psi, int *piRow, int *piCo
 								piCol[jPrime]+=1;
 							}
 							resolved=true;
-						} // end case 3.3 (=case 3.2 else)
-					} // end case 3.1 else
+						} // end case 3.3 (=case 3.1 else)
+					} // end case 3.2 else
                     		} // end case 3 subroutine while
 				K++;
 			} // end case 3 (=case 2 else)
