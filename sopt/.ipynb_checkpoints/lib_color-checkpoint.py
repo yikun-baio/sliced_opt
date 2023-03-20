@@ -28,7 +28,6 @@ def im2mat(img):
     X=img_a.reshape(n*m,d)
     return X
 
-print('hello')
 
 @nb.njit(['float64[:,:,:](float64[:,:],int64,int64,int64)','float32[:,:,:](float32[:,:],int64,int64,int64)'])
 def mat2im(X, n,m,d):
