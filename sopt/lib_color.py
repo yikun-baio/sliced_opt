@@ -179,15 +179,15 @@ def ot_transfer_32(Xs0,Xt0,Xs,Xt,numItermax=1000000):
     return transp_Xs
 
 @nb.njit(['float64[:,:](float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64,int64)'])
-def eot_transfer_32(Xs0,Xt0,Xs,Xt,reg=0.1,numItermax=1000000):
+def eot_transfer_64(Xs0,Xt0,Xs,Xt,reg=0.1,numItermax=1000000):
     n,d=Xs.shape
     m=Xt.shape[0]
     #plan=ot.emd()
     # get the transporation plan
     Xsc=Xs.copy()
     M=cost_matrix_d(Xs,Xt)
-    mu=np.ones(n,dtype=np.float32)/n
-    nu=np.ones(m,dtype=np.float32)/m
+    mu=np.ones(n,dtype=np.float64)/n
+    nu=np.ones(m,dtype=np.float64)/m
     plan=sinkhorn_knopp(mu, nu, M, reg=reg,numItermax=numItermax)
 
     # get the transported Xs
