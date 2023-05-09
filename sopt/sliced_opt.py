@@ -243,7 +243,7 @@ def opt_plans_64(X,Y,Lambda_list):
         obj,phi,psi,piRow,piCol=solve_opt(M,Lambda)
         
         L1=recover_indice(X_indice,Y_indice,piRow)
-        L2=recover_indice(Y_indice,X_indice,piCol)
+        #L2=recover_indice(Y_indice,X_indice,piCol)
         opt_cost_list[epoch]=obj
         opt_plan_X_list[epoch]=L1
         #opt_plan_Y_list[epoch]=L2
