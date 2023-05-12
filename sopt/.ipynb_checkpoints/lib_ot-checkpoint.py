@@ -75,7 +75,7 @@ def opt_lp(mu,nu,M,Lambda,numItermax=100000,numThreads=1):
     return cost,plan
 
 # 
-@nb.njit((nb.float64[:,:])(nb.float64[:],nb.float64[:],nb.float64[:,:],nb.float64,nb.float64,nb.int64))
+@nb.njit((nb.float64[:,:])(nb.float64[:],nb.float64[:],nb.float64[:,:],nb.float64,nb.float64,nb.int64),cathe=True)
 def sinkhorn_opt_pr(mu, nu, M, mass, reg, numItermax=100000):
     r"""
     (we modify the code in PythonOT) 
@@ -208,7 +208,7 @@ def sinkhorn_opt_pr(mu, nu, M, mass, reg, numItermax=100000):
     #     return K, log_e
     return K
 
-@nb.njit((nb.float64[:,:])(nb.float64[:],nb.float64[:],nb.float64[:,:],nb.float64,nb.int64))
+@nb.njit((nb.float64[:,:])(nb.float64[:],nb.float64[:],nb.float64[:,:],nb.float64,nb.int64),cathe=True)
 def sinkhorn_knopp(mu, nu, M, reg, numItermax=1000000):
     r"""
     we modify the code in PythonOT
@@ -317,7 +317,7 @@ def sinkhorn_knopp(mu, nu, M, reg, numItermax=1000000):
     return gamma
 
 
-@nb.njit((nb.float32[:,:])(nb.float32[:],nb.float32[:],nb.float32[:,:],nb.float32,nb.int64))
+@nb.njit((nb.float32[:,:])(nb.float32[:],nb.float32[:],nb.float32[:,:],nb.float32,nb.int64),cathe=True)
 def sinkhorn_knopp_32(mu, nu, M, reg, numItermax=1000000):
     r"""
     we modify the code in PythonOT
@@ -420,7 +420,7 @@ def sinkhorn_knopp_32(mu, nu, M, reg, numItermax=1000000):
 
     return gamma
 
-@nb.njit(['(float64[:,:])(float64[:],float64[:],float64[:,:],float64,float64,int64)'])
+@nb.njit(['(float64[:,:])(float64[:],float64[:],float64[:,:],float64,float64,int64)'],cathe=True)
 def sinkhorn_knopp_opt(mu, nu, M, Lambda, reg, numItermax=1000):
     r"""
     Solve the entropic regularization optimal transport problem and return the OT matrix
@@ -521,7 +521,7 @@ def sinkhorn_knopp_opt(mu, nu, M, Lambda, reg, numItermax=1000):
 
     return gamma
     
-@nb.njit(['(float32[:,:])(float32[:],float32[:],float32[:,:],float32,float32,int64)'])
+@nb.njit(['(float32[:,:])(float32[:],float32[:],float32[:,:],float32,float32,int64)'],cathe=True)
 def sinkhorn_knopp_opt_32(mu, nu, M, Lambda, reg, numItermax=1000000):
     r"""
     Solve the entropic regularization optimal transport problem and return the OT matrix
@@ -642,7 +642,7 @@ def getPiFromCol(M,N,piCol):
     return pi
 
     
-@nb.njit(nb.types.Tuple((nb.float64,nb.float64[:],nb.float64[:],nb.int64[:],nb.int64[:]))(nb.float64[:,:],nb.float64))
+@nb.njit(nb.types.Tuple((nb.float64,nb.float64[:],nb.float64[:],nb.int64[:],nb.int64[:]))(nb.float64[:,:],nb.float64),cathe=True)
 def solve_opt(c,lam): #,verbose=False):
     M,N=c.shape
     phi=np.full(shape=M,fill_value=-np.inf)
@@ -797,7 +797,7 @@ def solve_opt(c,lam): #,verbose=False):
 
 
 
-@nb.njit(nb.types.Tuple((nb.float32,nb.float32[:],nb.float32[:],nb.int64[:],nb.int64[:]))(nb.float32[:,:],nb.float32))
+@nb.njit(nb.types.Tuple((nb.float32,nb.float32[:],nb.float32[:],nb.int64[:],nb.int64[:]))(nb.float32[:,:],nb.float32),cathe=True)
 def solve_opt_32(c,lam): #,verbose=False):
     M,N=c.shape
     
@@ -955,7 +955,7 @@ def solve_opt_32(c,lam): #,verbose=False):
 
 
 
-@nb.njit(nb.types.Tuple((nb.float64,nb.float64[:],nb.float64[:],nb.int64[:],nb.int64[:]))(nb.float64[:,:],nb.float64))
+@nb.njit(nb.types.Tuple((nb.float64,nb.float64[:],nb.float64[:],nb.int64[:],nb.int64[:]))(nb.float64[:,:],nb.float64),cathe=True)
 def solve_opt_orig(c,lam): #,verbose=False):
     M,N=c.shape
     
@@ -1092,7 +1092,7 @@ def solve_opt_orig(c,lam): #,verbose=False):
     return objective,phi,psi,piRow,piCol
 
 
-@nb.njit(nb.types.Tuple((nb.float32,nb.float32[:],nb.float32[:],nb.int64[:],nb.int64[:]))(nb.float32[:,:],nb.float32))
+@nb.njit(nb.types.Tuple((nb.float32,nb.float32[:],nb.float32[:],nb.int64[:],nb.int64[:]))(nb.float32[:,:],nb.float32),cathe=True)
 def solve_opt_orig_32(c,lam): #,verbose=False):
     M,N=c.shape
     
@@ -1229,7 +1229,7 @@ def solve_opt_orig_32(c,lam): #,verbose=False):
     return objective,phi,psi,piRow,piCol
 
 
-@nb.njit(nb.types.Tuple((nb.float64,nb.float64[:],nb.float64[:],nb.int64[:],nb.int64[:]))(nb.float64[:,:],nb.float64))
+@nb.njit(nb.types.Tuple((nb.float64,nb.float64[:],nb.float64[:],nb.int64[:],nb.int64[:]))(nb.float64[:,:],nb.float64),cathe=True)
 #@nb.jit()
 def solve_opt2(c,lam):
     M,N=c.shape
@@ -1410,7 +1410,7 @@ def solve_opt2(c,lam):
 
 
 
-@nb.njit(['Tuple((float64,int64[:]))(float64[:,:])'])
+@nb.njit(['Tuple((float64,int64[:]))(float64[:,:])'],cathe=True)
 def pot(M): 
     n,m=M.shape
     L=np.empty(0,dtype=np.int64) # save the optimal plan
@@ -1466,7 +1466,7 @@ def pot(M):
 
 
 
-@nb.njit(['Tuple((float32,int64[:]))(float32[:,:])'])
+@nb.njit(['Tuple((float32,int64[:]))(float32[:,:])'],cathe=True)
 def pot_32(M): 
     n,m=M.shape 
     L=np.empty(0,dtype=np.int64) # save the optimal plan

@@ -43,7 +43,7 @@ def random_projections_T(d,n_projections,Type): #,device='cpu',dtype=torch.float
 
 
 
-@nb.njit(['float64[:,:](int64,int64,int64)'],fastmath=True)
+@nb.njit(['float64[:,:](int64,int64,int64)'],fastmath=True,cathe=True)
 def random_projections(d,n_projections,Type=0):
     '''
     input: 
@@ -71,7 +71,7 @@ def random_projections(d,n_projections,Type=0):
     return projections
 
 
-@nb.njit(['float32[:,:](int64,int64,int64)'],fastmath=True)
+@nb.njit(['float32[:,:](int64,int64,int64)'],fastmath=True,cathe=True)
 def random_projections_32(d,n_projections,Type=0):
     '''
     input: 
@@ -100,7 +100,7 @@ def random_projections_32(d,n_projections,Type=0):
 
 
 #@nb.njit([nb.types.Tuple((nb.float64[:],nb.int64[:,:]))(nb.float64[:,:],nb.float64[:,:],nb.float64)],parallel=True,fastmath=True)
-@nb.njit(['Tuple((float64[:],int64[:,:]))(float64[:,:],float64[:,:],float64[:])'],parallel=True,fastmath=True)
+@nb.njit(['Tuple((float64[:],int64[:,:]))(float64[:,:],float64[:,:],float64[:])'],parallel=True,fastmath=True,cathe=True)
 def opt_plans(X_sliced,Y_sliced,Lambda_list):
     N,n=X_sliced.shape
 #    Dtype=type(X_sliced[0,0])
@@ -122,7 +122,7 @@ def opt_plans(X_sliced,Y_sliced,Lambda_list):
 
 
 
-@nb.njit(['(float64[:,:],float64[:,:],float64[:,:],float64[:])'])
+@nb.njit(['(float64[:,:],float64[:,:],float64[:,:],float64[:])'],cathe=True)
 def X_correspondence(X,Y,projections,Lambda_list):
     N,d=projections.shape
     n=X.shape[0]
@@ -152,7 +152,7 @@ def X_correspondence(X,Y,projections,Lambda_list):
             Y_take=Y_theta[Ly]
             X[Lx]+=np.expand_dims(Y_take-X_take,1)*theta
             
-@nb.njit(['(float32[:,:],float32[:,:],float32[:,:],float32[:])'])
+@nb.njit(['(float32[:,:],float32[:,:],float32[:,:],float32[:])'],cathe=True)
 def X_correspondence_32(X,Y,projections,Lambda_list):
     N,d=projections.shape
     n=X.shape[0]
@@ -182,7 +182,7 @@ def X_correspondence_32(X,Y,projections,Lambda_list):
 
  
 
-@nb.njit(['(float64[:,:],float64[:,:],float64[:,:])'])
+@nb.njit(['(float64[:,:],float64[:,:],float64[:,:])'],cathe=True)
 def X_correspondence_pot(X,Y,projections):
     N,d=projections.shape
     n=X.shape[0]
@@ -224,7 +224,7 @@ def X_correspondence_pot_32(X,Y,projections):
 
     
 
-@nb.njit(['Tuple((float64,int64[:,:],float64[:,:],float64[:,:]))(float64[:,:],float64[:,:],float64[:])'],parallel=True,fastmath=True)
+@nb.njit(['Tuple((float64,int64[:,:],float64[:,:],float64[:,:]))(float64[:,:],float64[:,:],float64[:])'],parallel=True,fastmath=True,cathe=True)
 def opt_plans_64(X,Y,Lambda_list):
     n,d=X.shape
     n_projections=Lambda_list.shape[0]
@@ -251,7 +251,7 @@ def opt_plans_64(X,Y,Lambda_list):
         sopt_dist=opt_cost_list.sum()/n_projections
     return sopt_dist,opt_plan_X_list,X_projections,Y_projections
 
-def opt_cost_from_plans(X_projections,Y_projections,Lambda_list,opt_plan_X_list):
+def opt_cost_from_plans(X_projections,Y_projections,Lambda_list,opt_plan_X_list,cathe=True):
     n_projections,n=X_projections.shape
     n_projections,m=Y_projections.shape
     opt_cost_list=np.zeros(n_projections)
