@@ -18,7 +18,7 @@ from .library import *
 from .sliced_opt import *   
 from .lib_ot import *   
 
-@nb.njit([nb.float64[:,:](nb.float64[:,:,:]),nb.float32[:,:](nb.float32[:,:,:])],cathe=True)
+@nb.njit([nb.float64[:,:](nb.float64[:,:,:]),nb.float32[:,:](nb.float32[:,:,:])],cache=True)
 def im2mat(img):
     """Converts an image (n*m*3 matrix) to a (n*m)*3 matrix (one pixel per line)"""
     n=img.shape[0]
@@ -67,7 +67,7 @@ def plot_image(I1t,name,save_path):
 
 
 
-@nb.njit(['float64[:,:](float64[:,:],float64[:,:],float64[:,:],int64)'],fastmath=True,cathe=True)
+@nb.njit(['float64[:,:](float64[:,:],float64[:,:],float64[:,:],int64)'],fastmath=True,cache=True)
 def transform(Xs0,Xs,Xs1,batch_size=128):    
     
     # # perform out of sample mapping
@@ -88,7 +88,7 @@ def transform(Xs0,Xs,Xs1,batch_size=128):
     return transp_Xs
 
 
-@nb.njit(['float32[:,:](float32[:,:],float32[:,:],float32[:,:],int64)'],fastmath=True,cathe=True)
+@nb.njit(['float32[:,:](float32[:,:],float32[:,:],float32[:,:],int64)'],fastmath=True,cache=True)
 def transform_32(Xs0,Xsc,Xs,batch_size=128):    
     
     # # perform out of sample mapping
@@ -110,7 +110,7 @@ def transform_32(Xs0,Xsc,Xs,batch_size=128):
     return transp_Xs
 
 
-@nb.njit(['float64[:,:](float64[:,:],float64[:,:],float64[:,:],float64[:,:],int64)'],cathe=True)
+@nb.njit(['float64[:,:](float64[:,:],float64[:,:],float64[:,:],float64[:,:],int64)'],cache=True)
 def spot_transfer(Xs0,Xt0,Xs,Xt,n_projections=400):
     n,d=Xs.shape
     #np.random.seed(0)
@@ -122,7 +122,7 @@ def spot_transfer(Xs0,Xt0,Xs,Xt,n_projections=400):
     return transp_Xs
 
 
-@nb.njit(['float32[:,:](float32[:,:],float32[:,:],float32[:,:],float32[:,:],int64)'],cathe=True)
+@nb.njit(['float32[:,:](float32[:,:],float32[:,:],float32[:,:],float32[:,:],int64)'],cache=True)
 def spot_transfer_32(Xs0,Xt0,Xs,Xt,n_projections=400):
     n,d=Xs.shape
     #np.random.seed(0)
@@ -134,7 +134,7 @@ def spot_transfer_32(Xs0,Xt0,Xs,Xt,n_projections=400):
     return transp_Xs
 
 
-@nb.njit(['float32[:,:](float32[:,:],float32[:,:],float32[:,:],float32[:,:],float32[:],int64)'],cathe=True)
+@nb.njit(['float32[:,:](float32[:,:],float32[:,:],float32[:,:],float32[:,:],float32[:],int64)'],cache=True)
 def sopt_transfer_32(Xs0,Xt0,Xs,Xt,Lambda_list,n_projections=400):    
     n,d=Xs.shape
     #np.random.seed(0)
@@ -145,7 +145,7 @@ def sopt_transfer_32(Xs0,Xt0,Xs,Xt,Lambda_list,n_projections=400):
     transp_Xs=transform_32(Xs0,Xsc,Xs,batch_size)
     return transp_Xs
 
-@nb.njit(['float64[:,:](float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:],int64)'],cathe=True)
+@nb.njit(['float64[:,:](float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:],int64)'],cache=True)
 def sopt_transfer(Xs0,Xt0,Xs,Xt,Lambda_list,n_projections=400):    
     n,d=Xs.shape
     #np.random.seed(0)
@@ -177,7 +177,7 @@ def ot_transfer_32(Xs0,Xt0,Xs,Xt,numItermax=1000000):
     transp_Xs = transform_32(Xs0,Xsc,Xs,batch_size)
     return transp_Xs
 
-@nb.njit(['float64[:,:](float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64,int64)'],cathe=True)
+@nb.njit(['float64[:,:](float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64,int64)'],cache=True)
 def eot_transfer_64(Xs0,Xt0,Xs,Xt,reg=0.1,numItermax=1000000):
     n,d=Xs.shape
     m=Xt.shape[0]
@@ -200,7 +200,7 @@ def eot_transfer_64(Xs0,Xt0,Xs,Xt,reg=0.1,numItermax=1000000):
     return transp_Xs
 
 
-@nb.njit(['float32[:,:](float32[:,:],float32[:,:],float32[:,:],float32[:,:],float32,int64)'],cathe=True)
+@nb.njit(['float32[:,:](float32[:,:],float32[:,:],float32[:,:],float32[:,:],float32,int64)'],cache=True)
 def eot_transfer_32(Xs0,Xt0,Xs,Xt,reg=0.1,numItermax=1000000):
     n,d=Xs.shape
     m=Xt.shape[0]

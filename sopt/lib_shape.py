@@ -236,7 +236,7 @@ def rotation_in(cos_x,sin_x,cos_y,sin_y,cos_z,sin_z):
 
     
 
-@nb.njit(['float64[:](float64[:,:])'],fastmath=True,cathe=True)
+@nb.njit(['float64[:](float64[:,:])'],fastmath=True,cache=True)
 def vec_mean(X):
     """
     return X.mean(1) 
@@ -257,7 +257,7 @@ def vec_mean(X):
         mean[i]=X[:,i].mean()
     return mean
         
-@nb.njit(['float32[:](float32[:,:])'],fastmath=True,cathe=True)
+@nb.njit(['float32[:](float32[:,:])'],fastmath=True,cache=True)
 def vec_mean_32(X):
     """
     return X.mean(1) 
@@ -283,7 +283,7 @@ def vec_mean_32(X):
 
     
     
-@nb.njit(['Tuple((float64[:,:],float64))(float64[:,:],float64[:,:])'],cathe=True)
+@nb.njit(['Tuple((float64[:,:],float64))(float64[:,:],float64[:,:])'],cache=True)
 def recover_rotation(X,Y):
     """
     return the optimal rotation, scaling based on the correspondence (X,Y) 
@@ -313,7 +313,7 @@ def recover_rotation(X,Y):
     scaling=np.sum(np.abs(S.T))/np.trace(Y_c.T.dot(Y_c))
     return rotation,scaling
 
-@nb.njit(['Tuple((float32[:,:],float32))(float32[:,:],float32[:,:])'],cathe=True)
+@nb.njit(['Tuple((float32[:,:],float32))(float32[:,:],float32[:,:])'],cache=True)
 def recover_rotation_32(X,Y):
     """
     return the optimal rotation, scaling based on the correspondence (X,Y) 
@@ -343,7 +343,7 @@ def recover_rotation_32(X,Y):
 
 
 
-@nb.njit(['Tuple((float64[:,:],float64[:]))(float64[:,:],float64[:,:])'],fastmath=True,cathe=True)
+@nb.njit(['Tuple((float64[:,:],float64[:]))(float64[:,:],float64[:,:])'],fastmath=True,cache=True)
 def recover_rotation_du(X,Y):
     """
     return the optimal rotation, scaling based on the correspondence (X,Y) 
@@ -383,7 +383,7 @@ def recover_rotation_du(X,Y):
 
 
 
-@nb.njit(['Tuple((float32[:,:],float32[:]))(float32[:,:],float32[:,:])'],fastmath=True,cathe=True)
+@nb.njit(['Tuple((float32[:,:],float32[:]))(float32[:,:],float32[:,:])'],fastmath=True,cache=True)
 def recover_rotation_du_32(X,Y):
     """
     return the optimal rotation, scaling based on the correspondence (X,Y) 
@@ -424,7 +424,7 @@ def recover_rotation_du_32(X,Y):
 
 # our method
 #@nb.njit(['Tuple((float64[:,:,:],float64[:],float64[:,:]))(float64[:,:],float64[:,:],int64,int64)'])
-@nb.njit(['Tuple((float64[:,:,:],float64[:],float64[:,:]))(float64[:,:],float64[:,:],int64,int64)'],cathe=True)
+@nb.njit(['Tuple((float64[:,:,:],float64[:],float64[:,:]))(float64[:,:],float64[:,:],int64,int64)'],cache=True)
 def sopt_main(S,T,n_iterations,N0):
     '''
     Parameters: 
@@ -530,7 +530,7 @@ def sopt_main(S,T,n_iterations,N0):
 
 
 
-@nb.njit(['Tuple((float32[:,:,:],float32[:],float32[:,:]))(float32[:,:],float32[:,:],int64,int64)'],cathe=True)
+@nb.njit(['Tuple((float32[:,:,:],float32[:],float32[:,:]))(float32[:,:],float32[:,:],int64,int64)'],cache=True)
 def sopt_main_32(S,T,n_iterations,N0):
     n,d=T.shape
     N1=S.shape[0]
@@ -608,7 +608,7 @@ def sopt_main_32(S,T,n_iterations,N0):
 
 
 # method of spot_boneel 
-@nb.njit(['Tuple((float64[:,:,:],float64[:],float64[:,:]))(float64[:,:],float64[:,:],int64,int64)'],cathe=True)
+@nb.njit(['Tuple((float64[:,:,:],float64[:],float64[:,:]))(float64[:,:],float64[:,:],int64,int64)'],cache=True)
 def spot_bonneel(S,T,n_projections=20,n_iterations=200):
     
     '''
@@ -670,7 +670,7 @@ def spot_bonneel(S,T,n_projections=20,n_iterations=200):
     return rotation_list,scalar_list,beta_list    
 
 
-@nb.njit(['Tuple((float32[:,:,:],float32[:],float32[:,:]))(float32[:,:],float32[:,:],int64,int64)'],cathe=True)
+@nb.njit(['Tuple((float32[:,:,:],float32[:],float32[:,:]))(float32[:,:],float32[:,:],int64,int64)'],cache=True)
 def spot_bonneel_32(S,T,n_projections=20,n_iterations=200):
     '''
     Parameters: 
@@ -730,7 +730,7 @@ def spot_bonneel_32(S,T,n_projections=20,n_iterations=200):
 
 
 
-@nb.njit(['Tuple((float64[:,:,:],float64[:],float64[:,:]))(float64[:,:],float64[:,:],int64)'],cathe=True)
+@nb.njit(['Tuple((float64[:,:,:],float64[:],float64[:,:]))(float64[:,:],float64[:,:],int64)'],cache=True)
 def icp_du(S,T,n_iterations):
     '''
     Parameters: 
@@ -791,7 +791,7 @@ def icp_du(S,T,n_iterations):
     return rotation_list,scalar_list,beta_list  
 
 
-@nb.njit(['Tuple((float32[:,:,:],float32[:],float32[:,:]))(float32[:,:],float32[:,:],int64)'],cathe=True)
+@nb.njit(['Tuple((float32[:,:,:],float32[:],float32[:,:]))(float32[:,:],float32[:,:],int64)'],cache=True)
 def icp_du_32(S,T,n_iterations):
     '''
     Parameters: 
@@ -851,7 +851,7 @@ def icp_du_32(S,T,n_iterations):
     return rotation_list,scalar_list,beta_list  
 
 
-@nb.njit(['Tuple((float64[:,:,:],float64[:],float64[:,:]))(float64[:,:],float64[:,:],int64)'],cathe=True)
+@nb.njit(['Tuple((float64[:,:,:],float64[:],float64[:,:]))(float64[:,:],float64[:,:],int64)'],cache=True)
 def icp_umeyama(S,T,n_iterations):
     '''
     Parameters: 
@@ -911,7 +911,7 @@ def icp_umeyama(S,T,n_iterations):
     return rotation_list,scalar_list,beta_list  
 
 
-@nb.njit(['Tuple((float32[:,:,:],float32[:],float32[:,:]))(float32[:,:],float32[:,:],int64)'],cathe=True)
+@nb.njit(['Tuple((float32[:,:,:],float32[:],float32[:,:]))(float32[:,:],float32[:,:],int64)'],cache=True)
 def icp_umeyama_32(S,T,n_iterations):
     '''
     Parameters: 

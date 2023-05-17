@@ -17,8 +17,22 @@ from numba.typed import List
 #     print('here')
 
 # print('here')
-@nb.njit()
-def cost_function(x,y,cache=True): 
+
+@nb.njit(cache=True)
+def argmin_nb(X,Y):
+    Min=np.inf
+    ind=0
+    m=Y.shape[0]
+    for i in range(m):
+        cost_xy=X[i]-Y[i]
+        if cost_xy<Min:
+            Min=cost_xy
+            ind=i
+    return ind
+
+
+@nb.njit(cache=True)
+def cost_function(x,y,p=2): 
     ''' 
     case 1:
         input:
@@ -34,7 +48,7 @@ def cost_function(x,y,cache=True):
             (x-y)**2 n*1 float np array, whose i-th entry is (x_i-y_i)**2
     '''
 #    V=np.square(x-y) #**p
-    V=np.power(x-y,2)
+    V=np.abs(x-y)**p
     return V
 
 
@@ -56,7 +70,7 @@ def cost_function(x,y,cache=True):
 #     return XT
 
 
-@nb.njit(['float64[:,:](float64[:],float64[:])','float32[:,:](float32[:],float32[:])'],fastmath=True,cathe=True)
+@nb.njit(['float64[:,:](float64[:],float64[:])','float32[:,:](float32[:],float32[:])'],fastmath=True,cache=True)
 def cost_matrix(X,Y):
     '''
     input: 
@@ -71,12 +85,25 @@ def cost_matrix(X,Y):
     return M
 
 
+@nb.njit(cache=True)
+def argmin_nb(array):
+    Min=np.inf
+    Min_ind=0
+    n=array.shape[0]
+    for i in range(n):
+        val=array[i]
+        if val<Min:
+            Min=val
+            Min_ind=i
+    return Min_ind,Min
+
+
 
 
 
 
 #@nb.njit(fastmath=True)
-@nb.njit(['float32[:,:](float32[:,:],float32[:,:])','float64[:,:](float64[:,:],float64[:,:])'],fastmath=True,cathe=True)
+@nb.njit(['float32[:,:](float32[:,:],float32[:,:])','float64[:,:](float64[:,:],float64[:,:])'],fastmath=True,cache=True)
 def cost_matrix_d(X,Y):
     '''
     input: 
@@ -100,7 +127,7 @@ def cost_matrix_d(X,Y):
 
 
 
-@nb.njit(['Tuple((int64,float32))(float32,float32[:])','Tuple((int64,float64))(float64,float64[:])'],fastmath=True,cathe=True) 
+@nb.njit(['Tuple((int64,float32))(float32,float32[:])','Tuple((int64,float64))(float64,float64[:])'],fastmath=True,cache=True) 
 def closest_y(x,Y):
     '''
     Parameters
@@ -122,8 +149,8 @@ def closest_y(x,Y):
     return min_index,min_cost
 
 
-@nb.njit(['int64[:](float64[:,:])','int64[:](float32[:,:])'],fastmath=True)
-def closest_y_M(M,cathe=True):
+@nb.njit(['int64[:](float64[:,:])','int64[:](float32[:,:])'],fastmath=True,cache=True)
+def closest_y_M(M):
     '''
     Parameters
     ----------
@@ -146,7 +173,7 @@ def closest_y_M(M,cathe=True):
 
 
 
-@nb.njit(['int64[:],int64'],cathe=True) 
+@nb.njit(['int64[:],int64'],cache=True) 
 def index_adjust(L,j_start=0):
     '''
 
@@ -173,7 +200,7 @@ def index_adjust(L,j_start=0):
 
          
 
-@nb.njit(['Tuple((int64,int64))(int64[:])'],cathe=True)  
+@nb.njit(['Tuple((int64,int64))(int64[:])'],cache=True)  
 def startindex(L_pre):
     '''
     Parameters
@@ -217,7 +244,7 @@ def startindex(L_pre):
     return i_start,0
 
 
-@nb.njit(['Tuple((int64,int64))(int64[:])'],cathe=True)
+@nb.njit(['Tuple((int64,int64))(int64[:])'],cache=True)
 def startindex_np(L_pre):
     '''
     Parameters
@@ -256,7 +283,7 @@ def startindex_np(L_pre):
     j_start=max(0,L_pre.max()+1)
     return i_start,j_start
 
-@nb.njit(['int64[:](int64,int64)'],fastmath=True,cathe=True)
+@nb.njit(['int64[:](int64,int64)'],fastmath=True,cache=True)
 def arange(start,end):
     n=end-start
     L=np.zeros(n,np.int64)
@@ -266,7 +293,7 @@ def arange(start,end):
 
 
 
-@nb.njit(['Tuple((int64,int64))(int64[:])'],cathe=True)
+@nb.njit(['Tuple((int64,int64))(int64[:])'],cache=True)
 def unassign_y(L1):
     '''
     Parameters
@@ -308,7 +335,7 @@ def unassign_y(L1):
 
 
 
-@nb.njit(['Tuple((int64,int64))(int64[:])'],cathe=True)
+@nb.njit(['Tuple((int64,int64))(int64[:])'],cache=True)
 def unassign_y_nb(L1):
     '''
     Parameters
@@ -378,7 +405,7 @@ def recover_indice_T(indice_X,indice_Y,L):
 
 
 
-@nb.njit(['int64[:](int64[:],int64[:],int64[:])'],cathe=True)
+@nb.njit(['int64[:](int64[:],int64[:],int64[:])'],cache=True)
 def recover_indice(indice_X,indice_Y,L):
     '''
     input:
@@ -436,7 +463,7 @@ def recover_indice_M(indice_X,indice_Y,plans):
     return mapping_final
 
 
-@nb.njit(['int64[:,:](int64[:],int64)'],fastmath=True,cathe=True)
+@nb.njit(['int64[:,:](int64[:],int64)'],fastmath=True,cache=True)
 def array_to_matrix(L,m):
     '''
     Parameters
@@ -463,7 +490,7 @@ def array_to_matrix(L,m):
         plan[i,L[i]]=1
     return plan
 
-@nb.njit(['int64[:](int64[:,:])'],fastmath=True,cathe=True)
+@nb.njit(['int64[:](int64[:,:])'],fastmath=True,cache=True)
 #@nb.njit(fastmath=True)
 def L_to_pi(L_lp):
     '''
@@ -567,7 +594,7 @@ def L_to_pi(L_lp):
 #     L_pre=L.copy()
 #     return cost,L,cost_pre,L_pre
 
-@nb.njit(['Tuple((float64,int64[:],float64,int64[:]))(int64,float64)'],cathe=True)
+@nb.njit(['Tuple((float64,int64[:],float64,int64[:]))(int64,float64)'],cache=True)
 def empty_Y_opt(n,Lambda):
     '''
 
@@ -604,7 +631,7 @@ def empty_Y_opt(n,Lambda):
     L_pre=L.copy()
     return cost,L,cost_pre,L_pre
 
-@nb.njit(['Tuple((float32,int64[:],float32,int64[:]))(int64,float32)'],cathe=True)
+@nb.njit(['Tuple((float32,int64[:],float32,int64[:]))(int64,float32)'],cache=True)
 def empty_Y_opt_32(n,Lambda):
     '''
 
@@ -680,7 +707,7 @@ def empty_Y_opt_T(n: 'int',Lambda: 'torch.Tensor'):
     L_pre=L.clone()
     return cost,L,cost_pre,L_pre
 
-@nb.njit(['Tuple((float64,int64[:],float64,int64[:]))(float64[:,:],int64,int64,float64)'],cathe=True)
+@nb.njit(['Tuple((float64,int64[:],float64,int64[:]))(float64[:,:],int64,int64,float64)'],cache=True)
 #@nb.njit()
 def one_x_opt(M1,i_act,j_act,Lambda): 
     '''
@@ -730,7 +757,7 @@ def one_x_opt(M1,i_act,j_act,Lambda):
     else:
         return c_xy,np.array([j_act],np.int64),np.float64(0),np.empty(0,np.int64)
 
-@nb.njit(fastmath=True,cathe=True)
+@nb.njit(fastmath=True,cache=True)
 def merge_list(L):
     n=len(L) 
     merged_array=L[0]
@@ -740,7 +767,7 @@ def merge_list(L):
   
     
 
-@nb.njit(['Tuple((float64,int64[:],float64,int64[:]))(float64[:,:],int64,int64,float64)'],cathe=True)
+@nb.njit(['Tuple((float64,int64[:],float64,int64[:]))(float64[:,:],int64,int64,float64)'],cache=True)
 def one_x_opt_np(M1,i_act,j_act,Lambda): 
     '''
 
@@ -795,13 +822,13 @@ def one_x_opt_np(M1,i_act,j_act,Lambda):
 
     
 
-@nb.njit(['float32[:](float32[:,:],int64[:],int64[:])','float64[:](float64[:,:],int64[:],int64[:])'],fastmath=True,cathe=True)
+@nb.njit(['float32[:](float32[:,:],int64[:],int64[:])','float64[:](float64[:,:],int64[:],int64[:])'],fastmath=True,cache=True)
 def matrix_take(X,L1,L2):
     return np.array([X[L1[i],L2[i]] for i in range(L1.shape[0])])
 
 
 
-@nb.njit(['(float64[:])(float64[:],float64[:],int64)'],fastmath=True,cathe=True)
+@nb.njit(['(float64[:])(float64[:],float64[:],int64)'],fastmath=True,cache=True)
 def Gaussian_mixture(mu_list, variance_list,n):
     N=mu_list.shape[0]
     indices=np.random.randint(0,N,n)
@@ -810,7 +837,7 @@ def Gaussian_mixture(mu_list, variance_list,n):
         X[i]=np.random.normal(mu_list[indices[i]],variance_list[indices[i]])
     return X
 
-@nb.njit(['(float32[:])(float32[:],float32[:],int64)'],fastmath=True,cathe=True)
+@nb.njit(['(float32[:])(float32[:],float32[:],int64)'],fastmath=True,cache=True)
 def Gaussian_mixture_32(mu_list, variance_list,n):
     N=mu_list.shape[0]
     indices=np.random.randint(0,N,n)
