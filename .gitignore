@@ -4,3 +4,4 @@ test.ipynb
 .ipynb_checkpoints/test-checkpoint.ipynb
 sopt/lib_ot.py
 sopt/library.py
+C++/hello.cpp
