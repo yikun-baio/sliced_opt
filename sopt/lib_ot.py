@@ -642,7 +642,7 @@ def getPiFromCol(M,N,piCol):
     return pi
 
     
-@nb.njit(nb.types.Tuple((nb.float64,nb.float64[:],nb.float64[:],nb.int64[:],nb.int64[:]))(nb.float64[:,:],nb.float64),cache=True)
+@nb.njit(nb.types.Tuple((nb.float64,nb.float64[:],nb.float64[:],nb.int64[:],nb.int64[:]))(nb.float64[:,:],nb.float64),fastmath=True,cache=True)
 def solve_opt(c,lam): #,verbose=False):
     M,N=c.shape
     phi=np.full(shape=M,fill_value=-np.inf)
@@ -973,6 +973,7 @@ def getPiFromCol(M,N,piCol):
     for i,j in zip(piCol,np.arange(N)):
         if i>-1: pi[i,j]=1
     return pi
+
 @nb.njit()
 def solve(c,lam,verbose=False):
     M,N=c.shape

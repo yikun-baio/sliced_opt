@@ -70,7 +70,21 @@ def cost_function(x,y,p=2):
 #     return XT
 
 
-@nb.njit(['float64[:,:](float64[:],float64[:])','float32[:,:](float32[:],float32[:])'],fastmath=True,cache=True)
+# @nb.njit(['float64[:,:](float64[:],float64[:])','float32[:,:](float32[:],float32[:])'],fastmath=True,cache=True)
+# def cost_matrix(X,Y):
+#     '''
+#     input: 
+#         X: (n,) float np array
+#         Y: (m,) float np array
+#     output:
+#         M: n*m matrix, M_ij=c(X_i,Y_j) where c is defined by cost_function.
+    
+#     '''
+#     XT=np.expand_dims(X,1)
+#     M=cost_function(XT,Y)    
+#     return M
+
+@nb.njit(cache=True,fastmath=False,parallel=True)
 def cost_matrix(X,Y):
     '''
     input: 
@@ -80,8 +94,12 @@ def cost_matrix(X,Y):
         M: n*m matrix, M_ij=c(X_i,Y_j) where c is defined by cost_function.
     
     '''
-    XT=np.expand_dims(X,1)
-    M=cost_function(XT,Y)    
+#    XT=np.expand_dims(X,1)
+    n,m=X.shape[0],Y.shape[0]
+    M=np.zeros((n,m))
+    for i in nb.prange(n):
+        for j in nb.prange(m):
+            M[i,j]=(X[i]-Y[j])**2   
     return M
 
 

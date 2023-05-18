@@ -1,3 +1,6 @@
 .DS_Store
 test 4.ipynb
 test.ipynb
+.ipynb_checkpoints/test-checkpoint.ipynb
+sopt/lib_ot.py
+sopt/library.py
