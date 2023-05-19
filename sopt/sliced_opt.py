@@ -15,34 +15,6 @@ from .lib_ot import *
 
 
 
-def random_projections_T(d,n_projections,Type): #,device='cpu',dtype=torch.float,Type=None):
-    '''
-    input: 
-    d: int 
-    n_projections: int
-
-    output: 
-    projections: d*n torch tensor
-
-    '''
-    if Type==0:
-#        torch.manual_seed(0)
-        Gaussian_vector=np.random.normal(0,1,size=[d,n_projections],device=device,dtype=dtype)
-        projections=Gaussian_vector/np.sqrt(np.sum(np.square(Gaussian_vector),0))
-        projections=projections.T
-    elif Type==1:
-#        np.random.seed(0)
-        r=int(n_projections/d)+1
-        projections=np.concatenate([ortho_group.rvs(d) for i in range(r)],axis=1)
-        projections=projections[0:n_projections]
-#        projections=torch.from_numpy(projections).to(device=device).to(dtype=dtype).T
-    else:
-        print('Type must be None or orth')
-    return projections
-
-
-
-
 @nb.njit(['float64[:,:](int64,int64,int64)'],fastmath=True,cache=True)
 def random_projections(d,n_projections,Type=0):
     '''
@@ -99,7 +71,7 @@ def random_projections_32(d,n_projections,Type=0):
     return projections
 
 
-#@nb.njit([nb.types.Tuple((nb.float64[:],nb.int64[:,:]))(nb.float64[:,:],nb.float64[:,:],nb.float64)],parallel=True,fastmath=True)
+
 @nb.njit(['Tuple((float64[:],int64[:,:]))(float64[:,:],float64[:,:],float64[:])'],parallel=True,fastmath=True,cache=True)
 def opt_plans(X_sliced,Y_sliced,Lambda_list):
     N,n=X_sliced.shape

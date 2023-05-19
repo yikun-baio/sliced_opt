@@ -28,10 +28,111 @@ from ot.lp.emd_wrap import emd_c, check_result, emd_1d_sorted
 
 from .library import *
 
+
+p=2  # global variable, the ground cost is (x-y)**p
+
 #@nb.njit(nb.types.Tuple((nb.float64,nb.int64[:]))(nb.float64[:],nb.float64[:],nb.float64))
 # solve opt by linear programming 
  
+@nb.njit(cache=True)
+def argmin_nb(X,Y):
+    Min=np.inf
+    ind=0
+    m=Y.shape[0]
+    for i in range(m):
+        cost_xy=X[i]-Y[i]
+        if cost_xy<Min:
+            Min=cost_xy
+            ind=i
+    return ind
 
+
+@nb.njit(cache=True)
+def cost_function(x,y,p=2): 
+    ''' 
+    case 1:
+        input:
+            x: float number
+            y: float number 
+        output:
+            (x-y)**2: float number 
+    case 2: 
+        input: 
+            x: n*1 float np array
+            y: n*1 float np array
+        output:
+            (x-y)**2 n*1 float np array, whose i-th entry is (x_i-y_i)**2
+    '''
+#    V=np.square(x-y) #**p
+    V=np.abs(x-y)**p
+    return V
+
+
+
+# @nb.njit(['float64[:,:](float64[:])'],fastmath=True)
+# def transpose(X):
+#     n=X.shape[0]
+#     XT=np.zeros((n,1),np.float64)
+#     for i in range(n):
+#         XT[i]=X[i]
+#     return XT
+
+# @nb.njit(['float32[:,:](float32[:])'],fastmath=True)
+# def transpose_32(X):
+#     n=X.shape[0]
+#     XT=np.zeros((n,1),np.float32)
+#     for i in range(n):
+#         XT[i]=X[i]
+#     return XT
+
+
+# @nb.njit(['float64[:,:](float64[:],float64[:])','float32[:,:](float32[:],float32[:])'],fastmath=True,cache=True)
+# def cost_matrix(X,Y):
+#     '''
+#     input: 
+#         X: (n,) float np array
+#         Y: (m,) float np array
+#     output:
+#         M: n*m matrix, M_ij=c(X_i,Y_j) where c is defined by cost_function.
+    
+#     '''
+#     XT=np.expand_dims(X,1)
+#     M=cost_function(XT,Y)    
+#     return M
+
+@nb.njit(cache=True,fastmath=False,parallel=True)
+def cost_matrix(X,Y,p=2):
+    '''
+    input: 
+        X: (n,) float np array
+        Y: (m,) float np array
+    output:
+        M: n*m matrix, M_ij=c(X_i,Y_j) where c is defined by cost_function.
+    
+    '''
+#    XT=np.expand_dims(X,1)
+    n,m=X.shape[0],Y.shape[0]
+    M=np.zeros((n,m))
+    for i in nb.prange(n):
+        for j in nb.prange(m):
+            M[i,j]=(X[i]-Y[j])**p   
+    return M
+
+
+@nb.njit(cache=True)
+def argmin_nb(array):
+    Min=np.inf
+    Min_ind=0
+    n=array.shape[0]
+    for i in range(n):
+        val=array[i]
+        if val<Min:
+            Min=val
+            Min_ind=i
+    return Min_ind,Min
+
+
+    
 def opt_lp(mu,nu,M,Lambda,numItermax=100000,numThreads=1):
     """
     Solves the partial optimal transport problem
@@ -316,110 +417,6 @@ def sinkhorn_knopp(mu, nu, M, reg, numItermax=1000000):
 
     return gamma
 
-
-@nb.njit((nb.float32[:,:])(nb.float32[:],nb.float32[:],nb.float32[:,:],nb.float32,nb.int64),cache=True)
-def sinkhorn_knopp_32(mu, nu, M, reg, numItermax=1000000):
-    r"""
-    we modify the code in PythonOT
-    Solve the entropic regularization optimal transport problem and return the OT matrix
-
-    The function solves the following optimization problem:
-
-    .. math::
-        \gamma = \mathop{\arg \min}_\gamma \quad \langle \gamma, \mathbf{M} \rangle_F +
-        \mathrm{reg}\cdot\Omega(\gamma)
-
-        s.t. \ \gamma \mathbf{1} &= \mathbf{a}
-
-             \gamma^T \mathbf{1} &= \mathbf{b}
-
-             \gamma &\geq 0
-    where :
-
-    - :math:`\mathbf{M}` is the (`dia_mu`, `dia_nu`) metric cost matrix
-    - :math:`\Omega` is the entropic regularization term
-      :math:`\Omega(\gamma)=\sum_{i,j} \gamma_{i,j}\log(\gamma_{i,j})`
-    - :math:`\mathbf{a}` and :math:`\mathbf{b}` are source and target
-      weights (histograms, both sum to 1)
-
-    The algorithm used for solving the problem is the Sinkhorn-Knopp
-    matrix scaling algorithm as proposed in :ref:`[2] <references-sinkhorn-knopp>`
-
-
-    Parameters
-    ----------
-    mu : array-like, shape (mu,) float32
-        samples weights in the source domain
-    nu : array-like, shape (nu,) float32
-    M : array-like, shape (dia_mu, dia_nu) float32
-        loss matrix
-    reg : float
-        Regularization term >0
-    numItermax : int64, optional 
-        Max number of iterations 
-    stopThr : float32, optional 
-        Stop threshold on error (>0)
-
-    Returns
-    -------
-    gamma : array-like, shape (dim_mu, dim_nu)
-        Optimal transportation matrix for the given parameters
-
-    Examples
-    --------
-
-    >>> import ot
-    >>> mu=[.5, .5]
-    >>> nu=[.5, .5]
-    >>> M=[[0., 1.], [1., 0.]]
-    >>> ot.sinkhorn(a, b, M, 1)
-    array([[0.36552929, 0.13447071],
-           [0.13447071, 0.36552929]])
-
-
-    .. _references-sinkhorn-knopp:
-    References
-    ----------
-
-    .. [2] M. Cuturi, Sinkhorn Distances : Lightspeed Computation
-        of Optimal Transport, Advances in Neural Information
-        Processing Systems (NIPS) 26, 2013
-
-
-    See Also
-    -------
-
-    """
-
-    # init data
-    dim_mu = mu.shape[0]
-    dim_nu = nu.shape[0]
-    stopThr=1e-9
-    
-    #initialize u,v 
-    u = np.ones(dim_mu,dtype=np.float32) # is exp()
-    v = np.ones(dim_nu,dtype=np.float32)
-
-    K = np.exp(-M/reg)
-    
-    for ii in range(numItermax):
-        u_pre=u.copy()
-        v_pre=v.copy()
-        v = nu / np.dot(K.T, u)
-        u = mu / np.dot(K, v)
-        if ii % 10 == 0:
-            # we can speed up the process by checking for the error only all
-            # the 10th iterations
-            err = np.linalg.norm(u_pre - u)+np.linalg.norm(v_pre - v)  # violation of marginal
-            if err < stopThr:
-                break
-    if ii==numItermax-1:
-        print('warning, maximum iteration reached')
-    
-    gamma=np.expand_dims(u,1)*(K*v.T)
-
-    return gamma
-
 @nb.njit(['(float64[:,:])(float64[:],float64[:],float64[:,:],float64,float64,int64)'],cache=True)
 def sinkhorn_knopp_opt(mu, nu, M, Lambda, reg, numItermax=1000):
     r"""
@@ -521,107 +518,6 @@ def sinkhorn_knopp_opt(mu, nu, M, Lambda, reg, numItermax=1000):
 
     return gamma
     
-@nb.njit(['(float32[:,:])(float32[:],float32[:],float32[:,:],float32,float32,int64)'],cache=True)
-def sinkhorn_knopp_opt_32(mu, nu, M, Lambda, reg, numItermax=1000000):
-    r"""
-    Solve the entropic regularization optimal transport problem and return the OT matrix
-
-    The function solves the following optimization problem:
-
-    .. math::
-        \gamma = \mathop{\arg \min}_\gamma \quad \langle \gamma, \mathbf{M} \rangle_F +
-        \mathrm{reg}\cdot\Omega(\gamma)
-
-        s.t. \ \gamma \mathbf{1} &= \mathbf{a}
-
-             \gamma^T \mathbf{1} &= \mathbf{b}
-
-             \gamma &\geq 0
-    where :
-
-    - :math:`\mathbf{M}` is the (`dia_mu`, `dia_nu`) metric cost matrix
-    - :math:`\Omega` is the entropic regularization term
-      :math:`\Omega(\gamma)=\sum_{i,j} \gamma_{i,j}\log(\gamma_{i,j})`
-    - :math:`\mathbf{a}` and :math:`\mathbf{b}` are source and target
-      weights (histograms, both sum to 1)
-
-    The algorithm used for solving the problem is the Sinkhorn-Knopp
-    matrix scaling algorithm as proposed in :ref:`[2] <references-sinkhorn-knopp>`
-
-
-    Parameters
-    ----------
-    mu : array-like, shape (mu,) float64
-        samples weights in the source domain
-    nu : array-like, shape (nu,) float64
-        samples in the target domain, 
-    M : array-like, shape (dia_mu, dia_nu)
-        loss matrix
-    reg : float
-        Regularization term >0
-    numItermax : int64, optional
-        Max number of iterations
-    stopThr : float32, optional
-        Stop threshold on error (>0)
-
-    Returns
-    -------
-    gamma : array-like, shape (dim_mu, dim_nu)
-        Optimal transportation matrix for the given parameters
-
-    Examples
-    --------
-
-    >>> import ot
-    >>> mu=[.5, .5]
-    >>> nu=[.5, .5]
-    >>> M=[[0., 1.], [1., 0.]]
-    >>> ot.sinkhorn(a, b, M, 1)
-    array([[0.36552929, 0.13447071],
-           [0.13447071, 0.36552929]])
-
-
-    .. _references-sinkhorn-knopp:
-    References
-    ----------
-
-    .. [2] M. Cuturi, Sinkhorn Distances : Lightspeed Computation
-        of Optimal Transport, Advances in Neural Information
-        Processing Systems (NIPS) 26, 2013
-
-
-    See Also
-    --------
-    ot.lp.emd : Unregularized OT
-    ot.optim.cg : General regularized OT
-
-    """
-
-    # init data
-    dim_mu = mu.shape[0]
-    dim_nu = nu.shape[0]
-    stopThr=np.float32(1e-9)
-    
-    #initialize u,v 
-    u = np.ones(dim_mu,dtype=np.float32) # is exp()
-    v = np.zeros(dim_nu,dtype=np.float32)
-
-    K = np.exp(-M/reg)
-    
-    for ii in range(numItermax):
-        u_pre=u.copy()
-        v_pre=v.copy()
-        v = np.minimum(nu / np.dot(K.T, u),Lambda)
-        u = np.minimum(mu / np.dot(K, v),Lambda)
-        if ii % 10 == 0:
-            # we can speed up the process by checking for the error only all
-            # the 10th iterations
-            err = np.linalg.norm(u_pre - u)+np.linalg.norm(v_pre - v)  # violation of marginal
-            if err < stopThr:
-                break
-    gamma=np.expand_dims(u,1)*(K*v.T)
-
-    return gamma
 
 def getCost(x,y,p=2.):
     """Squared Euclidean distance cost for two 1d arrays"""
@@ -798,164 +694,6 @@ def solve_opt(c,lam): #,verbose=False):
 
 
 
-@nb.njit(nb.types.Tuple((nb.float32,nb.float32[:],nb.float32[:],nb.int64[:],nb.int64[:]))(nb.float32[:,:],nb.float32),cache=True)
-def solve_opt_32(c,lam): #,verbose=False):
-    M,N=c.shape
-    
-    phi=np.full(shape=M,fill_value=-np.inf,dtype=np.float32)
-    psi=np.full(shape=N,fill_value=lam,dtype=np.float32)
-    # to which cols/rows are rows/cols currently assigned? -1: unassigned
-    piRow=np.full(M,-1,dtype=np.int64)
-    piCol=np.full(N,-1,dtype=np.int64)
-    # a bit shifted from notes. K is index of the row that we are currently processing
-    K=0
-    # Dijkstra distance array, will be used and initialized on demand in case 3 subroutine
-    dist=np.full(M,np.inf,dtype=np.float32)
-
-    jLast=-1
-    while K<M:
-#        if verbose: print(f"K={K}")
-        if jLast==-1:
-            j=np.argmin(c[K,:]-psi)
-        else:
-            j=jLast+np.argmin(c[K,jLast:]-psi[jLast:])
-        val=c[K,j]-psi[j]
-        if val>=lam:
-            #if verbose: print("case 1")
-            phi[K]=lam
-            K+=1
-        elif piCol[j]==-1:
-            #if verbose: print("case 2")
-            piCol[j]=K
-            piRow[K]=j
-            phi[K]=val
-            K+=1
-            jLast=j
-        else:
-            #if verbose: print("case 3")
-            phi[K]=val
-            #assert piCol[j]==K-1
-            # Dijkstra distance vector and currently explored radius
-            dist[K]=np.float32(0)
-            dist[K-1]=np.float32(0)
-            v=np.float32(0)
-
-            # iMin and jMin indicate lower end of range of contiguous rows and cols
-            # that are currently examined in subroutine;
-            # upper end is always K and j
-            iMin=K-1
-            jMin=j
-            # threshold until an entry of phi hits lam
-            if phi[K]>phi[K-1]:
-                lamDiff=lam-phi[K]
-                lamInd=K
-            else:
-                lamDiff=lam-phi[K-1]
-                lamInd=K-1
-            resolved=False
-            while not resolved:
-                # threshold until constr iMin,jMin-1 becomes active
-                if jMin>0:
-                    lowEndDiff=c[iMin,jMin-1]-phi[iMin]-psi[jMin-1]
-                    # catch: empty rows in between that could numerically be skipped
-                    if iMin>0:
-                        if piRow[iMin-1]==-1:
-                            lowEndDiff=np.float32(np.infty)
-                else:
-                    lowEndDiff=np.float32(np.infty)
-                # threshold for upper end
-                if j<N-1:
-                    hiEndDiff=c[K,j+1]-phi[K]-psi[j+1]-v
-                else:
-                    hiEndDiff=np.float32(np.infty)
-                if hiEndDiff<=min(lowEndDiff,lamDiff):
-                 #  if verbose: print("case 3.1")
-                    v+=hiEndDiff
-                    # domain1=arange(iMin,K)
-                    # phi[domain1]+=v-dist[domain1]
-                    # psi[piRow[domain1]]-=v-dist[domain1]
-                    # i=K-1
-                    
-                    for i in range(iMin,K):
-                        phi[i]+=v-dist[i]
-                        psi[piRow[i]]-=v-dist[i]
-                    phi[K]+=v
-                    piRow[K]=j+1
-                    piCol[j+1]=K
-                    jLast=j+1
-                    resolved=True
-                elif lowEndDiff<=min(hiEndDiff,lamDiff):
-                    if piCol[jMin-1]==-1:
-                    #    if verbose: print("case 3.3a")
-                        v+=lowEndDiff
-                        # domain1=arange(iMin,K)
-                        # phi[domain1]+=v-dist[domain1]
-                        # psi[piRow[domain1]]-=v-dist[domain1]
-                        # i=K-1
-                        for i in range(iMin,K):
-                            phi[i]+=v-dist[i]
-                            psi[piRow[i]]-=v-dist[i]
-                        phi[K]+=v
-                        # "flip" assignment along whole chain
-                        jPrime=jMin
-                        piCol[jMin-1]=iMin
-                        piRow[iMin]-=1
-                        # domain2=arange(iMin+1,K)
-                        # piCol[domain2-(iMin+1)+jPrime]+=1
-                        # piRow[domain2]-=1
-                        # jPrime=K-(iMin+1)+jPrime
-                        # i=K-1
-                        for i in range(iMin+1,K):
-                            piCol[jPrime]+=1
-                            piRow[i]-=1
-                            jPrime+=1
-                        piRow[K]=j #jPrime
-                        piCol[j]+=1 #jPrime
-                        resolved=True
-                    else:
-                      #  if verbose: print("case 3.3b")
-                      #  assert piCol[jMin-1]==iMin-1
-                        v+=lowEndDiff
-                        dist[iMin-1]=v
-                        # adjust distance to threshold
-                        lamDiff-=lowEndDiff
-                        iMin-=1
-                        jMin-=1
-                        if lam-phi[iMin]<lamDiff:
-                            lamDiff=lam-phi[iMin]
-                            lamInd=iMin
-
-                else:
-                 #   if verbose: print(f"case 3.1, lamInd={lamInd}")
-                    v+=lamDiff
-                    for i in range(iMin,K):
-                        phi[i]+=v-dist[i]
-                        psi[piRow[i]]-=v-dist[i]
-                    phi[K]+=v
-                    # "flip" assignment from lambda touching row onwards
-                    if lamInd<K:
-                        jPrime=piRow[lamInd]
-                        piRow[lamInd]=-1
-                        domain1=arange(lamInd+1,K)
-                        piRow[domain1]-=1
-                        piCol[domain1-(lamInd+1)+jPrime]+=1
-                        jPrime=K-(lamInd+1)+jPrime
-                        i=K-1
-                        # for i in range(lamInd+1,K):
-                        #     piCol[jPrime]+=1
-                        #     piRow[i]-=1
-                        #     jPrime+=1
-                        piRow[K]=jPrime
-                        piCol[jPrime]+=1
-                    resolved=True
-            #assert np.min(c-phi.reshape((M,1))-psi.reshape((1,N)))>=-1E-15
-            K+=1
-    objective=np.sum(phi)+np.sum(psi)
-    #print('done')
-    return objective,phi,psi,piRow,piCol
-
-
-
 def getCost(x,y,p=2.):
     """Squared Euclidean distance cost for two 1d arrays"""
     c=(x.reshape((-1,1))-y.reshape((1,-1)))
@@ -973,144 +711,6 @@ def getPiFromCol(M,N,piCol):
     for i,j in zip(piCol,np.arange(N)):
         if i>-1: pi[i,j]=1
     return pi
-
-@nb.njit()
-def solve(c,lam,verbose=False):
-    M,N=c.shape
-    
-    phi=np.full(shape=M,fill_value=-np.inf)
-    psi=np.full(shape=N,fill_value=lam)
-    # to which cols/rows are rows/cols currently assigned? -1: unassigned
-    piRow=np.full(M,-1,dtype=int)
-    piCol=np.full(N,-1,dtype=int)
-    # a bit shifted from notes. K is index of the row that we are currently processing
-    K=0
-    # Dijkstra distance array, will be used and initialized on demand in case 3 subroutine
-    dist=np.full(M,np.inf)
-
-    jLast=-1
-    while K<M:
-        if verbose: print(f"K={K}")
-        if jLast==-1:
-            j=np.argmin(c[K,:]-psi)
-        else:
-            j=jLast+np.argmin(c[K,jLast:]-psi[jLast:])
-        val=c[K,j]-psi[j]
-        if val>=lam:
-            if verbose: print("case 1")
-            phi[K]=lam
-            K+=1
-        elif piCol[j]==-1:
-            if verbose: print("case 2")
-            piCol[j]=K
-            piRow[K]=j
-            phi[K]=val
-            K+=1
-            jLast=j
-        else:
-            if verbose: print("case 3")
-            phi[K]=val
-            assert piCol[j]==K-1
-            # Dijkstra distance vector and currently explored radius
-            dist[K]=0.
-            dist[K-1]=0.
-            v=0
-
-            # iMin and jMin indicate lower end of range of contiguous rows and cols
-            # that are currently examined in subroutine;
-            # upper end is always K and j
-            iMin=K-1
-            jMin=j
-            # threshold until an entry of phi hits lam
-            if phi[K]>phi[K-1]:
-                lamDiff=lam-phi[K]
-                lamInd=K
-            else:
-                lamDiff=lam-phi[K-1]
-                lamInd=K-1
-            resolved=False
-            while not resolved:
-                # threshold until constr iMin,jMin-1 becomes active
-                if jMin>0:
-                    lowEndDiff=c[iMin,jMin-1]-phi[iMin]-psi[jMin-1]
-                    # catch: empty rows in between that could numerically be skipped
-                    if iMin>0:
-                        if piRow[iMin-1]==-1:
-                            lowEndDiff=np.infty
-                else:
-                    lowEndDiff=np.infty
-                # threshold for upper end
-                if j<N-1:
-                    hiEndDiff=c[K,j+1]-phi[K]-psi[j+1]-v
-                else:
-                    hiEndDiff=np.infty
-                if hiEndDiff<=min(lowEndDiff,lamDiff):
-                    if verbose: print("case 3.1")
-                    v+=hiEndDiff
-                    for i in range(iMin,K):
-                        phi[i]+=v-dist[i]
-                        psi[piRow[i]]-=v-dist[i]
-                    phi[K]+=v
-                    piRow[K]=j+1
-                    piCol[j+1]=K
-                    jLast=j+1
-                    resolved=True
-                elif lowEndDiff<=min(hiEndDiff,lamDiff):
-                    if piCol[jMin-1]==-1:
-                        if verbose: print("case 3.2a")
-                        v+=lowEndDiff
-                        for i in range(iMin,K):
-                            phi[i]+=v-dist[i]
-                            psi[piRow[i]]-=v-dist[i]
-                        phi[K]+=v
-                        # "flip" assignment along whole chain
-                        jPrime=jMin
-                        piCol[jMin-1]=iMin
-                        piRow[iMin]-=1
-                        for i in range(iMin+1,K):
-                            piCol[jPrime]+=1
-                            piRow[i]-=1
-                            jPrime+=1
-                        piRow[K]=jPrime
-                        piCol[jPrime]+=1
-                        resolved=True
-                    else:
-                        if verbose: print("case 3.2b")
-                        assert piCol[jMin-1]==iMin-1
-                        v+=lowEndDiff
-                        dist[iMin-1]=v
-                        # adjust distance to threshold
-                        lamDiff-=lowEndDiff
-                        iMin-=1
-                        jMin-=1
-                        if lam-phi[iMin]<lamDiff:
-                            lamDiff=lam-phi[iMin]
-                            lamInd=iMin
-
-                else:
-                    if verbose: print(f"case 3.3, lamInd={lamInd}")
-                    v+=lamDiff
-                    for i in range(iMin,K):
-                        phi[i]+=v-dist[i]
-                        psi[piRow[i]]-=v-dist[i]
-                    phi[K]+=v
-                    # "flip" assignment from lambda touching row onwards
-                    if lamInd<K:
-                        jPrime=piRow[lamInd]
-                        piRow[lamInd]=-1
-                        for i in range(lamInd+1,K):
-                            piCol[jPrime]+=1
-                            piRow[i]-=1
-                            jPrime+=1
-                        piRow[K]=jPrime
-                        piCol[jPrime]+=1
-                    resolved=True
-            #assert np.min(c-phi.reshape((M,1))-psi.reshape((1,N)))>=-1E-15
-            K+=1
-    objective=np.sum(phi)+np.sum(psi)
-    return objective,phi,psi,piRow,piCol
-
-
 
 
 
@@ -1171,112 +771,3 @@ def pot(M):
 
 
 
-
-@nb.njit(['Tuple((float32,int64[:]))(float32[:,:])'],cache=True)
-def pot_32(M): 
-    n,m=M.shape 
-    L=np.empty(0,dtype=np.int64) # save the optimal plan
-    cost=np.float32(0)  # save the optimal cost
-    argmin_Y=closest_y_M(M) #M.argmin(1)
- 
-    #initial loop:
-    k=0
-    #xk=X[k]
-    jk=argmin_Y[k]
-    cost_xk_yjk=M[k,jk]
-
-    cost+=cost_xk_yjk
-    L=np.append(L,jk)
-    for k in range(1,n):
-        jk=argmin_Y[k]
-        cost_xk_yjk=M[k,jk]
-        j_last=L[-1]
-    
-        #define consistent term     
-        if jk>j_last:# No conflict, L[-1] is the j last assig
-            cost+=cost_xk_yjk
-            L=np.append(L,jk)
-        else:
-            # this is the case for conflict: 
-
-            # compute the first cost 
-            if j_last+1<=m-1:
-                cost_xk_yjlast1=M[k,j_last+1]
-                cost1=cost+cost_xk_yjlast1
-            else:
-                cost1=np.inf 
-            # compute the second cost 
-            i_act,j_act=unassign_y(L)
-            if j_act>=0:                        
-                L1=np.concatenate((L[0:i_act],np.array([j_act]),L[i_act:]))
-                X_indices=arange(0,k+1)
-                Y_indices=L1
-
-                cost2=np.sum(matrix_take(M,X_indices,Y_indices))
-#                cost2=np.sum(cost_function(X_assign,Y_assign))
-            else:
-                cost2=np.float32(np.inf)
-            if cost1<cost2:
-                cost=cost1
-                L=np.append(L,j_last+1)
-            elif cost2<=cost1:
-                cost=cost2
-                L=L1.copy()    
-    return cost,L
-
-
-
-# @nb.njit(['Tuple((float32,int64[:]))(float32[:],float32[:])'])
-# def pot_32(X,Y): 
-#     n=X.shape[0]
-#     m=Y.shape[0]
-#     L=np.empty(0,dtype=np.int64) # save the optimal plan
-#     dtype=type(X[0])
-#     cost=np.float32(0)  # save the optimal cost
-#     M=cost_matrix(X,Y)    
-#     argmin_Y=closest_y_M(M)
- 
-#     #initial loop:
-#     k=0
-#     jk=argmin_Y[k]
-#     cost_xk_yjk=M[k,jk]
-
-#     cost+=cost_xk_yjk
-#     L=np.append(L,jk)
-#     for k in range(1,n):
-#         jk=argmin_Y[k]
-#         cost_xk_yjk=M[k,jk]
-#         j_last=L[-1]
-    
-#         #define consistent term     
-#         if jk>j_last:# No conflict, L[-1] is the j last assig
-#             cost+=cost_xk_yjk
-#             L=np.append(L,jk)
-#         else:
-#             # this is the case for conflict: 
-
-#             # compute the first cost 
-#             if j_last+1<=m-1:
-#                 cost_xk_yjlast1=M[k,j_last+1]
-#                 cost1=cost+cost_xk_yjlast1
-#             else:
-#                 cost1=np.inf 
-#             # compute the second cost 
-#             i_act,j_act=unassign_y(L)
-#             if j_act>=0:                        
-#                 L1=np.concatenate((L[0:i_act],np.array([j_act]),L[i_act:]))
-#                 X_indices=arange(0,k+1)
-#                 Y_indices=L1
-# #                Y_assign=Y[L1]
-# #                X_assign=X[0:k+1]
-#                 cost2=np.sum(matrix_take(M,X_indices,Y_indices))
-# #                cost2=np.sum(cost_function(X_assign,Y_assign))
-#             else:
-#                 cost2=np.float32(np.inf)
-#             if cost1<cost2:
-#                 cost=cost1
-#                 L=np.append(L,j_last+1)
-#             elif cost2<=cost1:
-#                 cost=cost2
-#                 L=L1.copy()    
-#     return cost,L

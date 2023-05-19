@@ -88,27 +88,6 @@ def transform(Xs0,Xs,Xs1,batch_size=128):
     return transp_Xs
 
 
-@nb.njit(['float32[:,:](float32[:,:],float32[:,:],float32[:,:],int64)'],fastmath=True,cache=True)
-def transform_32(Xs0,Xsc,Xs,batch_size=128):    
-    
-    # # perform out of sample mapping
-    n,m=Xs0.shape
-    indices = np.arange(0,Xs0.shape[0])
-    batch_ind = [indices[i:i + batch_size] for i in np.arange(0, len(indices), batch_size)]
-    transp_Xs = np.zeros((n,m),dtype=np.float32)
-    #transp_Xs=[]
-    for bi in batch_ind:
-        # get the nearest neighbor in the source domain
-        D0 = cost_matrix_d(Xs0[bi], Xsc)
-        idx = np.argmin(D0, axis=1)
-        # define the transported points
-        transp_Xs[bi] =Xs0[bi]+Xs[idx, :]  - Xsc[idx, :]
-#        transp_Xs_=Xs0[bi]+Xs1[idx, :]  - Xs[idx, :]
-        #print(transp_Xs)
-#        transp_Xs.append(transp_Xs_)
-#    transp_Xs = np.concatenate(transp_Xs, axis=0)
-    return transp_Xs
-
 
 @nb.njit(['float64[:,:](float64[:,:],float64[:,:],float64[:,:],float64[:,:],int64)'],cache=True)
 def spot_transfer(Xs0,Xt0,Xs,Xt,n_projections=400):
@@ -122,28 +101,7 @@ def spot_transfer(Xs0,Xt0,Xs,Xt,n_projections=400):
     return transp_Xs
 
 
-@nb.njit(['float32[:,:](float32[:,:],float32[:,:],float32[:,:],float32[:,:],int64)'],cache=True)
-def spot_transfer_32(Xs0,Xt0,Xs,Xt,n_projections=400):
-    n,d=Xs.shape
-    #np.random.seed(0)
-    projections=random_projections_32(d,n_projections,1)
-    Xsc=Xs.copy()
-    X_correspondence_pot_32(Xs,Xt,projections)     
-    batch_size=128
-    transp_Xs=transform_32(Xs0,Xsc,Xs,batch_size)
-    return transp_Xs
 
-
-@nb.njit(['float32[:,:](float32[:,:],float32[:,:],float32[:,:],float32[:,:],float32[:],int64)'],cache=True)
-def sopt_transfer_32(Xs0,Xt0,Xs,Xt,Lambda_list,n_projections=400):    
-    n,d=Xs.shape
-    #np.random.seed(0)
-    projections=random_projections_32(d,n_projections,1)
-    Xsc=Xs.copy()
-    X_correspondence_32(Xs,Xt,projections,Lambda_list)     
-    batch_size=128
-    transp_Xs=transform_32(Xs0,Xsc,Xs,batch_size)
-    return transp_Xs
 
 @nb.njit(['float64[:,:](float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:],int64)'],cache=True)
 def sopt_transfer(Xs0,Xt0,Xs,Xt,Lambda_list,n_projections=400):    
@@ -154,27 +112,6 @@ def sopt_transfer(Xs0,Xt0,Xs,Xt,Lambda_list,n_projections=400):
     X_correspondence(Xs,Xt,projections,Lambda_list)     
     batch_size=128
     transp_Xs=transform(Xs0,Xsc,Xs,batch_size)
-    return transp_Xs
-
-# OT-based color adaptation 
-def ot_transfer_32(Xs0,Xt0,Xs,Xt,numItermax=1000000):
-    n,d=Xs.shape
-    m=Xt.shape[0]
-    #plan=ot.emd()
-    # get the transporation plan
-    Xsc=Xs.copy()
-    M=cost_matrix_d(Xs,Xt)
-    mu=np.ones(n,dtype=np.float32)/n
-    nu=np.ones(m,dtype=np.float32)/m
-    plan=ot.lp.emd(mu, nu, M, numItermax=numItermax)
-
-    # get the transported Xs It is the barycentric projection of Xt (with respect to Xs) 
-    cond_plan=plan/np.expand_dims(np.sum(plan,1),1)
-    Xs=np.dot(cond_plan,Xt)
-    
-#    # # prediction between images (using out of sample prediction as in [6])
-    batch_size=128
-    transp_Xs = transform_32(Xs0,Xsc,Xs,batch_size)
     return transp_Xs
 
 @nb.njit(['float64[:,:](float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64,int64)'],cache=True)
@@ -200,27 +137,6 @@ def eot_transfer_64(Xs0,Xt0,Xs,Xt,reg=0.1,numItermax=1000000):
     return transp_Xs
 
 
-@nb.njit(['float32[:,:](float32[:,:],float32[:,:],float32[:,:],float32[:,:],float32,int64)'],cache=True)
-def eot_transfer_32(Xs0,Xt0,Xs,Xt,reg=0.1,numItermax=1000000):
-    n,d=Xs.shape
-    m=Xt.shape[0]
-    #plan=ot.emd()
-    # get the transporation plan
-    Xsc=Xs.copy()
-    M=cost_matrix_d(Xs,Xt)
-    mu=np.ones(n,dtype=np.float32)/n
-    nu=np.ones(m,dtype=np.float32)/m
-    plan=sinkhorn_knopp_32(mu, nu, M, reg=reg,numItermax=numItermax)
-
-    # get the transported Xs
-    cond_plan=plan/np.expand_dims(np.sum(plan,1),1)
-    Xs=np.dot(cond_plan,Xt)
-    
-#    # # prediction between images (using out of sample prediction as in [6])
-    batch_size=128
-    transp_Xs = transform_32(Xs0,Xsc,Xs,batch_size)
-    
-    return transp_Xs
 
 
 def ot_transfer_orig(Xs0,Xt0,Xs,Xt,max_iter=1000000):

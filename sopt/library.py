@@ -18,110 +18,11 @@ from numba.typed import List
 
 # print('here')
 
-@nb.njit(cache=True)
-def argmin_nb(X,Y):
-    Min=np.inf
-    ind=0
-    m=Y.shape[0]
-    for i in range(m):
-        cost_xy=X[i]-Y[i]
-        if cost_xy<Min:
-            Min=cost_xy
-            ind=i
-    return ind
-
-
-@nb.njit(cache=True)
-def cost_function(x,y,p=2): 
-    ''' 
-    case 1:
-        input:
-            x: float number
-            y: float number 
-        output:
-            (x-y)**2: float number 
-    case 2: 
-        input: 
-            x: n*1 float np array
-            y: n*1 float np array
-        output:
-            (x-y)**2 n*1 float np array, whose i-th entry is (x_i-y_i)**2
-    '''
-#    V=np.square(x-y) #**p
-    V=np.abs(x-y)**p
-    return V
-
-
-
-# @nb.njit(['float64[:,:](float64[:])'],fastmath=True)
-# def transpose(X):
-#     n=X.shape[0]
-#     XT=np.zeros((n,1),np.float64)
-#     for i in range(n):
-#         XT[i]=X[i]
-#     return XT
-
-# @nb.njit(['float32[:,:](float32[:])'],fastmath=True)
-# def transpose_32(X):
-#     n=X.shape[0]
-#     XT=np.zeros((n,1),np.float32)
-#     for i in range(n):
-#         XT[i]=X[i]
-#     return XT
-
-
-# @nb.njit(['float64[:,:](float64[:],float64[:])','float32[:,:](float32[:],float32[:])'],fastmath=True,cache=True)
-# def cost_matrix(X,Y):
-#     '''
-#     input: 
-#         X: (n,) float np array
-#         Y: (m,) float np array
-#     output:
-#         M: n*m matrix, M_ij=c(X_i,Y_j) where c is defined by cost_function.
-    
-#     '''
-#     XT=np.expand_dims(X,1)
-#     M=cost_function(XT,Y)    
-#     return M
-
-@nb.njit(cache=True,fastmath=False,parallel=True)
-def cost_matrix(X,Y):
-    '''
-    input: 
-        X: (n,) float np array
-        Y: (m,) float np array
-    output:
-        M: n*m matrix, M_ij=c(X_i,Y_j) where c is defined by cost_function.
-    
-    '''
-#    XT=np.expand_dims(X,1)
-    n,m=X.shape[0],Y.shape[0]
-    M=np.zeros((n,m))
-    for i in nb.prange(n):
-        for j in nb.prange(m):
-            M[i,j]=(X[i]-Y[j])**2   
-    return M
-
-
-@nb.njit(cache=True)
-def argmin_nb(array):
-    Min=np.inf
-    Min_ind=0
-    n=array.shape[0]
-    for i in range(n):
-        val=array[i]
-        if val<Min:
-            Min=val
-            Min_ind=i
-    return Min_ind,Min
 
 
 
 
-
-
-#@nb.njit(fastmath=True)
-@nb.njit(['float32[:,:](float32[:,:],float32[:,:])','float64[:,:](float64[:,:],float64[:,:])'],fastmath=True,cache=True)
+@nb.njit(fastmath=True,cache=True)
 def cost_matrix_d(X,Y):
     '''
     input: 
@@ -139,13 +40,13 @@ def cost_matrix_d(X,Y):
     #     M+=C
     X1=np.expand_dims(X,1)
     Y1=np.expand_dims(Y,0)
-    M=np.sum(cost_function(X1,Y1),2)
+    M=np.sum((X1-Y1)**2,2)
     return M
 
 
 
 
-@nb.njit(['Tuple((int64,float32))(float32,float32[:])','Tuple((int64,float64))(float64,float64[:])'],fastmath=True,cache=True) 
+@nb.njit(fastmath=True,cache=True) 
 def closest_y(x,Y):
     '''
     Parameters
@@ -161,7 +62,7 @@ def closest_y(x,Y):
         Y[min_index]
 
     '''
-    cost_list=cost_function(x,Y)    
+    cost_list=(x-Y)**2    
     min_index=cost_list.argmin()
     min_cost=cost_list[min_index]
     return min_index,min_cost
