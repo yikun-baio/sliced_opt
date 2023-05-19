@@ -13,13 +13,26 @@ from typing import Tuple #,List
 from numba.typed import List
 
 
-# def text():
-#     print('here')
+global p
+p=2
 
-# print('here')
-
-
-
+@nb.njit(cache=True,fastmath=False,parallel=True)
+def cost_matrix(X,Y):
+    '''
+    input: 
+        X: (n,) float np array
+        Y: (m,) float np array
+    output:
+        M: n*m matrix, M_ij=c(X_i,Y_j) where c is defined by cost_function.
+    
+    '''
+#    XT=np.expand_dims(X,1)
+    n,m=X.shape[0],Y.shape[0]
+    M=np.zeros((n,m))
+    for i in nb.prange(n):
+        for j in nb.prange(m):
+            M[i,j]=(X[i]-Y[j])**p   
+    return M
 
 
 @nb.njit(fastmath=True,cache=True)
@@ -32,15 +45,11 @@ def cost_matrix_d(X,Y):
         M: n*m matrix, M_ij=c(X_i,Y_j) where c is defined by cost_function.
     
     '''
-#    n,d=X.shape
-#    m=Y.shape[0]
-#    M=np.zeros((n,m)) 
-    # for i in range(d):
-    #     C=cost_function(X[:,i:i+1],Y[:,i])
-    #     M+=C
-    X1=np.expand_dims(X,1)
-    Y1=np.expand_dims(Y,0)
-    M=np.sum((X1-Y1)**2,2)
+    n,d=X.shape
+    m,d=Y.shape
+    M=np.empty((n,m))
+    for i in nb.prange(n):
+        M[i]=np.sum((X[i]-Y)**p,1)
     return M
 
 

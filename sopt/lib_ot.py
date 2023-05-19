@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Sun Jun 26 14:25:29 2022
+""" 
+Created on SunJun 26 14:25:29 2022
 @author: Yikun Bai yikun.bai@Vanderbilt.edu  
 @author: Bernard Schmitzer, schmitzer @cs.uni-goettingen.de
 
@@ -29,6 +29,7 @@ from ot.lp.emd_wrap import emd_c, check_result, emd_1d_sorted
 from .library import *
 
 
+global p
 p=2  # global variable, the ground cost is (x-y)**p
 
 #@nb.njit(nb.types.Tuple((nb.float64,nb.int64[:]))(nb.float64[:],nb.float64[:],nb.float64))
@@ -207,23 +208,7 @@ def unassign_y(L1):
 #     M=cost_function(XT,Y)    
 #     return M
 
-@nb.njit(cache=True,fastmath=False,parallel=True)
-def cost_matrix(X,Y):
-    '''
-    input: 
-        X: (n,) float np array
-        Y: (m,) float np array
-    output:
-        M: n*m matrix, M_ij=c(X_i,Y_j) where c is defined by cost_function.
-    
-    '''
-#    XT=np.expand_dims(X,1)
-    n,m=X.shape[0],Y.shape[0]
-    M=np.zeros((n,m))
-    for i in nb.prange(n):
-        for j in nb.prange(m):
-            M[i,j]=(X[i]-Y[j])**p   
-    return M
+
 
 
 @nb.njit(cache=True)
