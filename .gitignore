@@ -1,10 +1,17 @@
 .DS_Store
+/.vscode/settings.json
+/.vscode/tasks.json
+readme1.md 
 test 4.ipynb
+test.ipynb
+opt1d.cpython-310-x86_64-linux-gnu.so
+opt1d.so 
 test.ipynb
 .ipynb_checkpoints/test-checkpoint.ipynb
 C++/hello.cpp
 C++/hello
 C++/hello$
+opt1d
 C++/opt1d2.cpp
 C++/.vscode/settings.json
 C++/.vscode/tasks.json
