@@ -370,7 +370,7 @@ def solve_opt_32(c,lam): #,verbose=False):
 
 
 @nb.njit()
-def solve(c,lam,verbose=False): # Dr. Barnhard
+def solve(c,lam,verbose=False): # Dr. Barnhard's original code
     M,N=c.shape
     
     phi=np.full(shape=M,fill_value=-np.inf)
@@ -1004,3 +1004,795 @@ def icp_umeyama_32(S,T,n_iterations):
 
     return rotation_list,scalar_list,beta_list  
 
+@nb.njit(['Tuple((float64,int64[:]))(float64[:,:])'],cache=True)
+def pot(M): 
+    n,m=M.shape
+    L=np.empty(0,dtype=np.int64) # save the optimal plan
+    cost=0.0 # save the optimal cost    
+    argmin_Y=closest_y_M(M) # M.argmin(1)
+ 
+    #initial loop:
+    k=0
+    #xk=X[k]
+    jk=argmin_Y[k]
+    cost_xk_yjk=M[k,jk]
+
+    cost+=cost_xk_yjk
+    L=np.append(L,jk)
+    for k in range(1,n):
+        jk=argmin_Y[k]
+        cost_xk_yjk=M[k,jk]
+        j_last=L[-1]
+    
+        #define consistent term     
+        if jk>j_last:# No conflict, L[-1] is the j last assig
+            cost+=cost_xk_yjk
+            L=np.append(L,jk)
+        else:
+            # this is the case for conflict: 
+
+            # compute the first cost 
+            if j_last+1<=m-1:
+                cost_xk_yjlast1=M[k,j_last+1]
+                cost1=cost+cost_xk_yjlast1
+            else:
+                cost1=np.inf 
+            # compute the second cost 
+            i_act,j_act=unassign_y(L)
+            if j_act>=0:                        
+                L1=np.concatenate((L[0:i_act],np.array([j_act]),L[i_act:]))
+                X_indices=arange(0,k+1)
+                Y_indices=L1
+#                Y_assign=Y[L1]
+#                X_assign=X[0:k+1]
+                cost2=np.sum(matrix_take(M,X_indices,Y_indices))
+#                cost2=np.sum(cost_function(X_assign,Y_assign))
+            else:
+                cost2=np.inf
+            if cost1<cost2:
+                cost=cost1
+                L=np.append(L,j_last+1)
+            elif cost2<=cost1:
+                cost=cost2
+                L=L1.copy()    
+    return cost,L
+
+
+@nb.njit(nb.types.Tuple((nb.float64,nb.float64[:],nb.float64[:],nb.int64[:],nb.int64[:]))(nb.float64[:,:],nb.float64),fastmath=True,cache=True)
+def solve_opt(c,lam): #,verbose=False):
+    n,m=c.shape
+    phi=np.full(shape=n,fill_value=-np.inf)
+    psi=np.full(shape=m,fill_value=lam)
+    # to which cols/rows are rows/cols currently assigned? -1: unassigned
+    piRow=np.full(n,-1,dtype=np.int64)
+    piCol=np.full(m,-1,dtype=np.int64)
+    # a bit shifted from notes. K is index of the row that we are currently processing
+    K=0
+    # Dijkstra distance array, will be used and initialized on demand in case 3 subroutine
+    dist=np.full(n,np.inf)
+
+    jLast=-1
+    while K<n:
+#        if verbose: print(f"K={K}")
+        if jLast==-1:
+            val,j=argmin_nb(c[K,:]-psi)
+        else:
+            val,j=argmin_nb(c[K,jLast:]-psi[jLast:])
+            j+=jLast
+        #val=c[K,j]-psi[j]
+        if val>=lam:
+            #if verbose: print("case 1")
+            phi[K]=lam
+            K+=1
+        elif piCol[j]==-1:
+            #if verbose: print("case 2")
+            piCol[j]=K
+            piRow[K]=j
+            phi[K]=val
+            K+=1
+            jLast=j
+        else:
+            #if verbose: print("case 3")
+            phi[K]=val
+            #assert piCol[j]==K-1
+            # Dijkstra distance vector and currently explored radius
+            dist[K]=0.
+            dist[K-1]=0.
+            v=0.
+
+            # iMin and jMin indicate lower end of range of contiguous rows and cols
+            # that are currently examined in subroutine;
+            # upper end is always K and j
+            iMin=K-1
+            jMin=j
+            # threshold until an entry of phi hits lam
+            if phi[K]>phi[K-1]:
+                lamDiff=lam-phi[K]
+                lamInd=K
+            else:
+                lamDiff=lam-phi[K-1]
+                lamInd=K-1
+            resolved=False
+            while not resolved:
+                # threshold until constr iMin,jMin-1 becomes active
+                if jMin>0:
+                    lowEndDiff=c[iMin,jMin-1]-phi[iMin]-psi[jMin-1]
+                    # catch: empty rows in between that could numerically be skipped
+                    if iMin>0:
+                        if piRow[iMin-1]==-1:
+                            lowEndDiff=np.infty
+                else:
+                    lowEndDiff=np.infty
+                # threshold for upper end
+                if j<m-1:
+                    hiEndDiff=c[K,j+1]-phi[K]-psi[j+1]-v
+                else:
+                    hiEndDiff=np.infty
+                if hiEndDiff<=min((lowEndDiff,lamDiff)):
+                 #  if verbose: print("case 3.2")
+                    v+=hiEndDiff
+                    for i in range(iMin,K):
+                        phi[i]+=v-dist[i]
+                        psi[piRow[i]]-=v-dist[i]
+                    
+                    phi[K]+=v
+                    piRow[K]=j+1
+                    piCol[j+1]=K
+                    jLast=j+1
+                    resolved=True
+                elif lowEndDiff<=min((hiEndDiff,lamDiff)):
+                    if piCol[jMin-1]==-1:
+                    #    if verbose: print("case 3.3a")
+                        v+=lowEndDiff
+
+                        for i in range(iMin,K):
+                            phi[i]+=v-dist[i]
+                            psi[piRow[i]]-=v-dist[i]
+                        phi[K]+=v
+                        # "flip" assignment along whole chain
+                        jPrime=jMin
+                        piCol[jMin-1]=iMin
+                        piRow[iMin]-=1
+    
+                        
+                        for i in range(iMin+1,K):
+                            piCol[jPrime]+=1
+                            piRow[i]-=1
+                            jPrime+=1
+                        piRow[K]=j #jPrime
+                        piCol[j]+=1 #jPrime
+                        resolved=True
+                    else:
+                      #  if verbose: print("case 3.3b")
+                      #  assert piCol[jMin-1]==iMin-1
+                        v+=lowEndDiff
+                        dist[iMin-1]=v
+                        # adjust distance to threshold
+                        lamDiff-=lowEndDiff
+                        iMin-=1
+                        jMin-=1
+                        if lam-phi[iMin]<lamDiff:
+                            lamDiff=lam-phi[iMin]
+                            lamInd=iMin
+
+                else:
+                 #   if verbose: print(f"case 3.1, lamInd={lamInd}")
+                    v+=lamDiff
+                    
+                    # domain=arange(iMin,K)
+                    # phi[domain]+=v-dist[domain]
+                    # psi[piRow[domain]]-=v-dist[domain]
+                    # i=K-1
+                    for i in range(iMin,K):
+                        phi[i]+=v-dist[i]
+                        psi[piRow[i]]-=v-dist[i]
+                    phi[K]+=v
+                    # "flip" assignment from lambda touching row onwards
+                    if lamInd<K:
+                        jPrime=piRow[lamInd]
+                        piRow[lamInd]=-1
+                        
+                        # domain1=arange(lamInd+1,K)
+                        # piRow[domain1]-=1
+                        # piCol[domain1-(lamInd+1)+jPrime]+=1
+                        # jPrime=K-(lamInd+1)+jPrime
+                        # i=K-1
+                        for i in range(lamInd+1,K):
+                            piCol[jPrime]+=1
+                            piRow[i]-=1
+                            jPrime+=1
+                        piRow[K]=j #jPrime
+                        piCol[j]+=1 #jPrime
+                    resolved=True
+            #assert np.min(c-phi.reshape((M,1))-psi.reshape((1,N)))>=-1E-15
+            K+=1
+    objective=np.sum(phi)+np.sum(psi)
+    return objective,phi,psi,piRow,piCol
+
+
+@nb.njit(nb.types.Tuple((nb.float64,nb.float64[:],nb.float64[:],nb.int64[:],nb.int64[:]))(nb.float64[:,:],nb.float64),fastmath=True,cache=True)
+def solve_opt(c,lam): #,verbose=False):
+    M,N=c.shape
+    phi=np.full(shape=M,fill_value=-np.inf)
+    psi=np.full(shape=N,fill_value=lam)
+    # to which cols/rows are rows/cols currently assigned? -1: unassigned
+    piRow=np.full(M,-1,dtype=np.int64)
+    piCol=np.full(N,-1,dtype=np.int64)
+    # a bit shifted from notes. K is index of the row that we are currently processing
+    K=0
+    # Dijkstra distance array, will be used and initialized on demand in case 3 subroutine
+    dist=np.full(M,np.inf)
+
+    jLast=-1
+    while K<M:
+#        if verbose: print(f"K={K}")
+        if jLast==-1:
+            val,j=argmin_nb(c[K,:]-psi)
+        else:
+            val,j=argmin_nb(c[K,jLast:]-psi[jLast:])
+            j+=jLast
+        #val=c[K,j]-psi[j]
+        if val>=lam:
+            #if verbose: print("case 1")
+            phi[K]=lam
+            K+=1
+        elif piCol[j]==-1:
+            #if verbose: print("case 2")
+            piCol[j]=K
+            piRow[K]=j
+            phi[K]=val
+            K+=1
+            jLast=j
+        else:
+            #if verbose: print("case 3")
+            phi[K]=val
+            #assert piCol[j]==K-1
+            # Dijkstra distance vector and currently explored radius
+            dist[K]=0.
+            dist[K-1]=0.
+            v=0.
+
+            # iMin and jMin indicate lower end of range of contiguous rows and cols
+            # that are currently examined in subroutine;
+            # upper end is always K and j
+            iMin=K-1
+            jMin=j
+            # threshold until an entry of phi hits lam
+            if phi[K]>phi[K-1]:
+                lamDiff=lam-phi[K]
+                lamInd=K
+            else:
+                lamDiff=lam-phi[K-1]
+                lamInd=K-1
+            resolved=False
+            while not resolved:
+                # threshold until constr iMin,jMin-1 becomes active
+                if jMin>0:
+                    lowEndDiff=c[iMin,jMin-1]-phi[iMin]-psi[jMin-1]
+                    # catch: empty rows in between that could numerically be skipped
+                    if iMin>0:
+                        if piRow[iMin-1]==-1:
+                            lowEndDiff=np.infty
+                else:
+                    lowEndDiff=np.infty
+                # threshold for upper end
+                if j<N-1:
+                    hiEndDiff=c[K,j+1]-phi[K]-psi[j+1]-v
+                else:
+                    hiEndDiff=np.infty
+                if hiEndDiff<=min((lowEndDiff,lamDiff)):
+                 #  if verbose: print("case 3.2")
+                    v+=hiEndDiff
+                    for i in range(iMin,K):
+                        phi[i]+=v-dist[i]
+                        psi[piRow[i]]-=v-dist[i]
+                    
+                    phi[K]+=v
+                    piRow[K]=j+1
+                    piCol[j+1]=K
+                    jLast=j+1
+                    resolved=True
+                elif lowEndDiff<=min((hiEndDiff,lamDiff)):
+                    if piCol[jMin-1]==-1:
+                    #    if verbose: print("case 3.3a")
+                        v+=lowEndDiff
+
+                        for i in range(iMin,K):
+                            phi[i]+=v-dist[i]
+                            psi[piRow[i]]-=v-dist[i]
+                        phi[K]+=v
+                        # "flip" assignment along whole chain
+                        jPrime=jMin
+                        piCol[jMin-1]=iMin
+                        piRow[iMin]-=1
+    
+                        
+                        for i in range(iMin+1,K):
+                            piCol[jPrime]+=1
+                            piRow[i]-=1
+                            jPrime+=1
+                        piRow[K]=j #jPrime
+                        piCol[j]+=1 #jPrime
+                        resolved=True
+                    else:
+                      #  if verbose: print("case 3.3b")
+                      #  assert piCol[jMin-1]==iMin-1
+                        v+=lowEndDiff
+                        dist[iMin-1]=v
+                        # adjust distance to threshold
+                        lamDiff-=lowEndDiff
+                        iMin-=1
+                        jMin-=1
+                        if lam-phi[iMin]<lamDiff:
+                            lamDiff=lam-phi[iMin]
+                            lamInd=iMin
+
+                else:
+                 #   if verbose: print(f"case 3.1, lamInd={lamInd}")
+                    v+=lamDiff
+                    
+                    # domain=arange(iMin,K)
+                    # phi[domain]+=v-dist[domain]
+                    # psi[piRow[domain]]-=v-dist[domain]
+                    # i=K-1
+                    for i in range(iMin,K):
+                        phi[i]+=v-dist[i]
+                        psi[piRow[i]]-=v-dist[i]
+                    phi[K]+=v
+                    # "flip" assignment from lambda touching row onwards
+                    if lamInd<K:
+                        jPrime=piRow[lamInd]
+                        piRow[lamInd]=-1
+                        
+                        # domain1=arange(lamInd+1,K)
+                        # piRow[domain1]-=1
+                        # piCol[domain1-(lamInd+1)+jPrime]+=1
+                        # jPrime=K-(lamInd+1)+jPrime
+                        # i=K-1
+                        for i in range(lamInd+1,K):
+                            piCol[jPrime]+=1
+                            piRow[i]-=1
+                            jPrime+=1
+                        piRow[K]=j #jPrime
+                        piCol[j]+=1 #jPrime
+                    resolved=True
+            #assert np.min(c-phi.reshape((M,1))-psi.reshape((1,N)))>=-1E-15
+            K+=1
+    objective=np.sum(phi)+np.sum(psi)
+    return objective,phi,psi,piRow,piCol
+
+
+
+
+@nb.njit(fastmath=True,cache=True) 
+def closest_y(x,Y):
+    '''
+    Parameters
+    ----------
+    x : float number, xk
+    Y : m*1 float np array, 
+
+    Returns
+    -------
+    min_index : integer >=0
+        argmin_j min(x,Y[j])  # you can also return 
+    min_cost : float number 
+        Y[min_index]
+
+    '''
+    cost_list=(x-Y)**2    
+    min_index=cost_list.argmin()
+    min_cost=cost_list[min_index]
+    return min_index,min_cost
+
+
+@nb.njit(['int64[:](float64[:,:])','int64[:](float32[:,:])'],fastmath=True,cache=True)
+def closest_y_M(M):
+    '''
+    Parameters
+    ----------
+    x : float number, xk
+    Y : m*1 float np array, 
+
+    Returns
+    -------
+    min_index : integer >=0
+        argmin_j min(x,Y[j])  # you can also return 
+    min_cost : float number 
+        Y[min_index]
+
+    '''
+    n,m=M.shape
+    argmin_Y=np.zeros(n,np.int64)
+    for i in range(n):
+        argmin_Y[i]=M[i,:].argmin()
+    return argmin_Y
+
+
+
+@nb.njit(['Tuple((float64,int64[:],float64,int64[:]))(int64,float64)'],cache=True)
+def empty_Y_opt(n,Lambda):
+    '''
+
+
+    Parameters
+    ----------
+    n : integer>=0
+        size of X
+    Lambda : float number >=0
+
+
+    Returns
+    -------
+    cost : float number
+        cost of the opt problem where Y is empty
+    L : n*1 list. 
+        transportation plan, whose entry could be 0,1,... or -1. 
+        must be in increasing order
+        in this function, it can only contains -1 
+    cost_pre : float number 
+        cost of the opt problem where Y is empty
+        in this example, cost_pre=cost
+    L_pre : n*1 list. 
+        transportation plan, whose entry could be 0,1,... or -1. 
+        must be in increasing order
+        in this function, L_pre=L
+
+    '''
+    L=np.full(n,-1,dtype=np.int64) #(n,dtype=np.int64)+np.int64(-1)
+    #for i in range(n):
+    #    L[i]=-1
+    cost=Lambda*np.float64(n)
+    cost_pre=cost
+    L_pre=L.copy()
+    return cost,L,cost_pre,L_pre
+
+@nb.njit(['Tuple((float32,int64[:],float32,int64[:]))(int64,float32)'],cache=True)
+def empty_Y_opt_32(n,Lambda):
+    '''
+
+
+    Parameters
+    ----------
+    n : integer>=0
+        size of X
+    Lambda : float number >=0
+
+
+    Returns
+    -------
+    cost : float number
+        cost of the opt problem where Y is empty
+    L : n*1 list. 
+        transportation plan, whose entry could be 0,1,... or -1. 
+        must be in increasing order
+        in this function, it can only contains -1 
+    cost_pre : float number 
+        cost of the opt problem where Y is empty
+        in this example, cost_pre=cost
+    L_pre : n*1 list. 
+        transportation plan, whose entry could be 0,1,... or -1. 
+        must be in increasing order
+        in this function, L_pre=L
+
+    '''
+    L=np.full(n,-1,dtype=np.int64) #(n,dtype=np.int64)+np.int64(-1)
+    #for i in range(n):
+    #    L[i]=-1
+    cost=Lambda*np.float32(n)
+    cost_pre=cost
+    L_pre=L.copy()
+    return cost,L,cost_pre,L_pre
+
+
+
+
+@torch.jit.script      
+def empty_Y_opt_T(n: 'int',Lambda: 'torch.Tensor'):
+    '''
+
+
+    Parameters
+    ----------
+    n : integer>=0
+        size of X
+    Lambda : float number >=0
+
+
+    Returns
+    -------
+    cost : float number
+        cost of the opt problem where Y is empty
+    L : n*1 torch tensor. 
+        transportation plan, whose entry could be 0,1,... or -1. 
+        must be in increasing order
+        in this function, it can only contains -1 
+    cost_pre : float number 
+        cost of the opt problem where Y is empty
+        in this example, cost_pre=cost
+    L_pre : n*1 torch tensor. 
+        transportation plan, whose entry could be 0,1,... or -1. 
+        must be in increasing order
+        in this function, L_pre=L
+
+    '''
+    device=Lambda.device.type
+    L=-1*torch.ones(n,device=device,dtype=torch.int64)
+    cost=torch.mul(Lambda,n)
+    cost_pre=cost
+    L_pre=L.clone()
+    return cost,L,cost_pre,L_pre
+
+@nb.njit(['Tuple((float64,int64[:],float64,int64[:]))(float64[:,:],int64,int64,float64)'],cache=True)
+#@nb.njit()
+def one_x_opt(M1,i_act,j_act,Lambda): 
+    '''
+
+    Parameters
+    ----------
+    M1 : 1*m np float array, if M1 has 2 ore more rows or M1 is empty array, there is a mistake in the main loop.  
+    j_act : integer>=0 or =-1
+    Lambda : float number>=0
+    
+    Returns
+    -------
+    cost: float number
+        cost for the one point X opt problem. 
+    list: np 1*1 array, whose entries could be 0,1,... or -1
+        transportation plan, which contains only one element, 
+    cost_pre
+        cost for the previous problem of the one point X opt problem 
+    list_pre: np 1*1 array, whose entries could be 0,1,2.... or -1
+        transportation plan 
+    
+    
+    if j_act>=0 and M[0,j_act]<Lambda:
+        return:
+            cost=M[0,j_act]
+            L=[j_act]
+            cost_pre=0
+            L_pre=[]
+    In other case, return:
+        cost=Lambda
+        L=[-1]
+        cost_pre=Lambda
+        L_pre=[-1]
+    Ex. M1=[0,1.0,4.0], j_act=-1, Lambda=0.4 
+    return 0.4,[-1],0.4,[-1]
+    Ex. M1=[0,1.0,4.0], j_act=1, Lambda=0.4
+    return 0.4 [-1], 0.4,[-1]
+    Ex. M1=[0,1.0,4.0], j_act=1, Lambda=2
+    return 1.0, [1], 0,[]
+    '''       
+    dtype=type(Lambda)
+    if j_act<0:
+        return Lambda,np.array([-1],np.int64),Lambda,np.array([-1],np.int64)
+    c_xy=M1[i_act,j_act]
+    if c_xy>=Lambda:
+        return Lambda,np.array([-1],np.int64),Lambda,np.array([-1],np.int64)
+    else:
+        return c_xy,np.array([j_act],np.int64),np.float64(0),np.empty(0,np.int64)
+
+@nb.njit(fastmath=True,cache=True)
+def merge_list(L):
+    n=len(L) 
+    merged_array=L[0]
+    for i in range(1,n):
+        merged_array=np.concatenate((merged_array,L[i]))
+    return merged_array
+  
+    
+
+@nb.njit(['Tuple((float64,int64[:],float64,int64[:]))(float64[:,:],int64,int64,float64)'],cache=True)
+def one_x_opt_np(M1,i_act,j_act,Lambda): 
+    '''
+
+    Parameters
+    ----------
+    M1 : 1*m np float array, if M1 has 2 ore more rows or M1 is empty array, there is a mistake in the main loop.  
+    j_act : integer>=0 or =-1
+    Lambda : float number>=0
+
+    Returns
+    -------
+    cost: float number
+        cost for the one point X opt problem. 
+    list: np 1*1 array, whose entries could be 0,1,... or -1
+        transportation plan, which contains only one element, 
+    cost_pre
+        cost for the previous problem of the one point X opt problem 
+    list_pre: np 1*1 array, whose entries could be 0,1,2.... or -1
+        transportation plan 
+    
+
+    if j_act>=0 and M[0,j_act]<Lambda:
+        return:
+            cost=M[0,j_act]
+            L=[j_act]
+            cost_pre=0
+            L_pre=[]
+    In other case, return:
+        cost=Lambda
+        L=[-1]
+        cost_pre=Lambda
+        L_pre=[-1]
+    Ex. M1=[0,1.0,4.0], j_act=-1, Lambda=0.4 
+    return 0.4,[-1],0.4,[-1]
+    Ex. M1=[0,1.0,4.0], j_act=1, Lambda=0.4
+    return 0.4 [-1], 0.4,[-1]
+    Ex. M1=[0,1.0,4.0], j_act=1, Lambda=2
+    return 1.0, [1], 0,[]
+
+    '''       
+    dtype=type(Lambda)
+    if j_act<0:
+        return Lambda,np.array([-1],dtype=np.int64),Lambda,np.array([-1],dtype=np.int64)
+    c_xy=M1[i_act,j_act]
+    if c_xy>=Lambda:
+        return Lambda,np.array([-1],dtype=np.int64),Lambda,np.array([-1],dtype=np.int64)
+    else:
+        return c_xy,np.array([j_act],dtype=np.int64),np.float64(0),np.empty(0,dtype=np.int64)
+    
+        
+
+
+    
+
+@nb.njit(['float32[:](float32[:,:],int64[:],int64[:])','float64[:](float64[:,:],int64[:],int64[:])'],fastmath=True,cache=True)
+def matrix_take(X,L1,L2):
+    return np.array([X[L1[i],L2[i]] for i in range(L1.shape[0])])
+
+
+
+@torch.jit.script
+def cost_function_T(x,y): 
+    ''' 
+    case 1:
+        input:
+            x: 0 dimension float tensor
+            y: 0 dimension float tensor
+        output:
+            float number: (x-y)**2 
+    case 2: 
+        input: 
+            x: n*1 tensor
+            y: n*1 tensor 
+        output:
+            n*1 array: whose ith entry is (x_i-y_i)**2
+    '''
+    return torch.square(x-y)
+
+    
+@torch.jit.script
+def cost_matrix_T(X,Y):
+    '''
+    input: 
+        X: n*d float torch tensor
+        Y: m*d float torch tensor
+    output:
+        M: n*m matrix, M_ij=c(X_i,Y_j) where c is defined by cost_function_T.
+    
+    '''
+    if len(X.shape)==1:
+        X=X.reshape([X.shape[0],1])
+        M=cost_function_T(X,Y)
+    else:
+        device=X.device.type
+        n,d=X.shape
+        m=Y.shape[0]
+        M=torch.zeros([n,m],device=device)
+        for i in range(d):
+            M+=cost_function_T(X[:,i:i+1],Y[:,i:i+1].T)      
+#        M=torch.sum(torch.stack([cost_function_T(X[:,d:d+1],Y[:,d:d+1].T) for d in range(dim)]),0)
+    return M
+
+
+
+@nb.njit(['float32[:,:](int64,int64,int64)'],fastmath=True,cache=True)
+def random_projections_32(d,n_projections,Type=0):
+    '''
+    input: 
+    d: int 
+    n_projections: int
+
+    output: 
+    projections: d*n torch tensor
+
+    '''
+    np.random.seed(0)
+    if Type==0:
+        Gaussian_vector=np.random.normal(0,1,size=(d,n_projections)).astype(np.float32) #.astype(np.float64)
+        projections=Gaussian_vector/np.sqrt(np.sum(np.square(Gaussian_vector),0))
+        projections=projections.T
+
+    elif Type==1:
+        r=np.int64(n_projections/d)+1
+        projections=np.zeros((r*d,d),dtype=np.float32)
+        for i in range(r):
+            H=np.random.randn(d,d).astype(np.float32)
+            Q,R=np.linalg.qr(H)
+            projections[i*d:(i+1)*d]=Q
+        projections=projections[0:n_projections]
+    return projections
+
+
+@nb.njit(['(float32[:,:],float32[:,:],float32[:,:],float32[:])'],cache=True)
+def X_correspondence_32(X,Y,projections,Lambda_list):
+    N,d=projections.shape
+    n=X.shape[0]
+    Lx_org=arange(0,n)
+    for i in range(N):
+        theta=projections[i]
+        X_theta=np.dot(theta,X.T)
+        Y_theta=np.dot(theta,Y.T)
+        X_indice=X_theta.argsort()
+        Y_indice=Y_theta.argsort()
+        X_s=X_theta[X_indice]
+        Y_s=Y_theta[Y_indice]
+        Lambda=Lambda_list[i]
+        M=cost_matrix(X_s,Y_s)
+        obj,phi,psi,piRow,piCol=solve_opt_32(M,Lambda)
+        L=piRow
+        L=recover_indice(X_indice,Y_indice,L)
+        #move X
+        Lx=Lx_org.copy()
+        Lx=Lx[L>=0]
+        if Lx.shape[0]>=1:
+            Ly=L[L>=0]
+#            dim=Ly.shape[0]
+            X_take=X_theta[Lx]
+            Y_take=Y_theta[Ly]
+            X[Lx]+=np.expand_dims(Y_take-X_take,1)*theta
+    
+
+@nb.njit(['(float32[:,:],float32[:,:],float32[:,:])'])
+def X_correspondence_pot_32(X,Y,projections):
+    N,d=projections.shape
+    n=X.shape[0]
+    for i in range(N):
+        theta=projections[i]
+        X_theta=np.dot(theta,X.T)
+        Y_theta=np.dot(theta,Y.T)
+        X_indice=X_theta.argsort()
+        Y_indice=Y_theta.argsort()
+        X_s=X_theta[X_indice]
+        Y_s=Y_theta[Y_indice]
+        M=cost_matrix(X_s,Y_s)
+        cost,L=pot_32(M)
+        L=recover_indice(X_indice,Y_indice,L)
+        X_take=X_theta
+        Y_take=Y_theta[L]
+        X+=np.expand_dims(Y_take-X_take,1)*theta
+    return X
+
+
+
+@torch.jit.script   
+def recover_indice_M(indice_X,indice_Y,plans):
+    '''
+    input:
+        indice_X: n*1 float torch tensor, whose entry is integer 0,1,2,....
+        indice_Y: m*1 float torch tensor, whose entry is integer 0,1,2,.... 
+        L: n*1 list, whose entry could be 0,1,2,... and -1.
+        L is the original transportation plan for sorted X,Y 
+        L[i]=j denote x_i->y_j and L[i]=-1 denote we destroy x_i. 
+        If we ignore -1, it must be in increasing order  
+    output:
+        mapping_final: the transportation plan for original unsorted X,Y
+        
+        Eg. X=[2,1,3], indice_X=[1,0,2]
+            Y=[3,1,2], indice_Y=[1,2,0]
+            L=[0,1,2] which means the mapping 1->1, 2->2, 3->3
+        return: 
+            L=[2,1,0], which also means the mapping 2->2, 1->1,3->3.
+    
+    '''
+    device=indice_X.device.type
+    N,n=plans.shape
+    indice_Y_mapped=torch.zeros((N,n),dtype=torch.int64,device=device)
+    for i in range (N):
+        indice_Y_mapped[i,:]=torch.where(plans[i]>=0,indice_Y[i].take(plans[i]),-1) 
+#    indice_Y_mapped=torch.where(plans>=0,indice_Y.gather(1,plans),-1).to(device) 
+    mapping=torch.stack([indice_X,indice_Y_mapped])
+    mapping_final=torch.gather(mapping[1],1,mapping[0,:].argsort())
+    return mapping_final

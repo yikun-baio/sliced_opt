@@ -35,20 +35,85 @@ p=2  # global variable, the ground cost is (x-y)**p
 # solve opt by linear programming 
  
 @nb.njit(cache=True)
-def argmin_nb(X,Y):
+def argmin_nb(array):
     Min=np.inf
     ind=0
-    m=Y.shape[0]
-    for i in range(m):
-        cost_xy=X[i]-Y[i]
+    n=array.shape[0]
+    for i in range(n):
+        cost_xy=array[i]
         if cost_xy<Min:
             Min=cost_xy
             ind=i
-    return ind
+    return Min,ind
 
+@nb.njit(fastmath=True,cache=True) 
+def closest_y(x,Y):
+    '''
+    Parameters
+    ----------
+    x : float number, xk
+    Y : m*1 float np array, 
+
+    Returns
+    -------
+    min_index : integer >=0
+        argmin_j min(x,Y[j])  # you can also return 
+    min_cost : float number 
+        Y[min_index]
+
+    '''
+    min_index=0
+    min_cost=np.inf
+    for j in range(Y.shape[0]):
+        y=Y[j]
+        costxy=abs(x-y)**p
+        if costxy<min_cost:
+            min_cost=costxy
+            min_index=j 
+    return min_cost,min_index
+
+@nb.njit(fastmath=True,cache=True) 
+def closest_y(x,Y):
+    '''
+    Parameters
+    ----------
+    x : float number, xk
+    Y : m*1 float np array, 
+
+    Returns
+    -------
+    min_index : integer >=0
+        argmin_j min(x,Y[j])  # you can also return 
+    min_cost : float number 
+        Y[min_index]
+
+    '''
+    m=Y.shape[0]
+    min_val=np.inf
+    min_index=0
+    for j in range(m):
+        cost_xy=(x-Y[j])**p
+        if cost_xy<min_val:
+            min_val=cost_xy
+            min_index=j
+    return min_val,min_index
+
+@nb.njit(fastmath=True,cache=True)
+def closest_y_opt(x,Y,psi):
+    m=Y.shape[0]
+    min_val=np.inf
+    min_index=0
+    for j in range(m):
+        cost_xy=(x-Y[j])**p-psi[j]
+        if cost_xy<min_val:
+            min_val=cost_xy
+            min_index=j
+    return min_val,min_index
+
+    
 
 @nb.njit(cache=True)
-def cost_function(x,y,p=2): 
+def cost_function(x,y): 
     ''' 
     case 1:
         input:
@@ -67,6 +132,48 @@ def cost_function(x,y,p=2):
     V=np.abs(x-y)**p
     return V
 
+
+
+@nb.njit(['Tuple((int64,int64))(int64[:])'],cache=True)
+def unassign_y(L1):
+    '''
+    Parameters
+    ----------
+    L1 : n*1 list , whose entry is 0,1,2,...... 
+            transporportation plan. L[i]=j denote we assign x_i to y_j, L[i]=-1, denote we destroy x_i. 
+            if we ignore -1, L1 must be in increasing order 
+            make sure L1 do not have -1 and is not empty, otherwise there is mistake in the main loop.  
+
+
+    Returns
+    -------
+    i_act: integer>=0 
+    j_act: integer>=0 or -1    
+    j_act=max{j: j not in L1, j<L1[end]} If L1[end]=-1, there is a bug in the main loop. 
+    i_act=min{i: L[i]>j_act}.
+    
+    Eg. input: L1=[1,3,5]
+    return: 2,4
+    input: L1=[2,3,4]
+    return: 0,1
+    input: L1=[0,1,2,3]
+    return: 0,-1
+    
+    '''
+    n=L1.shape[0]
+    j_last=L1[n-1]
+    i_last=L1.shape[0]-1 # this is the value of k-i_start
+    for l in range(n):
+        j=j_last-l
+        i=i_last-l+1
+        if j > L1[n-1-l]:
+            return i,j
+    j=j_last-n
+    if j>=0:
+        return 0,j
+    else:       
+        return 0,-1
+    
 
 
 # @nb.njit(['float64[:,:](float64[:])'],fastmath=True)
@@ -101,7 +208,7 @@ def cost_function(x,y,p=2):
 #     return M
 
 @nb.njit(cache=True,fastmath=False,parallel=True)
-def cost_matrix(X,Y,p=2):
+def cost_matrix(X,Y):
     '''
     input: 
         X: (n,) float np array
@@ -120,7 +227,7 @@ def cost_matrix(X,Y,p=2):
 
 
 @nb.njit(cache=True)
-def argmin_nb(array):
+def min_nb(array):
     Min=np.inf
     Min_ind=0
     n=array.shape[0]
@@ -129,7 +236,7 @@ def argmin_nb(array):
         if val<Min:
             Min=val
             Min_ind=i
-    return Min_ind,Min
+    return Min,Min_ind
 
 
     
@@ -168,9 +275,9 @@ def opt_lp(mu,nu,M,Lambda,numItermax=100000,numThreads=1):
     nu1[-1]=np.sum(mu)
     M1=np.zeros((n+1,m+1),dtype=np.float64)
     M1[0:n,0:m]=M-2*Lambda
-    plan1, cost1, u, v, result_code = emd_c(mu1, nu1, M1, numItermax, numThreads)
-    result_code_string = check_result(result_code)
-    #plan1=ot.lp.emd(mu1,nu1,M1,numItermax=numItermax,numThreads=numThreads)
+    # plan1, cost1, u, v, result_code = emd_c(mu1, nu1, M1, numItermax, numThreads)
+    # result_code_string = check_result(result_code)
+    plan1=ot.lp.emd(mu1,nu1,M1,numItermax=numItermax,numThreads=numThreads)
     plan=plan1[0:n,0:m]
     cost=np.sum(M*plan)
     return cost,plan
@@ -538,26 +645,115 @@ def getPiFromCol(M,N,piCol):
     return pi
 
     
-@nb.njit(nb.types.Tuple((nb.float64,nb.float64[:],nb.float64[:],nb.int64[:],nb.int64[:]))(nb.float64[:,:],nb.float64),fastmath=True,cache=True)
-def solve_opt(c,lam): #,verbose=False):
-    M,N=c.shape
-    phi=np.full(shape=M,fill_value=-np.inf)
-    psi=np.full(shape=N,fill_value=lam)
+
+
+
+
+
+
+def getCost(x,y,p=2.):
+    """Squared Euclidean distance cost for two 1d arrays"""
+    c=(x.reshape((-1,1))-y.reshape((1,-1)))
+    c=c**p
+    return c
+
+def getPiFromRow(M,N,piRow):
+    pi=np.zeros(shape=(M,N),dtype=int)
+    for i,j in zip(np.arange(M),piRow):
+        if j>-1: pi[i,j]=1
+    return pi
+
+def getPiFromCol(M,N,piCol):
+    pi=np.zeros(shape=(M,N),dtype=int)
+    for i,j in zip(piCol,np.arange(N)):
+        if i>-1: pi[i,j]=1
+    return pi
+
+
+
+
+@nb.njit(cache=True)
+def pot(X,Y): 
+    #M=cost_matrix(X,Y)
+    n,m=X.shape[0],Y.shape[0]
+    L=np.zeros(n,dtype=np.int64) # save the optimal plan
+    cost=0.0 # save the optimal cost    
+    #argmin_Y=closest_y_M(M) # M.argmin(1)
+
+ 
+    #initial loop:
+    k=0
+    x=X[k]
+    #jk=argmin_Y[k]
+    #cost_xk_yjk=M[k,jk]
+    cost_xk_yjk,jk=closest_y(x,Y)
+    cost+=cost_xk_yjk
+    L[k]=jk
+    for k in range(1,n):
+        x=X[k]
+        cost_xk_yjk,jk=closest_y(x,Y)
+        j_last=L[k-1]
+    
+        #define consistent term     
+        if jk>j_last:# No conflict, L[-1] is the j last assig
+            cost+=cost_xk_yjk
+            L[k]=jk
+        else:
+            # this is the case for conflict: 
+
+            # compute the first cost 
+            if j_last+1<=m-1:
+                cost_xk_yjlast1=(x-Y[j_last+1])**2
+                cost1=cost+cost_xk_yjlast1
+            else:
+                cost1=np.inf 
+            # compute the second cost 
+            i_act,j_act=unassign_y(L[0:k])
+            if j_act>=0:                        
+                cost2=0.
+                # cost2=np.sum((X[0:i_act]-Y[L[0:i_act]])**p)+np.sum((X[i_act:k]-Y[L[i_act:k]-1])**p)+(x-Y[j_last])**2
+                # in numba for loop is faster
+                for ind in range(0,i_act):
+                    cost2+=(X[ind]-Y[L[ind]])**p
+                for ind in range(i_act,k):
+                    cost2+=(X[ind]-Y[L[ind]-1])**p
+                cost2+=(x-Y[j_last])**p
+                
+            else:
+                cost2=np.inf
+            if cost1<cost2:
+                cost=cost1
+                L[k]=j_last+1 #=np.append(L,j_last+1)
+            elif cost2<=cost1:
+                cost=cost2
+                for ind in range(i_act,k):
+                    L[ind]=L[ind]-1
+                L[k]=j_last
+                
+    return cost,L
+
+
+@nb.njit(cache=True,fastmath=True)
+def solve_opt(X,Y,lam): #,verbose=False):
+    n,m=X.shape[0],Y.shape[0]
+    phi=np.full(shape=n,fill_value=-np.inf)
+    psi=np.full(shape=m,fill_value=lam)
     # to which cols/rows are rows/cols currently assigned? -1: unassigned
-    piRow=np.full(M,-1,dtype=np.int64)
-    piCol=np.full(N,-1,dtype=np.int64)
+    piRow=np.full(n,-1,dtype=np.int64)
+    piCol=np.full(m,-1,dtype=np.int64)
     # a bit shifted from notes. K is index of the row that we are currently processing
     K=0
     # Dijkstra distance array, will be used and initialized on demand in case 3 subroutine
-    dist=np.full(M,np.inf)
+    dist=np.full(n,np.inf)
 
     jLast=-1
-    while K<M:
+    while K<n:
+        x=X[K]
 #        if verbose: print(f"K={K}")
         if jLast==-1:
-            j,val=argmin_nb(c[K,:]-psi)
+            val,j=closest_y_opt(x,Y,psi)
         else:
-            j,val=argmin_nb(c[K,jLast:]-psi[jLast:])
+            val,j=closest_y_opt(x,Y[jLast:],psi[jLast:])
             j+=jLast
         #val=c[K,j]-psi[j]
         if val>=lam:
@@ -596,7 +792,7 @@ def solve_opt(c,lam): #,verbose=False):
             while not resolved:
                 # threshold until constr iMin,jMin-1 becomes active
                 if jMin>0:
-                    lowEndDiff=c[iMin,jMin-1]-phi[iMin]-psi[jMin-1]
+                    lowEndDiff=(X[iMin]-Y[jMin-1])**p-phi[iMin]-psi[jMin-1]
                     # catch: empty rows in between that could numerically be skipped
                     if iMin>0:
                         if piRow[iMin-1]==-1:
@@ -604,8 +800,8 @@ def solve_opt(c,lam): #,verbose=False):
                 else:
                     lowEndDiff=np.infty
                 # threshold for upper end
-                if j<N-1:
-                    hiEndDiff=c[K,j+1]-phi[K]-psi[j+1]-v
+                if j<m-1:
+                    hiEndDiff=(X[K]-Y[j+1])**p-phi[K]-psi[j+1]-v
                 else:
                     hiEndDiff=np.infty
                 if hiEndDiff<=min((lowEndDiff,lamDiff)):
@@ -658,11 +854,6 @@ def solve_opt(c,lam): #,verbose=False):
                 else:
                  #   if verbose: print(f"case 3.1, lamInd={lamInd}")
                     v+=lamDiff
-                    
-                    # domain=arange(iMin,K)
-                    # phi[domain]+=v-dist[domain]
-                    # psi[piRow[domain]]-=v-dist[domain]
-                    # i=K-1
                     for i in range(iMin,K):
                         phi[i]+=v-dist[i]
                         psi[piRow[i]]-=v-dist[i]
@@ -672,11 +863,6 @@ def solve_opt(c,lam): #,verbose=False):
                         jPrime=piRow[lamInd]
                         piRow[lamInd]=-1
                         
-                        # domain1=arange(lamInd+1,K)
-                        # piRow[domain1]-=1
-                        # piCol[domain1-(lamInd+1)+jPrime]+=1
-                        # jPrime=K-(lamInd+1)+jPrime
-                        # i=K-1
                         for i in range(lamInd+1,K):
                             piCol[jPrime]+=1
                             piRow[i]-=1
@@ -688,86 +874,3 @@ def solve_opt(c,lam): #,verbose=False):
             K+=1
     objective=np.sum(phi)+np.sum(psi)
     return objective,phi,psi,piRow,piCol
-
-
-
-
-
-
-def getCost(x,y,p=2.):
-    """Squared Euclidean distance cost for two 1d arrays"""
-    c=(x.reshape((-1,1))-y.reshape((1,-1)))
-    c=c**p
-    return c
-
-def getPiFromRow(M,N,piRow):
-    pi=np.zeros(shape=(M,N),dtype=int)
-    for i,j in zip(np.arange(M),piRow):
-        if j>-1: pi[i,j]=1
-    return pi
-
-def getPiFromCol(M,N,piCol):
-    pi=np.zeros(shape=(M,N),dtype=int)
-    for i,j in zip(piCol,np.arange(N)):
-        if i>-1: pi[i,j]=1
-    return pi
-
-
-
-
-
-@nb.njit(['Tuple((float64,int64[:]))(float64[:,:])'],cache=True)
-def pot(M): 
-    n,m=M.shape
-    L=np.empty(0,dtype=np.int64) # save the optimal plan
-    cost=0.0 # save the optimal cost    
-    argmin_Y=closest_y_M(M) # M.argmin(1)
- 
-    #initial loop:
-    k=0
-    #xk=X[k]
-    jk=argmin_Y[k]
-    cost_xk_yjk=M[k,jk]
-
-    cost+=cost_xk_yjk
-    L=np.append(L,jk)
-    for k in range(1,n):
-        jk=argmin_Y[k]
-        cost_xk_yjk=M[k,jk]
-        j_last=L[-1]
-    
-        #define consistent term     
-        if jk>j_last:# No conflict, L[-1] is the j last assig
-            cost+=cost_xk_yjk
-            L=np.append(L,jk)
-        else:
-            # this is the case for conflict: 
-
-            # compute the first cost 
-            if j_last+1<=m-1:
-                cost_xk_yjlast1=M[k,j_last+1]
-                cost1=cost+cost_xk_yjlast1
-            else:
-                cost1=np.inf 
-            # compute the second cost 
-            i_act,j_act=unassign_y(L)
-            if j_act>=0:                        
-                L1=np.concatenate((L[0:i_act],np.array([j_act]),L[i_act:]))
-                X_indices=arange(0,k+1)
-                Y_indices=L1
-#                Y_assign=Y[L1]
-#                X_assign=X[0:k+1]
-                cost2=np.sum(matrix_take(M,X_indices,Y_indices))
-#                cost2=np.sum(cost_function(X_assign,Y_assign))
-            else:
-                cost2=np.inf
-            if cost1<cost2:
-                cost=cost1
-                L=np.append(L,j_last+1)
-            elif cost2<=cost1:
-                cost=cost2
-                L=L1.copy()    
-    return cost,L
-
-
-

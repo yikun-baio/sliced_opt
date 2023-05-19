@@ -389,8 +389,8 @@ def sopt_main(S,T,n_iterations,N0):
         T_indice=T_theta.argsort()
         T_hat_s=T_hat_theta[T_hat_indice]
         T_s=T_theta[T_indice]
-        c=cost_matrix(T_hat_s,T_s)
-        obj,phi,psi,piRow,piCol=solve_opt(c,Lambda)
+        # c=cost_matrix(T_hat_s,T_s)
+        obj,phi,psi,piRow,piCol=solve_opt(T_hat_s,T_s,Lambda)
         L=piRow.copy()
         L=recover_indice(T_hat_indice,T_indice,L)
         
