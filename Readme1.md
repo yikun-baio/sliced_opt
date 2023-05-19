@@ -23,7 +23,7 @@ To use the C++ solver, you must first compile the 1D Partial Optimal Transport w
 Start by cloning the pybind11 repo:
 
 ```
-conda install -c conda-forge pybind11
+git clone https://github.com/pybind/pybind11.git
 ```
 Ensure cmake, cython, and pytest are installed: 
 ```
@@ -41,25 +41,40 @@ cmake --build . --config Release --target check
 ```
 
 ### Installing opt1d
-You can use the following to compile the opt1d.cpp:
-```
-c++ -O3 -Wall -shared -std=c++11 -fPIC $(python3 -m pybind11 --includes) opt1d.cpp -o opt1d$(python3-config --extension-suffix)
-```
-or (if the first one does not work.)
-```
-c++ -O3 -Wall -shared -std=c++11 -fPIC $(python3 -m pybind11 --includes) opt1d.cpp -o opt1d.so
+
+Get the python path: 
+
+``` 
+python3-config --includes
 ```
 
-You will get a compiled c++ file. In my computer, it is
-
+for instance, this will give me the following output:
 
 ```
-opt1d.cpython-310-x86_64-linux-gnu.so
+-I/home/baly/miniconda3/include/python3.10
+```
+
+Also, get the file extension of the lib:
+
+```
+python3-config --extension-suffix
+```
+
+Which should output something like: 
+
+```
+.cpython-310-x86_64-linux-gnu.so
+```
+
+Then you can use the following to compile the opt1d.cpp:
+
+```
+g++ -O3 -Wall -shared -std=c++11 -I/home/baly/projects/pybind11/include/pybind11 -I/home/baly/miniconda3/include/python3.10 -fPIC -DVERBOSE opt1d.cpp -o opt1d.cpython-310-x86_64-linux-gnu.so
 ```
 or 
 
 ```
-opt1d.so
+g++ -O3 -Wall -shared -std=c++11 -I/home/baly/projects/pybind11/include/pybind11 -I/home/baly/miniconda3/include/python3.10 -fPIC -DVERBOSE opt1d.cpp -o opt1d.so
 ```
 
 
@@ -85,28 +100,28 @@ You should comment out the lines which contains "opt1d.solve" if the C++ impleme
 ### OPT solver
 
 The file code/sopt/lib_ot.py contains our 1-D optimal partial transport (OPT problem) solver. In particular, it contains the following functions, most of which are accelarated by numba: 
-- "solve_opt" (for data in float64): our 1-D Optimal partial transport (OPT) sovler 
+- "solve_opt" (for data in float64) and "solve_opt_32" (for data in flaot32): our 1-D Optimal partial transport (OPT) sovler 
 - "opt_lp": linear programming sovler for OPT 
-- "sinkhorn_knopp": the Sinkhorn-knopp algorithm for classical OT problem (see [1])
-- "sinkhorn_knopp_opt": Sinkhorn-knopp algorithm for OPT problem accelarated by numba 
-- "pot": python implementation of the solver for partial optimal transport problem (algorithm 1 in [2])
+- "sinkhorn_knopp" and "sinkhorn_knopp_32": the Sinkhorn-knopp algorithm for classical OT problem (see [1])
+- "sinkhorn_knopp_opt" and "sinkhorn_knopp_opt_32": Sinkhorn-knopp algorithm for OPT problem accelarated by numba 
+- "pot" and "pot_32": python implementation of the solver for partial optimal transport problem (algorithm 1 in [2])
 
 
 
 ### Shape registration 
 The file code/sopt/lib_shape.py contains our method for shape registration experiment based on our OPT solver. In particular it contains the following functions: 
 
-- sopt_main: our method for shape registration problem based on our 1-D OPT sovler 
-- spot_bonneel: one python implementation of "Fast Iterative Sliced Transport algorithm" based on SPOT in [2]) 
-- icp_du: Du's ICP algorithm (see [3])
-- icp_umeyama: classical ICP algorithm (see [4]) 
+- sopt_main and sopt_main_32: our method for shape registration problem based on our 1-D OPT sovler 
+- spot_bonneel and spot_bonneel_32: one python implementation of "Fast Iterative Sliced Transport algorithm" based on SPOT in [2]) 
+- icp_du and icp_du_32: Du's ICP algorithm (see [3])
+- icp_umeyama and icp_umeyama_32: classical ICP algorithm (see [4]) 
 
 
 
 ### Color adaptation 
 The file code/sopt/lib_color.py contains our color adaptation method based on our 1-D OPT solver. In particular, it contains the following functions: 
-- sopt_transfer: our color transporation method based on 1-D OPT solver. 
-- spot_transfer: one python implementation of the color transportation method based on SPOT (see [2])
+- sopt_transfer and sopt_transfer_32: our color transporation method based on 1-D OPT solver. 
+- spot_transfer and spot_transfer_32: one python implementation of the color transportation method based on SPOT (see [2])
 - ot_transfer: one python implementation of OT-based color adaptation method (we modify the code of ot.da.EMDTransport in PythonOT to improve the speed) (see [5])
 - eot_transfer: one python implemtation of entropic OT-based color adaptation method (we modify the code of ot.da.SinkhornTransport in PythonOT to improve the speed) (see [5])
 
