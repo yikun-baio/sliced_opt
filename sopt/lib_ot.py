@@ -859,3 +859,16 @@ def solve_opt(X,Y,lam): #,verbose=False):
             K+=1
     objective=np.sum(phi)+np.sum(psi)
     return objective,phi,psi,piRow,piCol
+
+
+@nb.njit(parallel=True,cache=True,fastmath=True)
+def sliced_opt(X_projections,Y_projections,Lambda_list):
+    n_projections,n=X_projections.shape
+    opt_cost_list=np.zeros(n_projections)
+    opt_plan_list=np.zeros((n_projections,n))
+    for epoch in nb.prange(n_projections):
+        X_theta,Y_theta,Lambda=X_projections[epoch],Y_projections[epoch],Lambda_list[epoch]
+        obj,phi,psi,piRow,piCol=solve_opt(X_theta,Y_theta,Lambda)
+        opt_cost_list[epoch],opt_plan_list[epoch]=obj,piRow
+        
+    return opt_cost_list,opt_plan_list
