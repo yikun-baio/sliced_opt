@@ -326,8 +326,8 @@ def recover_rotation_du(X,Y):
         num=0
         denum=0
         for j in range(d):
-            num+=X_c[j].T.dot(rotation.T).dot(Ei).dot(Y_c[j])
-            denum+=Y_c[j].T.dot(Ei).dot(Y_c[j])
+            num+=X_c[j].dot(rotation.T).dot(Ei).dot(Y_c[j])
+            denum+=Y_c[j].dot(Ei).dot(Y_c[j])
         scaling[i]=num/denum
     return rotation,scaling
 
