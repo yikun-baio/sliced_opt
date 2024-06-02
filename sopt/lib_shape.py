@@ -729,10 +729,10 @@ def get_noise_index(Y0,Y1):
             noise_indices.append(j)
     return np.array(data_indices),np.array(noise_indices)
 
-def shape_image(T_data,S_data,T_noise=[],S_noise=[],name=None, param=None):
+def shape_image(T_data,S_data,T_noise=None,S_noise=None,name=None, param=None):
     fig = plt.figure(figsize=(10,10))
     ax = plt.axes(projection='3d')
-    if param!=None:
+    if param is not None:
         xlim,ylim,zlim,view_init,(dx,dy,dz)=param
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
@@ -741,9 +741,9 @@ def shape_image(T_data,S_data,T_noise=[],S_noise=[],name=None, param=None):
         
     ax.scatter(T_data[:,0]+dx,T_data[:,1]+dy,T_data[:,2]+dz,alpha=.5,c='C2',s=2,marker='o')
     ax.scatter(S_data[:,0]+dx,S_data[:,1]+dy,S_data[:,2]+dz,alpha=0.5,c='C1',s=2,marker='o')
-    if len(T_noise)>0:
+    if T_noise is not None:
         ax.scatter(T_noise[:,0]+dx,T_noise[:,1]+dy,T_noise[:,2]+dz,alpha=.5,c='C2',s=10,marker='o')
-    if len(S_noise)>0:
+    if S_noise is not None:
         ax.scatter(S_noise[:,0]+dx,S_noise[:,1]+dy,S_noise[:,2]+dz,alpha=.5,c='C1',s=10,marker='o')
     ax.set_facecolor('black') 
     ax.set_xticks([])
@@ -847,7 +847,7 @@ def init_image(X_data,X_noise,Y_data,Y_noise,image_path,name):
     
     
 
-def normal_image(X_data,X_noise,Y_data,Y_noise,image_path,name):
+def normal_image(X_data,Y_data,X_noise=None,Y_noise=None,image_name=None):
     
     """
     make a plot for the data and noise and save the plot 
@@ -869,9 +869,12 @@ def normal_image(X_data,X_noise,Y_data,Y_noise,image_path,name):
     fig = plt.figure(figsize=(10,10))
     ax = plt.axes(projection='3d')
     ax.scatter(X_data[:,0]+3,X_data[:,1],X_data[:,2]-15,alpha=.3,c='C2',s=5,marker='o')
-    ax.scatter(X_noise[:,0]+3,X_noise[:,1],X_noise[:,2]-15,alpha=.5,c='C2',s=15,marker='o')
     ax.scatter(Y_data[:,0]+3,Y_data[:,1],Y_data[:,2]-15,alpha=.9,c='C1',s=6,marker='o')
-    ax.scatter(Y_noise[:,0]+3,Y_noise[:,1],Y_noise[:,2]-15,alpha=.5,c='C1',s=15,marker='o')
+    if X_noise is not None:
+        ax.scatter(X_noise[:,0]+3,X_noise[:,1],X_noise[:,2]-15,alpha=.5,c='C2',s=15,marker='o')
+
+    if Y_noise is not None:
+        ax.scatter(Y_noise[:,0]+3,Y_noise[:,1],Y_noise[:,2]-15,alpha=.5,c='C1',s=15,marker='o')
     ax.set_xticks([])
     ax.set_yticks([])
     ax.set_zticks([])
@@ -905,8 +908,8 @@ def normal_image(X_data,X_noise,Y_data,Y_noise,image_path,name):
 
     # ax.view_init( 90, -90)
     # fig.set_facecolor('black')
-    
-    plt.savefig(image_path+'/'+name+'.png',dpi=200,format='png',bbox_inches='tight')
+    if image_name is not None:
+        plt.savefig(image_name+'.png',dpi=200,format='png',bbox_inches='tight')
     plt.show()
     plt.close()
     
