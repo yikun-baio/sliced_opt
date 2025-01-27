@@ -722,7 +722,8 @@ def pot(X,Y):
 def solve_opt(X,Y,lam): #,verbose=False):
     n,m=X.shape[0],Y.shape[0]
     phi=np.full(shape=n,fill_value=-np.inf)
-    psi=np.full(shape=m,fill_value=lam)
+    # psi=np.full(shape=m,fill_value=lam)
+    psi = np.full(shape=m, fill_value=lam-1e-20)
     # to which cols/rows are rows/cols currently assigned? -1: unassigned
     piRow=np.full(n,-1,dtype=np.int64)
     piCol=np.full(m,-1,dtype=np.int64)
